@@ -1,11 +1,17 @@
 <template>
   <div>Modellierung</div>
-  <EditorComp></EditorComp>
+  <EditorComp :model="model" @update:model="updateModel" />
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import EditorComp from '@/components/modeling/EditorComp.vue'
+
+const model = ref<GraphDataModel>()
+
+const updateModel = (model: GraphDataModel) => {
+  console.log('updateModel', model)
+}
 
 onMounted(() => {})
 </script>
