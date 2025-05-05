@@ -19,19 +19,6 @@ const graphContainer = ref<HTMLElement>()
 const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
-const graphDataModel = ref<mxGraphModel>()
-
-// const vertex = {
-//   id: '1',
-//   value: 'Hello,',
-//   position: [20, 20],
-//   size: [80, 30],
-//   style: {
-//     fillColor: 'orange',
-//     shape: 'ellipse',
-//     verticalAlign: 'top'
-//   }
-// }
 
 onMounted(() => {
   initGraph()
