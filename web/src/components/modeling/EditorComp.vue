@@ -45,10 +45,11 @@ const initGraph = () => {
     graph.value = new Graph(graphContainer.value, props.model)
   } else {
     graph.value = new Graph(graphContainer.value)
-    emitUpdatedModel()
+    // emitUpdatedModel()
   }
 
   // Enable or disable editing based on allowEdit
+  graph.value.setEnabled(props.allowEdit)
   graph.value.setConnectable(props.allowEdit)
   graph.value.setCellsEditable(props.allowEdit)
   graph.value.setCellsMovable(props.allowEdit)
@@ -59,7 +60,7 @@ const initGraph = () => {
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = 'orthogonalEdgeStyle'
 
   new RubberBandHandler(graph.value)
-  graph.value.setEnabled(false)
+
   parent.value = graph.value.getDefaultParent()
 }
 
