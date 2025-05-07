@@ -5,6 +5,7 @@
         <h1 class="home__title">Willkommen bei FBS</h1>
         <p class="home__description">Hier ist die Beschreibung der Anwendung.</p>
         <router-link to="/modeling" class="home__button">Modellierung starten</router-link>
+        <router-link to="/diagramEditor" class="home__button">Diagramm-Editor starten</router-link>
       </v-col>
     </v-row>
   </v-container>

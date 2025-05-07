@@ -14,6 +14,7 @@ const updateModel = (model: GraphDataModel) => {
   // console.log('updateModel', model)
 }
 
+
 onMounted(() => {})
 </script>
 

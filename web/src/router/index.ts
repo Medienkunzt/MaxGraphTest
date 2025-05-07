@@ -1,6 +1,4 @@
 import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
-import HomeView from '../views/ViewHome.vue'
-import ViewModeling from '../views/ViewModeling.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -8,13 +6,18 @@ const router = createRouter({
     {
       path: '/',
       name: 'Home',
-      component: HomeView
+      component: ()=> import('../views/ViewHome.vue')
     },
     {
       path: '/modeling',
       name: 'Modeling',
-      component: ViewModeling
-    }
+      component: () => import('../views/ViewModeling.vue')
+    },
+    {
+      path: '/diagramEditor',
+      name: 'DiagramEditor',
+      component: () => import('../views/ViewDiagramEditor.vue')
+    },
   ]
 })
 
