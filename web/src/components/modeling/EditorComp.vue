@@ -8,6 +8,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, gestureUtils, styleUtils } from '@maxgraph/core'
+import type { GraphDataModel, AbstractGraph, CellStyle, EdgeParameters, VertexParameters } from '@maxgraph/core'
+
+import img from '@/assets/images/rectangle.gif'
 
 const props = defineProps<{
   model: GraphDataModel
@@ -28,7 +31,6 @@ onMounted(() => {
     emitUpdatedModel()
   })
 
-  console.log(props.model)
   if (props.model) {
     loadModel(props.model)
   }
@@ -50,7 +52,7 @@ const initGraph = () => {
 
 const toolbarItems = ref([
   {
-    icon: 'rectangle.gif',
+    icon: img,
     width: 24,
     height: 24,
     style: {
@@ -66,11 +68,11 @@ const initToolbar = () => {
 
   for (const { icon, width, height, style } of toolbarItems.value) {
     const vertex = createToolbarShape(width, height, style)
-    const imageUrl = `../../assets/images/${icon}`
+    const imageUrl = icon
     const dropHandler = createDropHandler(vertex)
 
-    const img = toolbar.addMode(
-      null,
+    let img: HTMLElement = toolbar.addMode(
+      '123',
       imageUrl,
       (evt: MouseEvent, cell: Cell) => {
         const pt = graph.value!.getPointForEvent(evt)
@@ -79,8 +81,12 @@ const initToolbar = () => {
       ''
     )
 
-    setupDraggableIcon(img, dropHandler)
-    setupIconSelectionHighlight(img)
+    console.log(img)
+
+    img.innerHTML = '<v-icon icon="$vuetify"></v-icon>'
+
+    setupDraggableIcon(img as HTMLImageElement, dropHandler)
+    setupIconSelectionHighlight(img as HTMLImageElement)
   }
 }
 
@@ -93,17 +99,17 @@ const createToolbarShape = (width: number, height: number, style: CellStyle): Ce
 const createDropHandler = (prototype: Cell) => {
   return (graph: AbstractGraph, _evt: MouseEvent, _cell: Cell | null, x?: number, y?: number) => {
     graph.stopEditing(false)
-    const cloned = cellArrayUtils.cloneCell(prototype)!
+    const cloned: Cell = cellArrayUtils.cloneCell(prototype)!
     if (cloned.geometry) {
       if (x != null) cloned.geometry.x = x
       if (y != null) cloned.geometry.y = y
     }
-    graph.addCell(cloned)
+    graph.addCell(cloned, parent.value!)
     graph.setSelectionCell(cloned)
   }
 }
 
-const setupDraggableIcon = (img: HTMLImageElement, dropHandler: Function) => {
+const setupDraggableIcon = (img: HTMLImageElement, dropHandler: (graph: AbstractGraph, evt: MouseEvent, cell: Cell | null, x?: number, y?: number) => void) => {
   InternalEvent.addListener(img, 'mousedown', (evt: MouseEvent) => {
     if ((img as any).enabled === false) {
       InternalEvent.consume(evt)
@@ -120,21 +126,49 @@ const setupIconSelectionHighlight = (img: HTMLImageElement) => {
   })
 }
 
+const processModel = (model: GraphDataModel) => {
+  const vertices = []
+  const edges = []
+
+  for (const cell of Object.values(model.cells || {})) {
+    if (cell.isVertex()) {
+      vertices.push(cell)
+    } else if (cell.isEdge()) {
+      edges.push(cell)
+    }
+  }
+
+  return { vertices, edges }
+}
+
 const loadModel = (model: GraphDataModel) => {
-  graph.value.batchUpdate(() => {
-    for (const cell of model.cells) {
-      if (cell.type === 'vertex') {
-        addVertex(cell)
-      } else if (cell.type === 'edge') {
-        addEdge(cell)
-      }
+  const { vertices, edges } = processModel(model)
+
+  graph.value!.batchUpdate(() => {
+    for (const vertex of vertices) {
+      addVertex({
+        id: vertex.id,
+        value: vertex.value,
+        position: [vertex.geometry?.x, vertex.geometry?.y],
+        size: [vertex.geometry?.width, vertex.geometry?.height],
+        style: vertex.getStyle()
+      } as VertexParameters)
+    }
+
+    for (const edge of edges) {
+      addEdge({
+        id: edge.id,
+        source: edge.getTerminal(true),
+        target: edge.getTerminal(false),
+        style: edge.getStyle()
+      } as EdgeParameters)
     }
   })
 }
 
 const addVertex = (options: VertexParameters): Cell => {
   const { id, value, position, size, style } = options
-  const vertex = graph.value!.insertVertex(parent.value!, id, value, position[0], position[1], size[0], size[1], style)
+  const vertex = graph.value!.insertVertex(parent.value!, id, value, position![0], position![1], size![0], size![1], style)
   return vertex
 }
 
