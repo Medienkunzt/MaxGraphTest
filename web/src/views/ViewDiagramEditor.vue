@@ -5,35 +5,21 @@
       <v-form v-model="formIsValid">
         <v-container>
           <v-row>
-            <v-col cols="6" md="6">
-              <v-text-field v-model="elementId" label="Element ID" required />
+            <v-col cols="6">
+              <v-text-field v-model="formData.label" label="Shape Name" />
             </v-col>
-            <v-col cols="6" md="6">
-              <v-select v-model="elementKind" :items="['node', 'edge']" label="Elementtyp" required />
-            </v-col>
+          </v-row>
+          <v-row>
+            <v-col cols="3"><v-text-field v-model.number="formData.x" label="X" required /></v-col>
+            <v-col cols="3"><v-text-field v-model.number="formData.y" label="Y" required /></v-col>
+            <v-col cols="3"><v-text-field v-model.number="formData.width" label="Breite" required /></v-col>
+            <v-col cols="3"><v-text-field v-model.number="formData.height" label="Höhe" required /></v-col>
           </v-row>
 
           <v-row>
-            <v-col cols="3"><v-text-field v-model.number="x1" label="X" required /></v-col>
-            <v-col cols="3"><v-text-field v-model.number="x2" label="Y" required /></v-col>
-            <v-col cols="3"><v-text-field v-model.number="width" label="Breite" required /></v-col>
-            <v-col cols="3"><v-text-field v-model.number="height" label="Höhe" required /></v-col>
-          </v-row>
-
-          <v-row>
-            <v-col cols="12">
-              <v-select v-model="style.shape" :items="['rectangle', 'ellipse', 'doubleEllipse', 'rhombus', 'line', 'image', 'arrow', 'arrowConnector', 'label', 'cylinder', 'swimlane', 'connector', 'actor', 'cloud', 'triangle', 'hexagon']" label="Form" required />
-              <v-text-field v-model="style.fillColor" label="Füllfarbe" required />
-              <v-text-field v-model="style.strokeColor" label="Randfarbe" required />
-              <v-text-field v-model="style.strokeWidth" label="Randstärke" required />
-              <v-text-field v-model="style.fontSize" label="Schriftgröße" required />
-              <v-text-field v-model="style.fontColor" label="Schriftfarbe" required />
-            </v-col>
-          </v-row>
-
-          <v-row>
-            <v-col cols="12">
-              <v-text-field v-model="label" label="Label / Name" />
+            <!-- textarea for AbstractCanvas2D -->
+            <v-col cols="6">
+              <v-textarea v-model="formData.canvas" label="Canvas2D" auto-grow></v-textarea>
             </v-col>
           </v-row>
         </v-container>
@@ -41,7 +27,7 @@
     </v-card-text>
 
     <v-card-actions>
-      <v-btn color="primary" @click="addElement">Add Element</v-btn>
+      <!-- <v-btn color="primary" @click="addElement">Add Element</v-btn> -->
     </v-card-actions>
   </v-card>
 
@@ -49,9 +35,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import EditorComp from '@/components/modeling/EditorComp.vue'
-import type { CellStyle, GraphDataModel } from '@maxgraph/core'
+import type { GraphDataModel, AbstractCanvas2D } from '@maxgraph/core'
+import { Shape, CellRenderer } from '@maxgraph/core'
 
 // graph + ref binding
 const model = ref<GraphDataModel>()
@@ -60,41 +47,136 @@ const editorRef = ref<InstanceType<typeof EditorComp>>()
 // Formular-State
 const formIsValid = ref(false)
 
-const elementId = ref('')
-const elementKind = ref<'node' | 'edge'>('node')
-const x1 = ref<number>(50)
-const x2 = ref<number>(50)
-const width = ref<number>(100)
-const height = ref<number>(60)
-const style = ref<CellStyle>({
-  shape: 'rectangle',
-  fillColor: '#ffffff',
-  strokeColor: '#000000',
-  strokeWidth: 1,
-  fontColor: '#000000',
-  fontSize: 12,
-  fontFamily: 'Arial'
+// Objekt für die Formulardaten
+const formData = ref({
+  label: 'custom-shape',
+  x: 50,
+  y: 50,
+  width: 100,
+  height: 60,
+  canvas: 'RECT 0 0 1 1\nMOVE 0.3 0\nLINE 0 0.5\nLINE 0.3 1'
 })
-const label = ref<string>('Neues Element')
 
-// Aktion: Neues Element dem Graph hinzufügen
-const addElement = () => {
-  if (!formIsValid.value || !editorRef.value?.graph) return
+onMounted(() => {
+  updateElement()
+})
 
-  const graph = editorRef.value.graph
-  const parent = graph.getDefaultParent()
+watch(
+  () => formData.value,
+  (newValue) => {
+    updateElement()
+  },
+  { deep: true }
+)
 
-  graph.getDataModel().beginUpdate()
-  try {
-    if (elementKind.value === 'node') {
-      graph.insertVertex(parent, elementId.value, label.value, x1.value, x2.value, width.value, height.value, style.value)
-    } else if (elementKind.value === 'edge') {
-      // Optional später implementieren: neue Kante zwischen zwei vorhandenen Knoten
-      console.warn('Edge-Erzeugung noch nicht implementiert')
+const updateElement = () => {
+  // clear the graph
+  editorRef.value?.graph?.removeCells(editorRef.value?.graph?.getChildCells())
+  registerNewShape()
+  addVertex()
+}
+
+const addVertex = () => {
+  const graph = editorRef.value?.graph
+  if (graph) {
+    const parent = graph.getDefaultParent()
+    graph.getDataModel().beginUpdate()
+    try {
+      const shape = graph.insertVertex(parent, null, formData.value.label, formData.value.x, formData.value.y, formData.value.width, formData.value.height, {
+        shape: formData.value.label
+      })
+    } finally {
+      graph.getDataModel().endUpdate()
     }
-  } finally {
-    graph.getDataModel().endUpdate()
   }
+}
+
+const registerNewShape = () => {
+  class DynamicCustomShape extends Shape {
+    override paintBackground(c: AbstractCanvas2D, x: number, y: number, w: number, h: number) {
+      c.translate(x, y)
+
+      const lines = formData.value.canvas.trim().split('\n')
+
+      let pathStarted = false
+
+      for (const line of lines) {
+        const [cmd, ...args] = line.trim().split(/\s+/)
+        const nums = args.map(Number)
+
+        if (nums.some((n) => isNaN(n))) {
+          console.warn(`Ungültige Zahlen in: ${line}`)
+          continue
+        }
+
+        switch (cmd.toUpperCase()) {
+          case 'MOVE':
+            if (pathStarted) {
+              c.stroke()
+              c.end()
+              pathStarted = false
+            }
+            c.begin()
+            c.moveTo(w * nums[0], h * nums[1])
+            pathStarted = true
+            break
+
+          case 'LINE':
+            if (nums.length === 2) {
+              if (!pathStarted) {
+                c.begin()
+                pathStarted = true
+              }
+              c.lineTo(w * nums[0], h * nums[1])
+            } else if (nums.length === 4) {
+              if (pathStarted) {
+                c.stroke()
+                c.end()
+                pathStarted = false
+              }
+              c.begin()
+              c.moveTo(w * nums[0], h * nums[1])
+              c.lineTo(w * nums[2], h * nums[3])
+              c.stroke()
+              c.end()
+            } else {
+              console.warn(`LINE erwartet 2 oder 4 Parameter, bekam ${nums.length}`)
+            }
+            break
+
+          case 'ELLIPSE':
+            if (pathStarted) {
+              c.stroke()
+              c.end()
+              pathStarted = false
+            }
+            c.ellipse(w * nums[0], h * nums[1], w * nums[2], h * nums[3])
+            c.fillAndStroke()
+            break
+
+          case 'RECT':
+            if (pathStarted) {
+              c.stroke()
+              c.end()
+              pathStarted = false
+            }
+            c.rect(w * nums[0], h * nums[1], w * nums[2], h * nums[3])
+            c.fillAndStroke()
+            break
+
+          default:
+            console.warn(`Unbekannter Canvas-Befehl: ${cmd}`)
+        }
+      }
+
+      if (pathStarted) {
+        c.stroke()
+        c.end()
+      }
+    }
+  }
+
+  CellRenderer.registerShape(formData.value.label, DynamicCustomShape)
 }
 </script>
 
