@@ -21,6 +21,25 @@
             <v-col cols="6">
               <v-textarea v-model="formData.canvas" label="Canvas2D" auto-grow></v-textarea>
             </v-col>
+            <v-col cols="6">
+              <v-checkbox v-model="formData.hasAttributes" label="Has Attributes"></v-checkbox>
+              <v-row v-if="formData.hasAttributes">
+                <v-col cols="6">
+                  <v-text-field v-model="formData.attributeConfig.x" label="Attr Pos X" />
+                </v-col>
+                <v-col cols="6">
+                  <v-text-field v-model="formData.attributeConfig.y" label="Attr Pos Y" />
+                </v-col>
+              </v-row>
+              <v-row v-if="formData.hasAttributes">
+                <v-col cols="6">
+                  <v-text-field v-model.number="formData.attributeConfig.width" label="Attr Width" />
+                </v-col>
+                <v-col cols="6">
+                  <v-text-field v-model.number="formData.attributeConfig.height" label="Attr Height" />
+                </v-col>
+              </v-row>
+            </v-col>
           </v-row>
         </v-container>
       </v-form>
@@ -54,7 +73,14 @@ const formData = ref({
   y: 50,
   width: 100,
   height: 60,
-  canvas: 'RECT 0 0 1 1\nMOVE 0.3 0\nLINE 0 0.5\nLINE 0.3 1'
+  canvas: 'RECT 0 0 1 1\nMOVE 0.2 0\nLINE 0 0.5\nLINE 0.2 1\nMOVE 0.8 0\nLINE 1 0.5\nLINE 0.8 1',
+  hasAttributes: true,
+  attributeConfig: {
+    x: 0.0,
+    y: 1,
+    width: 100,
+    height: 0
+  }
 })
 
 onMounted(() => {
@@ -63,7 +89,7 @@ onMounted(() => {
 
 watch(
   () => formData.value,
-  (newValue) => {
+  () => {
     updateElement()
   },
   { deep: true }
@@ -85,6 +111,26 @@ const addVertex = () => {
       const shape = graph.insertVertex(parent, null, formData.value.label, formData.value.x, formData.value.y, formData.value.width, formData.value.height, {
         shape: formData.value.label
       })
+      if (formData.value.hasAttributes) {
+        const attrX = formData.value.attributeConfig.x
+        const attrY = formData.value.attributeConfig.y
+        const attrWidth = formData.value.attributeConfig.width
+        const attrHeight = formData.value.attributeConfig.height
+        const attr = graph.insertVertex(shape, null, 'Attribuet, daws, wdad, wad, awd, w, awd,', attrX, attrY, attrWidth, attrHeight, {
+          shape: 'label',
+          autoSize: true,
+          strokeColor: 'transparent',
+          fillColor: 'transparent',
+          align: 'left',
+          verticalAlign: 'top'
+        })
+        shape.geometry!.relative = false
+        attr.geometry!.relative = true
+        // atr not clickable
+        attr.setConnectable(false)
+
+        graph.refresh()
+      }
     } finally {
       graph.getDataModel().endUpdate()
     }
