@@ -7,10 +7,29 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, gestureUtils, styleUtils } from '@maxgraph/core'
-import type { GraphDataModel, AbstractGraph, CellStyle } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, gestureUtils, styleUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, ConnectionConstraint, Point } from '@maxgraph/core'
+import type { GraphDataModel, AbstractGraph, CellStyle, GraphPluginConstructor, InternalMouseEvent } from '@maxgraph/core'
 
 import img from '@/assets/images/rectangle.gif'
+
+class MyCustomConnectionHandler extends ConnectionHandler {
+  // Enables connect preview for the default edge style
+  override createEdgeState(_me: InternalMouseEvent) {
+    const edge = this.graph.createEdge(null, null!, null, null, null)
+    return new CellState(this.graph.view, edge, this.graph.getCellStyle(edge))
+  }
+}
+
+class MyCustomGraph extends Graph {
+  constructor(container: HTMLElement, model?: GraphDataModel, plugins?: GraphPluginConstructor[]) {
+    super(container, model, plugins)
+  }
+
+  override getAllConnectionConstraints = (terminal: CellState | null, _source: boolean) => {
+    // Overridden to define per-geometry connection points
+    return (terminal?.cell?.geometry as any)?.constraints ?? null
+  }
+}
 
 const props = withDefaults(
   defineProps<{
@@ -30,6 +49,7 @@ const graphContainer = ref<HTMLElement>()
 const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
+const plugins = ref<GraphPluginConstructor[]>([CellEditorHandler, SelectionCellsHandler, MyCustomConnectionHandler, SelectionHandler, RubberBandHandler])
 
 onMounted(() => {
   initGraph()
@@ -42,9 +62,9 @@ onMounted(() => {
 
 const initGraph = () => {
   if (props.model) {
-    graph.value = new Graph(graphContainer.value, props.model)
+    graph.value = new MyCustomGraph(graphContainer.value!, props.model, plugins.value)
   } else {
-    graph.value = new Graph(graphContainer.value)
+    graph.value = new MyCustomGraph(graphContainer.value!, undefined, plugins.value)
     // emitUpdatedModel()
   }
 
@@ -55,6 +75,10 @@ const initGraph = () => {
   graph.value.setCellsMovable(props.allowEdit)
   graph.value.setCellsResizable(props.allowEdit)
   graph.value.setCellsDeletable(props.allowEdit)
+
+  // graph.value.setAllowDanglingEdges(false)
+  // graph.value.setMultigraph(false)
+  // graph.value.setDisconnectOnMove(false)
 
   // Specifies the default edge style
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = 'orthogonalEdgeStyle'
@@ -151,11 +175,13 @@ defineExpose({
 
 <style scoped>
 .graph-container {
+  position: relative;
   width: 100%;
-  height: 100%;
-  background-color: #f0f0f0;
+  height: 500px;
+  /* background-image: url(/images/grid.gif); */
+  background-color: #ffffff;
   border: 1px solid #ccc;
-  overflow: hidden;
+  cursor: default;
 }
 
 .toolbar-container {

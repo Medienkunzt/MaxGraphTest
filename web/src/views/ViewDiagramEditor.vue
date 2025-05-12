@@ -20,6 +20,22 @@
             <!-- textarea for AbstractCanvas2D -->
             <v-col cols="6">
               <v-textarea v-model="formData.canvas" label="Canvas2D" auto-grow></v-textarea>
+              <v-row v-for="(point, index) in formData.anchorPoints" :key="index">
+                <v-col cols="5">
+                  <v-text-field v-model.number="point.x" label="Anchor Point X" />
+                </v-col>
+                <v-col cols="5">
+                  <v-text-field v-model.number="point.y" label="Anchor Point Y" />
+                </v-col>
+                <v-col cols="2">
+                  <v-btn icon @click="formData.anchorPoints.splice(index, 1)">
+                    <v-icon>mdi-delete</v-icon>
+                  </v-btn>
+                </v-col>
+              </v-row>
+              <v-btn icon @click="formData.anchorPoints.push({ x: 0, y: 0 })">
+                <v-icon>mdi-plus</v-icon>
+              </v-btn>
             </v-col>
             <v-col cols="6">
               <v-checkbox v-model="formData.hasAttributes" label="Has Attributes"></v-checkbox>
@@ -56,8 +72,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import EditorComp from '@/components/modeling/EditorComp.vue'
-import type { GraphDataModel, AbstractCanvas2D } from '@maxgraph/core'
-import { Shape, CellRenderer } from '@maxgraph/core'
+import type { GraphDataModel, AbstractCanvas2D, GraphPluginConstructor, InternalMouseEvent, VertexParameters, CellStyle } from '@maxgraph/core'
+import { Shape, CellRenderer, Point, ConnectionConstraint, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, RubberBandHandler, Geometry } from '@maxgraph/core'
 
 // graph + ref binding
 const model = ref<GraphDataModel>()
@@ -80,7 +96,13 @@ const formData = ref({
     y: 1,
     width: 100,
     height: 0
-  }
+  },
+  anchorPoints: [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: 0, y: 1 },
+    { x: 1, y: 1 }
+  ]
 })
 
 onMounted(() => {
@@ -100,6 +122,30 @@ const updateElement = () => {
   editorRef.value?.graph?.removeCells(editorRef.value?.graph?.getChildCells())
   registerNewShape()
   addVertex()
+  addEdge()
+}
+
+const addEdge = () => {
+  const graph = editorRef.value?.graph
+  if (graph) {
+    const parent = graph.getDefaultParent()
+    graph.getDataModel().beginUpdate()
+    try {
+      const style: CellStyle = {
+        shape: 'rectangle',
+        strokeColor: 'black',
+        fillColor: '#e0e0e0',
+        fontSize: 12
+      }
+
+      // add horizontal edge from left to right
+      const source = graph.insertVertex(parent, null, 'Source', 400, 50, 50, 30, style)
+      const target = graph.insertVertex(parent, null, 'Target', 600, 50, 50, 30, style)
+      const edge = graph.insertEdge(parent, null, 'Edge', source, target)
+    } finally {
+      graph.getDataModel().endUpdate()
+    }
+  }
 }
 
 const addVertex = () => {
@@ -108,14 +154,42 @@ const addVertex = () => {
     const parent = graph.getDefaultParent()
     graph.getDataModel().beginUpdate()
     try {
-      const shape = graph.insertVertex(parent, null, formData.value.label, formData.value.x, formData.value.y, formData.value.width, formData.value.height, {
-        shape: formData.value.label
-      })
+      const shape = graph.insertVertex({
+        parent: parent,
+        id: undefined,
+        value: formData.value.label,
+        x: formData.value.x,
+        y: formData.value.y,
+        width: formData.value.width,
+        height: formData.value.height,
+        style: {
+          shape: formData.value.label,
+          strokeColor: 'black',
+          fillColor: 'white',
+          strokeWidth: 2,
+          fontSize: 12,
+          fontColor: 'black',
+          fontFamily: 'Arial',
+          fontStyle: 0,
+          align: 'center',
+          verticalAlign: 'middle',
+          autoSize: false,
+          editable: true,
+          resizable: true,
+          selectable: true,
+          connectable: true
+        } as CellStyle,
+        relative: false,
+        geometryClass: getMyCustomGeometry()
+      } as VertexParameters)
+
       if (formData.value.hasAttributes) {
         const attrX = formData.value.attributeConfig.x
         const attrY = formData.value.attributeConfig.y
         const attrWidth = formData.value.attributeConfig.width
         const attrHeight = formData.value.attributeConfig.height
+
+        // add attribute shape
         const attr = graph.insertVertex(shape, null, 'Attribuet, daws, wdad, wad, awd, w, awd,', attrX, attrY, attrWidth, attrHeight, {
           shape: 'label',
           autoSize: true,
@@ -124,6 +198,7 @@ const addVertex = () => {
           align: 'left',
           verticalAlign: 'top'
         })
+
         shape.geometry!.relative = false
         attr.geometry!.relative = true
         // atr not clickable
@@ -223,6 +298,13 @@ const registerNewShape = () => {
   }
 
   CellRenderer.registerShape(formData.value.label, DynamicCustomShape)
+}
+
+const getMyCustomGeometry = () => {
+  class MyCustomGeometry extends Geometry {
+    constraints: ConnectionConstraint[] = formData.value.anchorPoints.map((p) => new ConnectionConstraint(new Point(p.x, p.y), true))
+  }
+  return MyCustomGeometry
 }
 </script>
 
