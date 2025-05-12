@@ -122,30 +122,6 @@ const updateElement = () => {
   editorRef.value?.graph?.removeCells(editorRef.value?.graph?.getChildCells())
   registerNewShape()
   addVertex()
-  addEdge()
-}
-
-const addEdge = () => {
-  const graph = editorRef.value?.graph
-  if (graph) {
-    const parent = graph.getDefaultParent()
-    graph.getDataModel().beginUpdate()
-    try {
-      const style: CellStyle = {
-        shape: 'rectangle',
-        strokeColor: 'black',
-        fillColor: '#e0e0e0',
-        fontSize: 12
-      }
-
-      // add horizontal edge from left to right
-      const source = graph.insertVertex(parent, null, 'Source', 400, 50, 50, 30, style)
-      const target = graph.insertVertex(parent, null, 'Target', 600, 50, 50, 30, style)
-      const edge = graph.insertEdge(parent, null, 'Edge', source, target)
-    } finally {
-      graph.getDataModel().endUpdate()
-    }
-  }
 }
 
 const addVertex = () => {
