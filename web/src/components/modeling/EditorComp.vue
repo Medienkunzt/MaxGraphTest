@@ -20,8 +20,8 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, gestureUtils, styleUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, ConnectionConstraint, Point } from '@maxgraph/core'
-import type { GraphDataModel, AbstractGraph, CellStyle, GraphPluginConstructor, InternalMouseEvent } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, gestureUtils, styleUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, ConnectionConstraint, Point, EdgeStyle } from '@maxgraph/core'
+import type { GraphDataModel, AbstractGraph, CellStyle, GraphPluginConstructor, InternalMouseEvent, EdgeStyleValue } from '@maxgraph/core'
 
 import img from '@/assets/images/rectangle.gif'
 
@@ -46,7 +46,7 @@ class MyCustomGraph extends Graph {
 
 const props = withDefaults(
   defineProps<{
-    model?: GraphDataModel // `model` für v-model
+    model?: GraphDataModel
     allowEdit?: boolean
     showToolbar?: boolean
   }>(),
@@ -56,7 +56,7 @@ const props = withDefaults(
   }
 )
 
-const emit = defineEmits(['update:model']) // `update:model` für v-model
+const emit = defineEmits(['update:model'])
 
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
@@ -91,7 +91,7 @@ const initGraph = () => {
   graph.value.setCellsResizable(props.allowEdit)
   graph.value.setCellsDeletable(props.allowEdit)
 
-  graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = 'orthogonalEdgeStyle'
+  graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = EdgeStyle.OrthConnector
 
   parent.value = graph.value.getDefaultParent()
 

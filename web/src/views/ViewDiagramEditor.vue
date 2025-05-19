@@ -73,7 +73,7 @@
 import { onMounted, ref, watch } from 'vue'
 import EditorComp from '@/components/modeling/EditorComp.vue'
 import type { GraphDataModel, AbstractCanvas2D, GraphPluginConstructor, InternalMouseEvent, VertexParameters, CellStyle } from '@maxgraph/core'
-import { Shape, CellRenderer, Point, ConnectionConstraint, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, RubberBandHandler, Geometry } from '@maxgraph/core'
+import { Shape, ShapeRegistry, Point, ConnectionConstraint, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, RubberBandHandler, Geometry } from '@maxgraph/core'
 
 // graph + ref binding
 const model = ref<GraphDataModel>()
@@ -273,7 +273,7 @@ const registerNewShape = () => {
     }
   }
 
-  CellRenderer.registerShape(formData.value.label, DynamicCustomShape)
+  ShapeRegistry.add(formData.value.label, DynamicCustomShape)
 }
 
 const getMyCustomGeometry = () => {
