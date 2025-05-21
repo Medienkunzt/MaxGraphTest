@@ -20,10 +20,11 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, gestureUtils, styleUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, ConnectionConstraint, Point, EdgeStyle } from '@maxgraph/core'
-import type { GraphDataModel, AbstractGraph, CellStyle, GraphPluginConstructor, InternalMouseEvent, EdgeStyleValue } from '@maxgraph/core'
+import { Graph, InternalEvent, ConstraintHandler, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, gestureUtils, styleUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, AbstractGraph, InternalMouseEvent, ImageBox } from '@maxgraph/core'
+import type { CellStyle, GraphPluginConstructor } from '@maxgraph/core'
 
-import img from '@/assets/images/rectangle.gif'
+import img_rectangle from '@/assets/images/rectangle.gif'
+import img_point from '@/assets/images/point.gif'
 
 class MyCustomConnectionHandler extends ConnectionHandler {
   // Enables connect preview for the default edge style
@@ -39,7 +40,6 @@ class MyCustomGraph extends Graph {
   }
 
   override getAllConnectionConstraints = (terminal: CellState | null, _source: boolean) => {
-    // Overridden to define per-geometry connection points
     return (terminal?.cell?.geometry as any)?.constraints ?? null
   }
 }
@@ -69,10 +69,19 @@ onMounted(() => {
   initGraph()
   initToolbar()
 
-  graph.value!.getDataModel().addListener(InternalEvent.CHANGE, () => {
-    graph.value?.refresh()
-    graph.value?.view.validate()
-    emitUpdatedModel()
+  nextTick(() => {
+    const constraintHandler = graph.value?.getPlugin('ConstraintHandler')
+    if (constraintHandler) {
+      ;(constraintHandler as ConstraintHandler).pointImage = new ImageBox(img_point, 16, 16)
+    }
+
+    console.log(ConstraintHandler.prototype.pointImage)
+
+    graph.value!.getDataModel().addListener(InternalEvent.CHANGE, () => {
+      graph.value?.refresh()
+      graph.value?.view.validate()
+      emitUpdatedModel()
+    })
   })
 })
 
@@ -85,11 +94,16 @@ const initGraph = () => {
 
   // Enable editing
   graph.value.setEnabled(props.allowEdit)
-  graph.value.setConnectable(props.allowEdit)
+  graph.value.setConnectable(true)
+  graph.value.setConnectableEdges(true)
   graph.value.setCellsEditable(props.allowEdit)
   graph.value.setCellsMovable(props.allowEdit)
   graph.value.setCellsResizable(props.allowEdit)
   graph.value.setCellsDeletable(props.allowEdit)
+  graph.value.setCellsCloneable(props.allowEdit)
+  graph.value.setAllowNegativeCoordinates(false)
+
+  // graph.value.setEventTolerance(100)
 
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = EdgeStyle.OrthConnector
 
@@ -104,7 +118,7 @@ const initGraph = () => {
 
 const toolbarItems = ref([
   {
-    icon: img,
+    icon: img_rectangle,
     width: 24,
     height: 24,
     style: {

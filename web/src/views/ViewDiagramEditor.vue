@@ -98,10 +98,10 @@ const formData = ref({
     height: 0
   },
   anchorPoints: [
-    { x: 0, y: 0 },
-    { x: 1, y: 0 },
-    { x: 0, y: 1 },
-    { x: 1, y: 1 }
+    { x: 0, y: .5 },
+    { x: .5, y: .5 },
+    { x: .5, y: 1 },
+    { x: .5, y: 0 }
   ]
 })
 
@@ -158,6 +158,7 @@ const addVertex = () => {
         relative: false,
         geometryClass: getMyCustomGeometry()
       } as VertexParameters)
+      shape.setConnectable(true)
 
       if (formData.value.hasAttributes) {
         const attrX = formData.value.attributeConfig.x
@@ -179,9 +180,10 @@ const addVertex = () => {
         attr.geometry!.relative = true
         // atr not clickable
         attr.setConnectable(false)
-
-        graph.refresh()
       }
+
+      graph.refresh()
+      graph.view.validate()
     } finally {
       graph.getDataModel().endUpdate()
     }
@@ -277,9 +279,14 @@ const registerNewShape = () => {
 }
 
 const getMyCustomGeometry = () => {
+  const anchorPointsCopy = JSON.parse(JSON.stringify(formData.value.anchorPoints))
+  const anchorPoints = anchorPointsCopy.map((p: { x: number; y: number }) => new Point(p.x, p.y))
+  const constraints = anchorPoints.map((p: Point) => new ConnectionConstraint(p, true))
+
   class MyCustomGeometry extends Geometry {
-    constraints: ConnectionConstraint[] = formData.value.anchorPoints.map((p) => new ConnectionConstraint(new Point(p.x, p.y), true))
+    constraints: ConnectionConstraint[] = constraints
   }
+
   return MyCustomGeometry
 }
 </script>
