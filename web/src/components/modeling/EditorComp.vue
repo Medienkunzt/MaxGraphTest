@@ -69,19 +69,10 @@ onMounted(() => {
   initGraph()
   initToolbar()
 
-  nextTick(() => {
-    const constraintHandler = graph.value?.getPlugin('ConstraintHandler')
-    if (constraintHandler) {
-      ;(constraintHandler as ConstraintHandler).pointImage = new ImageBox(img_point, 16, 16)
-    }
-
-    console.log(ConstraintHandler.prototype.pointImage)
-
-    graph.value!.getDataModel().addListener(InternalEvent.CHANGE, () => {
-      graph.value?.refresh()
-      graph.value?.view.validate()
-      emitUpdatedModel()
-    })
+  graph.value!.getDataModel().addListener(InternalEvent.CHANGE, () => {
+    graph.value?.refresh()
+    graph.value?.view.validate()
+    emitUpdatedModel()
   })
 })
 
