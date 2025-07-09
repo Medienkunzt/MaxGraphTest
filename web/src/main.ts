@@ -14,7 +14,7 @@ import vuetify from './plugins/vuetify'
 import '@maxgraph/core/css/common.css'
 
 import { Client } from '@maxgraph/core'
-Client.setImageBasePath('public/images/')
+Client.setImageBasePath('/images/')
 
 const pinia = createPinia()
 const app = createApp(App)
