@@ -1,30 +1,94 @@
 <template>
-  <v-card class="pa-4" height="100%" width="100%">
-    <v-card-title>Diagramm-Editor</v-card-title>
-    <v-card-text>
-      <div v-if="props.showToolbar" ref="toolbarContainer" class="toolbar-container"></div>
+  <v-card class="pa-2" height="100%" width="100%">
+    <v-card-title class="py-1">
+      <span class="text-h6">Diagramm Editor</span>
+      <v-spacer />
+    </v-card-title>
+
+    <v-card-text class="pa-1">
+      <!-- Erweiterte Toolbar -->
+      <div v-if="props.showToolbar" class="toolbar-actions mb-2">
+        <!-- MaxGraph Toolbar Container -->
+        <div ref="toolbarContainer" class="maxgraph-toolbar mr-3"></div>
+
+        <!-- Vue Action Buttons -->
+        <v-btn-group size="small" density="compact" class="mr-2">
+          <v-btn title="Alles auswählen (Strg+A)" @click="selectAll">
+            <v-icon>mdi-select-all</v-icon>
+          </v-btn>
+          <v-btn title="Auswahl aufheben (Esc)" @click="clearSelection">
+            <v-icon>mdi-selection-off</v-icon>
+          </v-btn>
+        </v-btn-group>
+
+        <v-btn-group size="small" density="compact">
+          <v-btn title="Löschen (Entf)" @click="deleteSelected">
+            <v-icon>mdi-delete</v-icon>
+          </v-btn>
+          <v-btn title="Duplizieren (Strg+D)" @click="duplicateSelected">
+            <v-icon>mdi-content-duplicate</v-icon>
+          </v-btn>
+        </v-btn-group>
+      </div>
+
+      <!-- Graph Container -->
       <div ref="graphContainer" class="graph-container">
         <canvas ref="canvasGrid" class="grid-canvas"></canvas>
+
+        <!-- Floating Button Group unten links -->
+        <div class="floating-button-group">
+          <v-btn-group size="small" density="compact" variant="outlined">
+            <v-btn icon="mdi-magnify-minus" title="Herauszoomen" @click="graph?.zoomOut()" />
+            <v-btn icon="mdi-fit-to-page" title="An Fenster anpassen" @click="graph?.fit()" />
+            <v-btn icon="mdi-magnify-plus" title="Hineinzoomen" @click="graph?.zoomIn()" />
+            <v-btn :icon="snapToGrid ? 'mdi-grid' : 'mdi-grid-off'" :color="snapToGrid ? 'primary' : 'grey'" title="Raster umschalten" @click="toggleGrid" />
+            <v-btn icon="mdi-refresh" title="Raster neu laden" @click="forceGridRepaint" />
+          </v-btn-group>
+        </div>
+
+        <!-- Floating Settings Menu unten rechts -->
+        <div class="floating-settings-menu">
+          <v-menu v-model="settingsMenuOpen" :close-on-content-click="false" location="top">
+            <template #activator="{ props: activatorProps }">
+              <v-btn v-bind="activatorProps" icon="mdi-chevron-up" size="small" density="compact" variant="outlined" title="Einstellungen" :class="{ 'settings-active': settingsMenuOpen }" />
+            </template>
+            <v-card class="settings-card" min-width="280">
+              <v-card-title class="py-2 px-3">
+                <v-icon class="mr-2">mdi-cog</v-icon>
+                Einstellungen
+              </v-card-title>
+              <v-card-text class="py-2 px-3">
+                <v-row dense>
+                  <v-col cols="12">
+                    <v-text-field v-model="gridSize" label="Raster (px)" type="number" density="compact" variant="outlined" min="5" max="100" hint="Empfohlen: 5-25" @input="updateGridSize" />
+                  </v-col>
+                  <v-col cols="12">
+                    <v-text-field v-model="tolerance" label="Toleranz (px)" type="number" density="compact" variant="outlined" min="1" max="50" hint="Mauserkennung in px" @input="updateTolerance" />
+                  </v-col>
+                  <v-col cols="12">
+                    <v-select v-model="snapToGrid" label="Raster-Snap" :items="snapOptions" density="compact" variant="outlined" @update:model-value="updateSnapToGrid" />
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+          </v-menu>
+        </div>
       </div>
     </v-card-text>
-    <v-card-actions>
-      <v-btn icon @click="graph?.zoomIn()">
-        <v-icon>mdi-magnify-plus</v-icon>
-      </v-btn>
-      <v-btn icon @click="graph?.zoomOut()">
-        <v-icon>mdi-magnify-minus</v-icon>
-      </v-btn>
-    </v-card-actions>
   </v-card>
 </template>
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, ConstraintHandler, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, gestureUtils, styleUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, AbstractGraph, InternalMouseEvent, ImageBox } from '@maxgraph/core'
-import type { CellStyle, GraphPluginConstructor } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent } from '@maxgraph/core'
+import type { GraphPluginConstructor } from '@maxgraph/core'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
-import img_point from '@/assets/images/point.gif'
+import img_ellipse from '@/assets/images/ellipse.gif'
+import img_rhombus from '@/assets/images/rhombus.gif'
+import img_triangle from '@/assets/images/triangle.gif'
+import img_actor from '@/assets/images/actor.gif'
+import img_cloud from '@/assets/images/cloud.gif'
 
 class MyCustomConnectionHandler extends ConnectionHandler {
   // Enables connect preview for the default edge style
@@ -58,6 +122,19 @@ const props = withDefaults(
 
 const emit = defineEmits(['update:model'])
 
+// Reaktive Variablen für Konfiguration
+const gridSize = ref(10)
+const snapToGrid = ref(true)
+const tolerance = ref(10)
+const edgeStyle = ref('orthogonal')
+const settingsMenuOpen = ref(false)
+
+// Optionen für Dropdown-Menüs
+const snapOptions = ref([
+  { title: 'Ein', value: true },
+  { title: 'Aus', value: false }
+])
+
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
 const toolbarContainer = ref<HTMLElement>()
@@ -73,6 +150,35 @@ onMounted(() => {
     graph.value?.refresh()
     graph.value?.view.validate()
     emitUpdatedModel()
+  })
+
+  // Forciere das Raster sofort nach dem Mount
+  nextTick(() => {
+    setTimeout(() => {
+      if (graph.value) {
+        // Triggere einen minimalen Zoom um das Raster zu initialisieren
+        const currentScale = graph.value.view.scale
+        graph.value.view.scale = currentScale * 1.001
+        graph.value.view.scale = currentScale
+        graph.value.view.validate()
+        graph.value.view.validateBackground()
+
+        // Zusätzlicher direkter Repaint-Aufruf
+        if ((graph.value as any).repaintGrid) {
+          ;(graph.value as any).repaintGrid()
+        }
+      }
+    }, 100)
+
+    // Zweiter Versuch nach längerer Zeit
+    setTimeout(() => {
+      if (graph.value) {
+        graph.value.view.validateBackground()
+        if ((graph.value as any).repaintGrid) {
+          ;(graph.value as any).repaintGrid()
+        }
+      }
+    }, 500)
   })
 })
 
@@ -94,7 +200,15 @@ const initGraph = () => {
   graph.value.setCellsCloneable(props.allowEdit)
   graph.value.setAllowNegativeCoordinates(false)
 
-  // graph.value.setEventTolerance(100)
+  // Raster-Konfiguration
+  graph.value.setGridEnabled(true)
+  graph.value.gridSize = gridSize.value
+  graph.value.setGridSize(gridSize.value)
+
+  // Snap-to-Grid aktivieren
+  if (snapToGrid.value) {
+    graph.value.setGridEnabled(true)
+  }
 
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = EdgeStyle.OrthConnector
 
@@ -102,61 +216,89 @@ const initGraph = () => {
 
   setupDynamicGrid()
 
-  // new RubberBandHandler(graph.value)
-
   parent.value = graph.value.getDefaultParent()
-}
 
-const toolbarItems = ref([
-  {
-    icon: img_rectangle,
-    width: 24,
-    height: 24,
-    style: {
-      shape: 'rectangle',
-      perimeter: 'rectanglePerimeter'
-    }
-  }
-])
+  // Forciere das Raster sofort nach der Graph-Initialisierung
+  nextTick(() => {
+    setTimeout(() => {
+      if (graph.value && snapToGrid.value) {
+        graph.value.view.validateBackground()
+        // Zusätzlicher direkter Repaint-Aufruf
+        if ((graph.value as any).repaintGrid) {
+          ;(graph.value as any).repaintGrid()
+        }
+      }
+    }, 100)
+  })
+}
 
 const setupDynamicGrid = () => {
   const canvas = canvasGrid.value
   if (!canvas || !graphContainer.value) return
 
+  // Canvas Größe initial setzen - warte bis Container bereit ist
+  const container = graphContainer.value
+
+  // Initialisiere Canvas-Größe
+  const initCanvasSize = () => {
+    const containerWidth = container.clientWidth || 800
+    const containerHeight = container.clientHeight || 600
+
+    canvas.width = containerWidth
+    canvas.height = containerHeight
+    canvas.style.width = containerWidth + 'px'
+    canvas.style.height = containerHeight + 'px'
+  }
+
+  initCanvasSize()
+
   const ctx = canvas.getContext('2d')!
   let s = 1
   let gs = graph.value!.gridSize
-  let tr = new Point()
-  let w = 0
-  let h = 0
+  let tr = new Point(0, 0) // Initialisiere mit (0,0)
+  let w = canvas.width
+  let h = canvas.height
 
   const repaintGrid = () => {
+    if (!snapToGrid.value) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      return
+    }
+
+    // Hole aktuelle Werte vom Graph
+    const currentScale = graph.value?.view.scale || 1
+    const currentTranslate = graph.value?.view.translate || new Point(0, 0)
+    const currentGridSize = graph.value?.gridSize || gridSize.value
+
     const bounds = graph.value!.getGraphBounds()
     const container = graphContainer.value!
-    const width = Math.max(bounds.x + bounds.width, container.clientWidth)
-    const height = Math.max(bounds.y + bounds.height, container.clientHeight)
+    const width = Math.max(bounds.x + bounds.width, container.clientWidth || 800)
+    const height = Math.max(bounds.y + bounds.height, container.clientHeight || 600)
     const sizeChanged = width !== w || height !== h
 
-    if (graph.value!.view.scale !== s || graph.value!.view.translate.x !== tr.x || graph.value!.view.translate.y !== tr.y || gs !== graph.value!.gridSize || sizeChanged) {
-      tr = graph.value!.view.translate.clone()
-      s = graph.value!.view.scale
-      gs = graph.value!.gridSize
+    // Überprüfe ob sich etwas geändert hat ODER es das erste Mal ist
+    if (currentScale !== s || currentTranslate.x !== tr.x || currentTranslate.y !== tr.y || currentGridSize !== gs || sizeChanged || (s === 1 && tr.x === 0 && tr.y === 0)) {
+      tr = currentTranslate.clone()
+      s = currentScale
+      gs = currentGridSize
       w = width
       h = height
 
       if (!sizeChanged) {
         ctx.clearRect(0, 0, w, h)
       } else {
-        canvas.setAttribute('width', `${w}`)
-        canvas.setAttribute('height', `${h}`)
+        canvas.width = w
+        canvas.height = h
+        canvas.style.width = w + 'px'
+        canvas.style.height = h + 'px'
       }
 
       const tx = tr.x * s
       const ty = tr.y * s
       let stepping = gs * s
 
-      if (stepping < gs) {
-        const count = Math.round(Math.ceil(gs / stepping) / 2) * 2
+      if (stepping < 5) {
+        const count = Math.round(Math.ceil(5 / stepping) / 2) * 2
         stepping = count * stepping
       }
 
@@ -165,7 +307,12 @@ const setupDynamicGrid = () => {
       const ys = Math.floor((0 - ty) / stepping) * stepping + ty
       const ye = Math.ceil(h / stepping) * stepping
 
-      ctx.strokeStyle = '#e0e0e0'
+      // Raster-Farbe abhängig von der Rastergröße anpassen
+      const opacity = Math.min(0.8, Math.max(0.4, stepping / 30))
+
+      // Hauptraster (normale Linien)
+      ctx.strokeStyle = `rgba(120, 120, 120, ${opacity})`
+      ctx.lineWidth = stepping > 10 ? 1 : 0.5
       ctx.beginPath()
 
       for (let x = xs; x <= xe; x += stepping) {
@@ -179,6 +326,25 @@ const setupDynamicGrid = () => {
       }
 
       ctx.stroke()
+
+      // Zusätzliche Hervorhebung der Hauptachsen (x=0, y=0)
+      if (xs <= 0 && xe >= 0) {
+        ctx.strokeStyle = 'rgba(200, 100, 100, 0.7)'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(0 + tx + 0.5, ys + 0.5)
+        ctx.lineTo(0 + tx + 0.5, ye + 0.5)
+        ctx.stroke()
+      }
+
+      if (ys <= 0 && ye >= 0) {
+        ctx.strokeStyle = 'rgba(100, 200, 100, 0.7)'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(xs + 0.5, 0 + ty + 0.5)
+        ctx.lineTo(xe + 0.5, 0 + ty + 0.5)
+        ctx.stroke()
+      }
     }
   }
 
@@ -189,76 +355,308 @@ const setupDynamicGrid = () => {
     repaintGrid()
   }
 
-  // Initialer Aufruf nach Mount
-  nextTick(() => repaintGrid())
+  // Initialer Aufruf mit mehreren Versuchen
+  nextTick(() => {
+    // Sofortiger erster Versuch
+    initCanvasSize()
+    repaintGrid()
+
+    // Erstes Repaint
+    setTimeout(() => {
+      initCanvasSize()
+      repaintGrid()
+    }, 50)
+
+    // Zweites Repaint für Sicherheit
+    setTimeout(() => {
+      initCanvasSize()
+      repaintGrid()
+    }, 200)
+
+    // Drittes Repaint nach längerer Zeit
+    setTimeout(() => {
+      initCanvasSize()
+      repaintGrid()
+    }, 800)
+
+    // Event-Listener für Zoom und Translate
+    graph.value!.addListener(InternalEvent.SCALE, repaintGrid)
+    graph.value!.addListener(InternalEvent.TRANSLATE, repaintGrid)
+
+    // Zusätzlicher Listener für Resize
+    window.addEventListener('resize', () => {
+      setTimeout(() => {
+        initCanvasSize()
+        repaintGrid()
+      }, 100)
+    })
+  })
+
+  // Globale Repaint-Funktion für externe Aufrufe
+  ;(graph.value as any).repaintGrid = repaintGrid
 }
 
 const initToolbar = () => {
   const toolbar = new MaxToolbar(toolbarContainer.value!)
-  toolbar.enabled = false
+  toolbar.enabled = true
 
-  for (const { icon, width, height, style } of toolbarItems.value) {
-    const vertex = createToolbarShape(width, height, style)
-    const imageUrl = icon
-    const dropHandler = createDropHandler(vertex)
+  // Definiere verschiedene Formen mit ihren Eigenschaften
+  const shapes = [
+    {
+      name: 'rectangle',
+      width: 80,
+      height: 60,
+      style: { shape: 'rectangle', perimeter: 'rectanglePerimeter', fillColor: '#f0f0f0' },
+      tooltip: 'Rechteck (Drag & Drop)',
+      image: img_rectangle
+    },
+    {
+      name: 'ellipse',
+      width: 60,
+      height: 60,
+      style: { shape: 'ellipse', perimeter: 'ellipsePerimeter', fillColor: '#e3f2fd' },
+      tooltip: 'Ellipse (Drag & Drop)',
+      image: img_ellipse
+    },
+    {
+      name: 'diamond',
+      width: 70,
+      height: 70,
+      style: { shape: 'rhombus', perimeter: 'rhombusPerimeter', fillColor: '#fff3e0' },
+      tooltip: 'Raute (Drag & Drop)',
+      image: img_rhombus
+    },
+    {
+      name: 'triangle',
+      width: 60,
+      height: 60,
+      style: { shape: 'triangle', perimeter: 'trianglePerimeter', fillColor: '#f3e5f5' },
+      tooltip: 'Dreieck (Drag & Drop)',
+      image: img_triangle
+    },
+    {
+      name: 'actor',
+      width: 50,
+      height: 80,
+      style: { shape: 'umlActor', perimeter: 'rectanglePerimeter', fillColor: '#e8f5e8' },
+      tooltip: 'UML Akteur (Drag & Drop)',
+      image: img_actor
+    },
+    {
+      name: 'cloud',
+      width: 100,
+      height: 60,
+      style: { shape: 'cloud', perimeter: 'rectanglePerimeter', fillColor: '#fce4ec' },
+      tooltip: 'Wolke (Drag & Drop)',
+      image: img_cloud
+    }
+  ]
 
-    let img: HTMLElement = toolbar.addMode(
-      '123',
-      imageUrl,
+  // Erstelle MaxGraph Toolbar Items
+  for (const shape of shapes) {
+    const cell = new Cell(null, new Geometry(0, 0, shape.width, shape.height), shape.style)
+    cell.setVertex(true)
+
+    // Erstelle einen Drop-Handler für Drag & Drop
+    const dropHandler = (graph: Graph, evt: MouseEvent, target: Cell | null, x?: number, y?: number) => {
+      const cloned = cellArrayUtils.cloneCell(cell)!
+      if (cloned.geometry) {
+        if (x != null) cloned.geometry.x = x
+        if (y != null) cloned.geometry.y = y
+      }
+      graph.addCell(cloned, parent.value!)
+      graph.setSelectionCell(cloned)
+    }
+
+    // Füge das Tool zur Toolbar hinzu
+    const img = toolbar.addMode(
+      shape.name,
+      shape.image,
       (evt: MouseEvent, cell: Cell) => {
         const pt = graph.value!.getPointForEvent(evt)
         dropHandler(graph.value!, evt, cell, pt.x, pt.y)
       },
-      ''
+      shape.tooltip
     )
 
-    // console.log(img)
+    // Konfiguriere Drag & Drop für das Image
+    if (img) {
+      img.style.cursor = 'move'
 
-    img.innerHTML = '<v-icon icon="$vuetify"></v-icon>'
+      // Erstelle einen Drag-Handler
+      const dragHandler = (evt: DragEvent) => {
+        if (evt.dataTransfer) {
+          evt.dataTransfer.setData('text/plain', shape.name)
+          evt.dataTransfer.effectAllowed = 'copy'
+        }
+      }
 
-    setupDraggableIcon(img as HTMLImageElement, dropHandler)
-    setupIconSelectionHighlight(img as HTMLImageElement)
-  }
-}
-
-const createToolbarShape = (width: number, height: number, style: CellStyle): Cell => {
-  const cell = new Cell(null, new Geometry(0, 0, width, height), style)
-  cell.setVertex(true)
-  return cell
-}
-
-const createDropHandler = (prototype: Cell) => {
-  return (graph: AbstractGraph, _evt: MouseEvent, _cell: Cell | null, x?: number, y?: number) => {
-    graph.stopEditing(false)
-    const cloned: Cell = cellArrayUtils.cloneCell(prototype)!
-    if (cloned.geometry) {
-      if (x != null) cloned.geometry.x = x
-      if (y != null) cloned.geometry.y = y
+      // Mache das Image draggable
+      img.setAttribute('draggable', 'true')
+      img.addEventListener('dragstart', dragHandler)
     }
-    graph.addCell(cloned, parent.value!)
-    graph.setSelectionCell(cloned)
   }
-}
 
-const setupDraggableIcon = (img: HTMLImageElement, dropHandler: (graph: AbstractGraph, evt: MouseEvent, cell: Cell | null, x?: number, y?: number) => void) => {
-  InternalEvent.addListener(img, 'mousedown', (evt: MouseEvent) => {
-    if ((img as any).enabled === false) {
-      InternalEvent.consume(evt)
+  // Konfiguriere Drop-Handler für den Graph-Container
+  const graphContainer = graph.value!.container
+
+  graphContainer.addEventListener('dragover', (evt: DragEvent) => {
+    evt.preventDefault()
+    evt.dataTransfer!.dropEffect = 'copy'
+  })
+
+  graphContainer.addEventListener('drop', (evt: DragEvent) => {
+    evt.preventDefault()
+
+    const shapeName = evt.dataTransfer!.getData('text/plain')
+    const shape = shapes.find((s) => s.name === shapeName)
+
+    if (shape) {
+      const cell = new Cell(null, new Geometry(0, 0, shape.width, shape.height), shape.style)
+      cell.setVertex(true)
+
+      // Transformiere die Koordinaten
+      const pt = graph.value!.getPointForEvent(evt as any)
+
+      const cloned = cellArrayUtils.cloneCell(cell)!
+      if (cloned.geometry) {
+        cloned.geometry.x = pt.x
+        cloned.geometry.y = pt.y
+      }
+
+      graph.value!.addCell(cloned, parent.value!)
+      graph.value!.setSelectionCell(cloned)
     }
   })
-  gestureUtils.makeDraggable(img, graph.value!, dropHandler)
 }
 
-const setupIconSelectionHighlight = (img: HTMLImageElement) => {
-  graph.value!.getSelectionModel().addListener(InternalEvent.CHANGE, () => {
-    const noSelection = graph.value!.isSelectionEmpty()
-    styleUtils.setOpacity(img, noSelection ? 100 : 20)
-    ;(img as any).enabled = noSelection
-  })
-}
+// Entfernte Shape-Toolbar-Funktionen - werden nicht mehr verwendet
+// createToolbarShape, createDropHandler, setupDraggableIcon, setupIconSelectionHighlight
+// sind entfernt worden da die Vue-basierte Shape-Toolbar entfernt wurde
 
 const emitUpdatedModel = () => {
   emit('update:model', graph.value!.getDataModel())
+}
+
+// Neue Funktionen für die erweiterte Benutzeroberfläche
+const updateGridSize = () => {
+  if (graph.value) {
+    graph.value.gridSize = gridSize.value
+    graph.value.setGridSize(gridSize.value)
+    graph.value.setGridEnabled(snapToGrid.value)
+    graph.value.refresh()
+    graph.value.view.validate()
+    // Trigger repaint des Canvas-Rasters mit kurzer Verzögerung
+    setTimeout(() => {
+      graph.value?.view.validateBackground()
+      // Zusätzlicher direkter Aufruf der Repaint-Funktion
+      if ((graph.value as any).repaintGrid) {
+        ;(graph.value as any).repaintGrid()
+      }
+    }, 50)
+  }
+}
+
+const updateSnapToGrid = () => {
+  if (graph.value) {
+    graph.value.setGridEnabled(snapToGrid.value)
+    if (snapToGrid.value) {
+      graph.value.gridSize = gridSize.value
+      graph.value.setGridSize(gridSize.value)
+    }
+    graph.value.refresh()
+    graph.value.view.validate()
+    // Trigger repaint des Canvas-Rasters mit kurzer Verzögerung
+    setTimeout(() => {
+      graph.value?.view.validateBackground()
+      // Zusätzlicher direkter Aufruf der Repaint-Funktion
+      if ((graph.value as any).repaintGrid) {
+        ;(graph.value as any).repaintGrid()
+      }
+    }, 50)
+  }
+}
+
+const updateTolerance = () => {
+  if (graph.value) {
+    // MaxGraph verwendet eventTolerance anstatt setTolerance
+    graph.value.setEventTolerance(tolerance.value)
+  }
+}
+
+// selectTool function removed - using MaxGraph toolbar instead
+
+const deleteSelected = () => {
+  if (graph.value) {
+    const cells = graph.value.getSelectionCells()
+    if (cells.length > 0) {
+      graph.value.removeCells(cells)
+    }
+  }
+}
+
+const duplicateSelected = () => {
+  if (graph.value) {
+    const cells = graph.value.getSelectionCells()
+    if (cells.length > 0) {
+      const cloned = cellArrayUtils.cloneCells(cells)
+      // Verschiebe geklonte Zellen um 20px nach rechts und unten
+      cloned.forEach((cell) => {
+        if (cell.geometry) {
+          cell.geometry.x += 20
+          cell.geometry.y += 20
+        }
+      })
+      // Füge jede Zelle einzeln hinzu
+      cloned.forEach((cell) => {
+        if (cell) {
+          graph.value!.addCell(cell, parent.value!)
+        }
+      })
+      graph.value.setSelectionCells(cloned)
+    }
+  }
+}
+
+const selectAll = () => {
+  if (graph.value) {
+    graph.value.selectAll()
+  }
+}
+
+const clearSelection = () => {
+  if (graph.value) {
+    graph.value.clearSelection()
+  }
+}
+
+const toggleGrid = () => {
+  snapToGrid.value = !snapToGrid.value
+  updateSnapToGrid()
+}
+
+// Debug-Funktion um das Raster zu forcieren
+const forceGridRepaint = () => {
+  console.log('Force grid repaint called')
+  if (graph.value) {
+    console.log('Graph exists, snapToGrid:', snapToGrid.value)
+    console.log('Canvas:', canvasGrid.value)
+
+    // Mehrfacher Repaint-Versuch
+    setTimeout(() => {
+      graph.value?.view.validateBackground()
+      if ((graph.value as any).repaintGrid) {
+        ;(graph.value as any).repaintGrid()
+      }
+    }, 10)
+
+    setTimeout(() => {
+      graph.value?.view.validateBackground()
+      if ((graph.value as any).repaintGrid) {
+        ;(graph.value as any).repaintGrid()
+      }
+    }, 100)
+  }
 }
 
 defineExpose({
@@ -270,23 +668,186 @@ defineExpose({
 .graph-container {
   position: relative;
   width: 100%;
-  height: 600px;
-  border: 1px solid #ccc;
+  height: calc(100vh - 200px); /* Angepasste Höhe für kompakteres Layout */
+  border: 1px solid #ddd;
+  border-radius: 4px;
   overflow: hidden;
+  background-color: #fafafa;
 }
 
 .grid-canvas {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: -1;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 1;
+  background: transparent;
+}
+
+.floating-button-group {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 2px 6px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.floating-button-group .v-btn-group {
+  box-shadow: none;
+}
+
+.floating-button-group .v-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+}
+
+.floating-button-group .v-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.floating-settings-menu {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+.floating-settings-menu .v-btn {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 2px 6px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+}
+
+.floating-settings-menu .v-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.2),
+    0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.floating-settings-menu .v-btn.settings-active {
+  background: rgba(25, 118, 210, 0.1);
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.settings-card {
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.settings-card .v-card-title {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.settings-card .v-text-field,
+.settings-card .v-select {
+  margin-bottom: 8px;
+}
+
+.settings-card .v-text-field :deep(.v-field__input),
+.settings-card .v-select :deep(.v-field__input) {
+  min-height: 32px !important;
+  padding: 4px 8px !important;
+  font-size: 0.875rem;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.maxgraph-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-right: 1px solid #ddd;
+  padding-right: 8px;
+  margin-right: 8px;
 }
 
 .toolbar-container {
   display: flex;
-  height: 50px;
-  background-color: #e0e0e0;
-  border-bottom: 1px solid #ccc;
-  padding: 5px;
+  align-items: center;
+  min-height: 40px; /* Reduziert von 50px */
+  background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px 8px; /* Kompakteres Padding */
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Kompakte Eingabefelder */
+.v-text-field :deep(.v-field__input) {
+  min-height: 32px !important;
+  padding: 4px 8px !important;
+}
+
+.v-select :deep(.v-field__input) {
+  min-height: 32px !important;
+  padding: 4px 8px !important;
+}
+
+/* Kompakte Button-Gruppen */
+.v-btn-group .v-btn {
+  min-width: 36px !important;
+  height: 36px !important;
+}
+
+/* Hover-Effekte für bessere UX */
+.toolbar-container .v-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+/* Aktive Tool-Hervorhebung */
+.v-btn--active {
+  background-color: #1976d2 !important;
+  color: white !important;
+}
+
+/* Responsives Design für kleinere Bildschirme */
+@media (max-width: 768px) {
+  .toolbar-container {
+    flex-wrap: wrap;
+    min-height: auto;
+  }
+
+  .graph-container {
+    height: calc(100vh - 250px);
+  }
 }
 </style>

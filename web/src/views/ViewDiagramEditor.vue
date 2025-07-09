@@ -215,14 +215,6 @@ const createElementFromDefinition = (definition: ElementDefinition | ChildElemen
       ? definition.id // Für Canvas2D verwende die ID als Shape-Name
       : definition.predefinedShape || 'rectangle' // Für vordefinierte Shapes verwende predefinedShape
 
-  console.log('Creating element:', {
-    label: definition.label,
-    type: definition.type,
-    shapeName,
-    predefinedShape: definition.predefinedShape,
-    isChildElement
-  })
-
   // Haupt-Element erstellen
   const mainElement = graph.insertVertex({
     parent: parent,
