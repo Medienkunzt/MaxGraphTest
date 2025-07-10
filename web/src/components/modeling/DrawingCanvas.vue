@@ -1,10 +1,5 @@
 <template>
   <v-card class="pa-2" height="100%" width="100%">
-    <v-card-title class="py-1">
-      <span class="text-h6">Diagramm Editor</span>
-      <v-spacer />
-    </v-card-title>
-
     <v-card-text class="pa-1">
       <!-- Erweiterte Toolbar -->
       <div v-if="props.showToolbar" class="toolbar-actions mb-2">
