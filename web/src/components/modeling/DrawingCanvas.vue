@@ -28,10 +28,13 @@
 
       <!-- Graph Container -->
       <div ref="graphContainer" class="graph-container">
-        <canvas ref="canvasGrid" class="grid-canvas"></canvas>
+        <!-- Separater Grid Container -->
+        <div class="grid-container">
+          <canvas ref="canvasGrid" class="grid-canvas"></canvas>
+        </div>
 
         <!-- Floating Button Group unten links -->
-        <div class="floating-button-group">
+        <div class="floating-button-group" :class="{ 'hidden-during-pan': isPanning }">
           <v-btn-group size="small" density="compact" variant="outlined">
             <v-btn icon="mdi-magnify-minus" title="Herauszoomen" @click="zoomOut" />
             <v-btn icon="mdi-fit-to-page" title="An Fenster anpassen" @click="fitToWindow" />
@@ -42,7 +45,7 @@
         </div>
 
         <!-- Floating Settings Menu unten rechts -->
-        <div class="floating-settings-menu">
+        <div class="floating-settings-menu" :class="{ 'hidden-during-pan': isPanning }">
           <v-menu v-model="settingsMenuOpen" :close-on-content-click="false" location="top">
             <template #activator="{ props: activatorProps }">
               <v-btn v-bind="activatorProps" icon="mdi-chevron-up" size="small" density="compact" variant="outlined" title="Einstellungen" :class="{ 'settings-active': settingsMenuOpen }" />
@@ -75,7 +78,7 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
@@ -124,6 +127,7 @@ const gridSize = ref(10)
 const snapToGrid = ref(true)
 const tolerance = ref(10)
 const settingsMenuOpen = ref(false)
+const isPanning = ref(false)
 
 // Optionen für Dropdown-Menüs
 const snapOptions = ref([
@@ -136,7 +140,7 @@ const canvasGrid = ref<HTMLCanvasElement>()
 const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
-const plugins = ref<GraphPluginConstructor[]>([CellEditorHandler, SelectionCellsHandler, MyCustomConnectionHandler, SelectionHandler, RubberBandHandler])
+const plugins = ref<GraphPluginConstructor[]>([PanningHandler, CellEditorHandler, SelectionCellsHandler, SelectionHandler, MyCustomConnectionHandler, RubberBandHandler])
 
 onMounted(() => {
   initGraph()
@@ -198,6 +202,31 @@ const initGraph = () => {
 
   // Enable panning (drag to navigate)
   graph.value.setPanning(true)
+
+  // Configure panning handler to detect panning state
+  const panningHandler = graph.value.getPlugin('PanningHandler')
+  if (panningHandler) {
+    // Override panning methods to track state
+    const originalMouseDown = (panningHandler as any).mouseDown
+    const originalMouseUp = (panningHandler as any).mouseUp
+
+    ;(panningHandler as any).mouseDown = function (sender: any, me: any) {
+      isPanning.value = true
+      return originalMouseDown.call(this, sender, me)
+    }
+    ;(panningHandler as any).mouseUp = function (sender: any, me: any) {
+      setTimeout(() => {
+        isPanning.value = false
+      }, 100) // Small delay to ensure smooth transition
+      return originalMouseUp.call(this, sender, me)
+    }
+  }
+
+  // Configure selection handler like in Grid.js
+  const selectionHandler = graph.value.getPlugin('SelectionHandler')
+  if (selectionHandler) {
+    ;(selectionHandler as any).scaleGrid = true
+  }
 
   // Enable tooltips
   graph.value.setTooltips(true)
@@ -693,8 +722,18 @@ defineExpose({
   height: calc(100vh - 200px);
   border: 1px solid #ddd;
   border-radius: 4px;
-
   background-color: #fafafa;
+}
+
+.grid-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .grid-canvas {
@@ -703,7 +742,7 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  z-index: 0;
   pointer-events: none;
   opacity: 1;
   background: transparent;
@@ -829,6 +868,13 @@ defineExpose({
   padding: 4px 8px; /* Kompakteres Padding */
   gap: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Verstecke floating controls während des Pannens */
+.hidden-during-pan {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 /* Kompakte Eingabefelder */
