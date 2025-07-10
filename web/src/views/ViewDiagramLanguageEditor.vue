@@ -1,54 +1,38 @@
 <template>
-  <v-card class="mx-4 my-4" outlined>
-    <v-card-title>Diagramm-Editor</v-card-title>
-    <v-card-text>
-      <v-form v-model="formIsValid">
-        <v-container>
-          <!-- Haupt-Element -->
-          <v-card outlined class="mb-4">
-            <v-card-subtitle>Haupt-Element</v-card-subtitle>
-            <v-card-text>
-              <ElementEditor :model-value="formData" :is-root="true" @update:model-value="updateFormData" @update="updateElement" />
-            </v-card-text>
-          </v-card>
+  <v-container fluid class="pa-0">
+    <v-row no-gutters>
+      <!-- Element-Editor Panel (links) -->
+      <v-col cols="7">
+        <v-card class="mx-2 my-2" outlined height="calc(100vh - 100px)">
+          <v-card-title>Element-Editor</v-card-title>
+          <v-card-text class="pa-2" style="height: calc(100% - 60px); overflow-y: auto">
+            <ElementEditorPanel :model-value="elementDefinition" @update:model-value="updateElementDefinition" @element-updated="handleElementUpdate" />
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-          <!-- Child-Elemente -->
-          <v-card outlined>
-            <v-card-subtitle>
-              Child-Elemente
-              <v-btn size="small" color="primary" class="ml-2" @click="addChildElement">
-                <v-icon>mdi-plus</v-icon>
-                Child hinzufügen
-              </v-btn>
-            </v-card-subtitle>
-            <v-card-text>
-              <ChildElementList :model-value="formData.children" @update:model-value="updateChildren" @update="updateElement" />
-            </v-card-text>
-          </v-card>
-        </v-container>
-      </v-form>
-    </v-card-text>
-  </v-card>
-
-  <EditorComp ref="editorRef" v-model="model" :allow-edit="true" :show-toolbar="true" />
+      <!-- Zeichenfläche (rechts) -->
+      <v-col cols="5">
+        <v-card class="mx-2 my-2" outlined height="calc(100vh - 100px)">
+          <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :allow-edit="true" :show-toolbar="true" @update:model="updateCanvasModel" />
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import EditorComp from '@/components/modeling/EditorComp.vue'
-import ElementEditor from '@/components/modeling/ElementEditor.vue'
-import ChildElementList from '@/components/modeling/ChildElementList.vue'
+import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
+import ElementEditorPanel from '@/components/modeling/ElementEditorPanel.vue'
 import type { GraphDataModel, AbstractCanvas2D, VertexParameters, CellStyle } from '@maxgraph/core'
 import { Shape, ShapeRegistry, Point, ConnectionConstraint, Geometry } from '@maxgraph/core'
 
-// graph + ref binding
-const model = ref<GraphDataModel>()
-const editorRef = ref<InstanceType<typeof EditorComp>>()
+// Refs
+const canvasModel = ref<GraphDataModel>()
+const drawingCanvasRef = ref<InstanceType<typeof DrawingCanvas>>()
 
-// Formular-State
-const formIsValid = ref(false)
-
-// Element-Definition Interfaces
+// Element-Definition Interface
 interface ChildElement {
   id: string
   label: string
@@ -83,8 +67,8 @@ interface ElementDefinition {
   connectable: boolean
 }
 
-// Objekt für die Formulardaten
-const formData = ref<ElementDefinition>({
+// Element-Definition State
+const elementDefinition = ref<ElementDefinition>({
   id: 'custom-shape',
   label: 'Custom Shape',
   x: 50,
@@ -105,7 +89,7 @@ const formData = ref<ElementDefinition>({
   },
   anchorPoints: [
     { x: 0, y: 0.5 },
-    { x: 0.5, y: 0.5 },
+    { x: 1, y: 0.5 },
     { x: 0.5, y: 1 },
     { x: 0.5, y: 0 }
   ],
@@ -137,69 +121,62 @@ const formData = ref<ElementDefinition>({
 })
 
 onMounted(() => {
-  updateElement()
+  // Registriere Shapes sofort beim Mount
+  registerCustomShapes()
+
+  // Warte bis das Canvas vollständig geladen ist
+  setTimeout(() => {
+    handleElementUpdate()
+  }, 1000)
 })
 
-const addChildElement = () => {
-  const newChild: ChildElement = {
-    id: `child-${Date.now()}`,
-    label: 'New Child',
-    type: 'predefined',
-    predefinedShape: 'label',
-    position: {
-      x: 0,
-      y: 1,
-      width: 100,
-      height: 20,
-      relative: true
-    },
-    style: {
-      strokeColor: 'transparent',
-      fillColor: 'transparent'
-    },
-    connectable: false,
-    children: []
+// Event Handlers
+const updateElementDefinition = (newDefinition: ElementDefinition) => {
+  elementDefinition.value = newDefinition
+}
+
+const updateCanvasModel = (newModel: GraphDataModel) => {
+  canvasModel.value = newModel
+}
+
+const handleElementUpdate = () => {
+  // Canvas aktualisieren
+  if (drawingCanvasRef.value?.graph) {
+    // Direkte Löschung über das Graph-Objekt
+    const graph = drawingCanvasRef.value.graph
+    const cells = graph.getChildCells()
+    if (cells.length > 0) {
+      graph.removeCells(cells)
+    }
+
+    registerCustomShapes()
+    addElementToCanvas()
+  } else {
+    // Versuche es später nochmal, wenn das Canvas noch nicht bereit ist
+    setTimeout(() => {
+      handleElementUpdate()
+    }, 500)
   }
-  formData.value.children.push(newChild)
-  updateElement()
 }
 
-const updateChildren = (newChildren: ChildElement[]) => {
-  formData.value.children = newChildren
-  updateElement()
-}
-
-const updateFormData = (newFormData: ElementDefinition) => {
-  formData.value = newFormData
-  updateElement()
-}
-
-const updateElement = () => {
-  // clear the graph
-  editorRef.value?.graph?.removeCells(editorRef.value?.graph?.getChildCells())
-  registerNewShape()
-  addVertex()
-}
-
-const addVertex = () => {
-  const graph = editorRef.value?.graph
-  if (graph) {
-    const parent = graph.getDefaultParent()
-    graph.getDataModel().beginUpdate()
+const addElementToCanvas = () => {
+  const canvas = drawingCanvasRef.value
+  if (canvas && canvas.graph) {
+    const parent = canvas.graph.getDefaultParent()
+    canvas.graph.getDataModel().beginUpdate()
     try {
-      createElementFromDefinition(formData.value, parent)
-
-      graph.refresh()
-      graph.view.validate()
+      createElementFromDefinition(elementDefinition.value, parent)
+      canvas.graph.refresh()
+      canvas.graph.view.validate()
     } finally {
-      graph.getDataModel().endUpdate()
+      canvas.graph.getDataModel().endUpdate()
     }
   }
 }
 
 const createElementFromDefinition = (definition: ElementDefinition | ChildElement, parent: any): any => {
-  const graph = editorRef.value?.graph
-  if (!graph) return null
+  const canvas = drawingCanvasRef.value
+  if (!canvas || !canvas.graph) return null
 
   // Position und Größe ermitteln
   const isChildElement = 'position' in definition
@@ -210,13 +187,10 @@ const createElementFromDefinition = (definition: ElementDefinition | ChildElemen
   const relative = isChildElement ? definition.position.relative : false
 
   // Shape-Name ermitteln
-  const shapeName =
-    definition.type === 'canvas2d'
-      ? definition.id // Für Canvas2D verwende die ID als Shape-Name
-      : definition.predefinedShape || 'rectangle' // Für vordefinierte Shapes verwende predefinedShape
+  const shapeName = definition.type === 'canvas2d' ? definition.id : definition.predefinedShape || 'rectangle'
 
   // Haupt-Element erstellen
-  const mainElement = graph.insertVertex({
+  const mainElement = canvas.graph.insertVertex({
     parent: parent,
     id: undefined,
     value: definition.label,
@@ -226,7 +200,7 @@ const createElementFromDefinition = (definition: ElementDefinition | ChildElemen
     height,
     style: {
       ...definition.style,
-      shape: shapeName, // Shape-Name nach style setzen, damit er nicht überschrieben wird
+      shape: shapeName,
       editable: true,
       resizable: true,
       selectable: true,
@@ -251,14 +225,14 @@ const createElementFromDefinition = (definition: ElementDefinition | ChildElemen
   return mainElement
 }
 
-const registerNewShape = () => {
+const registerCustomShapes = () => {
   // Registriere Canvas2D Shape für Haupt-Element
-  if (formData.value.type === 'canvas2d' && formData.value.canvas) {
-    registerCustomShape(formData.value.id, formData.value.canvas)
+  if (elementDefinition.value.type === 'canvas2d' && elementDefinition.value.canvas) {
+    registerCustomShape(elementDefinition.value.id, elementDefinition.value.canvas)
   }
 
   // Registriere Canvas2D Shapes für alle Child-Elemente rekursiv
-  registerChildShapes(formData.value.children)
+  registerChildShapes(elementDefinition.value.children)
 }
 
 const registerChildShapes = (children: ChildElement[]) => {
@@ -280,7 +254,6 @@ const registerCustomShape = (shapeId: string, canvasCommands: string) => {
       c.translate(x, y)
 
       const lines = canvasCommands.trim().split('\n')
-
       let pathStarted = false
 
       for (const line of lines) {
@@ -306,10 +279,6 @@ const registerCustomShape = (shapeId: string, canvasCommands: string) => {
 
           case 'LINE':
             if (nums.length === 2) {
-              if (!pathStarted) {
-                c.begin()
-                pathStarted = true
-              }
               c.lineTo(w * nums[0], h * nums[1])
             } else if (nums.length === 4) {
               if (pathStarted) {
@@ -322,33 +291,36 @@ const registerCustomShape = (shapeId: string, canvasCommands: string) => {
               c.lineTo(w * nums[2], h * nums[3])
               c.stroke()
               c.end()
-            } else {
-              console.warn(`LINE erwartet 2 oder 4 Parameter, bekam ${nums.length}`)
+            }
+            break
+
+          case 'RECT':
+            if (nums.length === 4) {
+              if (pathStarted) {
+                c.stroke()
+                c.end()
+                pathStarted = false
+              }
+              c.begin()
+              c.rect(w * nums[0], h * nums[1], w * nums[2], h * nums[3])
+              c.fillAndStroke()
+              c.end()
             }
             break
 
           case 'ELLIPSE':
-            if (pathStarted) {
-              c.stroke()
+            if (nums.length === 4) {
+              if (pathStarted) {
+                c.stroke()
+                c.end()
+                pathStarted = false
+              }
+              c.begin()
+              c.ellipse(w * nums[0], h * nums[1], w * nums[2], h * nums[3])
+              c.fillAndStroke()
               c.end()
-              pathStarted = false
             }
-            c.ellipse(w * nums[0], h * nums[1], w * nums[2], h * nums[3])
-            c.fillAndStroke()
             break
-
-          case 'RECT':
-            if (pathStarted) {
-              c.stroke()
-              c.end()
-              pathStarted = false
-            }
-            c.rect(w * nums[0], h * nums[1], w * nums[2], h * nums[3])
-            c.fillAndStroke()
-            break
-
-          default:
-            console.warn(`Unbekannter Canvas-Befehl: ${cmd}`)
         }
       }
 
@@ -363,14 +335,12 @@ const registerCustomShape = (shapeId: string, canvasCommands: string) => {
 }
 
 const getCustomGeometry = (definition: ElementDefinition | ChildElement) => {
-  // Für ElementDefinition verwende anchorPoints, für ChildElement erstelle Standard-Anchor-Points
   let anchorPoints: Array<{ x: number; y: number }>
 
   if ('anchorPoints' in definition) {
-    // ElementDefinition
     anchorPoints = definition.anchorPoints
   } else {
-    // ChildElement - erstelle Standard-Anchor-Points
+    // Standard-Anchor-Points für Child-Elemente
     anchorPoints = [
       { x: 0, y: 0.5 },
       { x: 0.5, y: 0 },
@@ -380,15 +350,25 @@ const getCustomGeometry = (definition: ElementDefinition | ChildElement) => {
   }
 
   const anchorPointsCopy = JSON.parse(JSON.stringify(anchorPoints))
-  const points = anchorPointsCopy.map((p: { x: number; y: number }) => new Point(p.x, p.y))
-  const constraints = points.map((p: Point) => new ConnectionConstraint(p, true))
-
-  class CustomGeometry extends Geometry {
-    constraints: ConnectionConstraint[] = constraints
+  return class extends Geometry {
+    constraints = anchorPointsCopy.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
   }
-
-  return CustomGeometry
 }
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.v-container {
+  height: 100vh;
+  max-width: 100% !important;
+  padding: 0;
+}
+
+.v-row {
+  height: 100%;
+  margin: 0;
+}
+
+.v-col {
+  padding: 0;
+}
+</style>

@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -6,7 +6,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'Home',
-      component: ()=> import('../views/ViewHome.vue')
+      component: () => import('../views/ViewHome.vue')
     },
     {
       path: '/modeling',
@@ -14,10 +14,10 @@ const router = createRouter({
       component: () => import('../views/ViewModeling.vue')
     },
     {
-      path: '/diagramEditor',
-      name: 'DiagramEditor',
-      component: () => import('../views/ViewDiagramEditor.vue')
-    },
+      path: '/diagramLanguageEditor',
+      name: 'DiagramLanguageEditor',
+      component: () => import('../views/ViewDiagramLanguageEditor.vue')
+    }
   ]
 })
 

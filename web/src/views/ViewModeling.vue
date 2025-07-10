@@ -1,11 +1,11 @@
 <template>
   <div>Modellierung</div>
-  <EditorComp :model="model" />
+  <DrawingCanvas :model="model" />
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import EditorComp from '@/components/modeling/EditorComp.vue'
+import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import type { GraphDataModel } from '@maxgraph/core'
 
 const model = ref<GraphDataModel>()
