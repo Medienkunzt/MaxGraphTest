@@ -33,9 +33,9 @@
         <!-- Floating Button Group unten links -->
         <div class="floating-button-group">
           <v-btn-group size="small" density="compact" variant="outlined">
-            <v-btn icon="mdi-magnify-minus" title="Herauszoomen" @click="graph?.zoomOut()" />
-            <v-btn icon="mdi-fit-to-page" title="An Fenster anpassen" @click="graph?.fit()" />
-            <v-btn icon="mdi-magnify-plus" title="Hineinzoomen" @click="graph?.zoomIn()" />
+            <v-btn icon="mdi-magnify-minus" title="Herauszoomen" @click="zoomOut" />
+            <v-btn icon="mdi-fit-to-page" title="An Fenster anpassen" @click="fitToWindow" />
+            <v-btn icon="mdi-magnify-plus" title="Hineinzoomen" @click="zoomIn" />
             <v-btn :icon="snapToGrid ? 'mdi-grid' : 'mdi-grid-off'" :color="snapToGrid ? 'primary' : 'grey'" title="Raster umschalten" @click="toggleGrid" />
             <v-btn icon="mdi-refresh" title="Raster neu laden" @click="forceGridRepaint" />
           </v-btn-group>
@@ -108,10 +108,12 @@ const props = withDefaults(
     model?: GraphDataModel
     allowEdit?: boolean
     showToolbar?: boolean
+    contextMenu?: boolean
   }>(),
   {
     allowEdit: true,
-    showToolbar: true
+    showToolbar: true,
+    contextMenu: false
   }
 )
 
@@ -121,7 +123,6 @@ const emit = defineEmits(['update:model'])
 const gridSize = ref(10)
 const snapToGrid = ref(true)
 const tolerance = ref(10)
-const edgeStyle = ref('orthogonal')
 const settingsMenuOpen = ref(false)
 
 // Optionen für Dropdown-Menüs
@@ -194,6 +195,17 @@ const initGraph = () => {
   graph.value.setCellsDeletable(props.allowEdit)
   graph.value.setCellsCloneable(props.allowEdit)
   graph.value.setAllowNegativeCoordinates(false)
+
+  // Enable panning (drag to navigate)
+  graph.value.setPanning(true)
+
+  // Enable tooltips
+  graph.value.setTooltips(true)
+
+  // Kontextmenü konfigurieren
+  if (!props.contextMenu) {
+    InternalEvent.disableContextMenu(graphContainer.value!)
+  }
 
   // Raster-Konfiguration
   graph.value.setGridEnabled(true)
@@ -533,6 +545,21 @@ const emitUpdatedModel = () => {
   emit('update:model', graph.value!.getDataModel())
 }
 
+// Zoom und Fit Funktionen
+const zoomIn = () => {
+  graph.value?.zoomIn()
+}
+
+const zoomOut = () => {
+  graph.value?.zoomOut()
+}
+
+const fitToWindow = () => {
+  if (graph.value) {
+    graph.value.fit()
+  }
+}
+
 // Neue Funktionen für die erweiterte Benutzeroberfläche
 const updateGridSize = () => {
   if (graph.value) {
@@ -663,10 +690,10 @@ defineExpose({
 .graph-container {
   position: relative;
   width: 100%;
-  height: calc(100vh - 200px); /* Angepasste Höhe für kompakteres Layout */
+  height: calc(100vh - 200px);
   border: 1px solid #ddd;
   border-radius: 4px;
-  overflow: hidden;
+
   background-color: #fafafa;
 }
 
