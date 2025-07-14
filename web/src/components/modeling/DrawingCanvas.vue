@@ -140,7 +140,7 @@ const canvasGrid = ref<HTMLCanvasElement>()
 const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
-const plugins = ref<GraphPluginConstructor[]>([PanningHandler, CellEditorHandler, SelectionCellsHandler, SelectionHandler, MyCustomConnectionHandler, RubberBandHandler])
+const plugins = ref<GraphPluginConstructor[]>([MyCustomConnectionHandler, PanningHandler, CellEditorHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
 
 onMounted(() => {
   initGraph()
@@ -365,7 +365,7 @@ const setupDynamicGrid = () => {
 
       // Zusätzliche Hervorhebung der Hauptachsen (x=0, y=0)
       if (xs <= 0 && xe >= 0) {
-        ctx.strokeStyle = 'rgba(200, 100, 100, 0.7)'
+        ctx.strokeStyle = 'rgba(170, 100, 100, 0.7)'
         ctx.lineWidth = 2
         ctx.beginPath()
         ctx.moveTo(0 + tx + 0.5, ys + 0.5)
@@ -374,7 +374,7 @@ const setupDynamicGrid = () => {
       }
 
       if (ys <= 0 && ye >= 0) {
-        ctx.strokeStyle = 'rgba(100, 200, 100, 0.7)'
+        ctx.strokeStyle = 'rgba(170, 100, 100, 0.7)'
         ctx.lineWidth = 2
         ctx.beginPath()
         ctx.moveTo(xs + 0.5, 0 + ty + 0.5)
