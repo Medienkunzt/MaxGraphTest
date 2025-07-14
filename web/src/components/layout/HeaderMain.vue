@@ -11,6 +11,14 @@
         <span> Modellierung </span>
         <v-tooltip activator="parent" location="bottom"> Modellierung </v-tooltip>
       </v-btn>
+      <v-btn to="/diagramLanguages" active-class="active" prepend-icon="mdi-view-list">
+        <span> Sprachen </span>
+        <v-tooltip activator="parent" location="bottom"> Diagramsprachen-Übersicht </v-tooltip>
+      </v-btn>
+      <v-btn to="/diagramLanguageEditor" active-class="active" prepend-icon="mdi-application-edit">
+        <span> Editor </span>
+        <v-tooltip activator="parent" location="bottom"> Diagramsprachen-Editor </v-tooltip>
+      </v-btn>
     </template>
   </v-app-bar>
 </template>

@@ -17,6 +17,11 @@ const router = createRouter({
       path: '/diagramLanguageEditor',
       name: 'DiagramLanguageEditor',
       component: () => import('../views/ViewDiagramLanguageEditor.vue')
+    },
+    {
+      path: '/diagramLanguages',
+      name: 'DiagramLanguages',
+      component: () => import('../views/ViewDiagramLanguageOverview.vue')
     }
   ]
 })
