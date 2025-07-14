@@ -4,7 +4,12 @@
       <!-- Element-Editor Panel (links) -->
       <v-col cols="7">
         <v-card class="mx-2 my-2" outlined height="calc(100vh - 100px)">
-          <v-card-title>Element-Editor</v-card-title>
+          <v-card-title class="d-flex align-center justify-space-between">
+            <span>Element-Editor</span>
+            <v-chip v-if="currentLanguage" color="primary" variant="tonal" size="small">
+              {{ currentLanguage.name }}
+            </v-chip>
+          </v-card-title>
           <v-card-text class="pa-2" style="height: calc(100% - 60px); overflow-y: auto">
             <ElementEditorPanel :model-value="elementDefinition" @update:model-value="updateElementDefinition" @element-updated="handleElementUpdate" />
           </v-card-text>
@@ -22,11 +27,22 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import ElementEditorPanel from '@/components/modeling/ElementEditorPanel.vue'
+import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { GraphDataModel, AbstractCanvas2D, VertexParameters, CellStyle } from '@maxgraph/core'
 import { Shape, ShapeRegistry, Point, ConnectionConstraint, Geometry } from '@maxgraph/core'
+
+// Props für die Route-Parameter
+interface Props {
+  id?: string
+}
+
+const props = defineProps<Props>()
+const route = useRoute()
+const { languages, currentLanguage, setCurrentLanguage } = useDiagramLanguages()
 
 // Refs
 const canvasModel = ref<GraphDataModel>()
@@ -128,7 +144,18 @@ onMounted(() => {
   setTimeout(() => {
     handleElementUpdate()
   }, 1000)
+
+  // Sprachen-ID aus Route laden
+  loadLanguageFromRoute()
 })
+
+// Watch für Route-Änderungen
+watch(
+  () => route.params.id,
+  () => {
+    loadLanguageFromRoute()
+  }
+)
 
 // Event Handlers
 const updateElementDefinition = (newDefinition: ElementDefinition) => {
@@ -352,6 +379,24 @@ const getCustomGeometry = (definition: ElementDefinition | ChildElement) => {
   const anchorPointsCopy = JSON.parse(JSON.stringify(anchorPoints))
   return class extends Geometry {
     constraints = anchorPointsCopy.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
+  }
+}
+
+// Sprachen-ID aus Route laden
+const loadLanguageFromRoute = () => {
+  const languageId = props.id || (route.params.id as string)
+
+  if (languageId) {
+    const language = languages.find((lang) => lang.id === languageId)
+    if (language) {
+      setCurrentLanguage(language)
+      console.log('Sprache aus Route geladen:', language.name)
+
+      // TODO: Hier würden die spezifischen Elemente, Verbindungen und Syntax
+      // der geladenen Sprache in den Editor geladen werden
+    } else {
+      console.warn('Sprache mit ID nicht gefunden:', languageId)
+    }
   }
 }
 </script>

@@ -50,13 +50,17 @@
 
               <!-- Aktionen Spalte -->
               <template #[`item.actions`]="{ item }">
+                <v-btn size="small" variant="text" color="success" @click="tryLanguage(item)">
+                  <v-icon>mdi-play</v-icon>
+                  <v-tooltip activator="parent" location="top"> Ausprobieren </v-tooltip>
+                </v-btn>
                 <v-btn size="small" variant="text" color="primary" @click="editLanguage(item)">
                   <v-icon>mdi-pencil</v-icon>
                   <v-tooltip activator="parent" location="top"> Bearbeiten </v-tooltip>
                 </v-btn>
-                <v-btn size="small" variant="text" color="success" @click="tryLanguage(item)">
-                  <v-icon>mdi-play</v-icon>
-                  <v-tooltip activator="parent" location="top"> Ausprobieren </v-tooltip>
+                <v-btn size="small" variant="text" color="info" @click="openInEditor(item)">
+                  <v-icon>mdi-application-edit</v-icon>
+                  <v-tooltip activator="parent" location="top"> Editor öffnen </v-tooltip>
                 </v-btn>
                 <v-btn size="small" variant="text" color="error" @click="deleteLanguage(item)">
                   <v-icon>mdi-delete</v-icon>
@@ -80,11 +84,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { DiagramLanguage } from '@/types/DiagramLanguage'
 import DialogLanguageEditor from '@/components/dialog/DialogLanguageEditor.vue'
 import DialogLanguageTester from '@/components/dialog/DialogLanguageTester.vue'
 import DialogConfirm from '@/components/dialog/DialogConfirm.vue'
+
+const router = useRouter()
 
 const { languages, createLanguage, updateLanguage, deleteLanguage: deleteLanguageFromStore, setCurrentLanguage } = useDiagramLanguages()
 
@@ -152,6 +159,12 @@ const viewLanguage = (language: DiagramLanguage) => {
 const tryLanguage = (language: DiagramLanguage) => {
   selectedLanguage.value = language
   showTesterDialog.value = true
+}
+
+const openInEditor = (language: DiagramLanguage) => {
+  // Setze die aktuelle Sprache und navigiere zum Editor mit ID
+  setCurrentLanguage(language)
+  router.push(`/diagramLanguageEditor/${language.id}`)
 }
 
 const deleteLanguage = async (language: DiagramLanguage) => {
