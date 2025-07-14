@@ -64,7 +64,7 @@
             <v-textarea v-if="selectedElement.type === 'canvas2d'" v-model="selectedElement.canvas" label="Canvas2D Befehle" variant="outlined" density="compact" rows="4" class="mb-3" hint="Befehle: MOVE x y, LINE x y, RECT x y w h, ELLIPSE x y w h" persistent-hint @input="updateAll" />
 
             <!-- Predefined Shape -->
-            <v-select v-if="selectedElement.type === 'predefined'" v-model="selectedElement.predefinedShape" :items="predefinedShapes" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+            <v-select v-if="selectedElement.type === 'predefined'" v-model="selectedElement.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
 
             <!-- Erweiterte Einstellungen -->
             <v-expansion-panels variant="accordion">
@@ -204,7 +204,7 @@
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="canvasRef" :model="canvasModel" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" />
             </div>
 
             <v-alert v-if="!selectedElement" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element aus, um eine Vorschau zu sehen </v-alert>
@@ -217,23 +217,34 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
-import { Cell, Geometry, ConnectionConstraint, Point } from '@maxgraph/core'
+import { Cell, Geometry, ConnectionConstraint, Point, Shape, AbstractCanvas2D } from '@maxgraph/core'
+import { ShapeRegistry } from '@maxgraph/core'
 import type { GraphDataModel } from '@maxgraph/core'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
+import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { DiagramElement, ChildElement } from '@/model/DiagramLanguage'
 
 // Props
-defineProps<{
+interface Props {
   languageId?: string
-}>()
+  id?: string
+}
+
+const props = defineProps<Props>()
+const route = useRoute()
 
 const store = useDiagramLanguageStore()
+const { languages, setCurrentLanguage } = useDiagramLanguages()
 
 // State
 const selectedElementId = ref<string>('')
 const canvasModel = ref<GraphDataModel>()
-const canvasRef = ref()
+const drawingCanvasRef = ref()
+
+// Zusätzliche Refs für Canvas-Integration
+const elementDefinition = ref<DiagramElement | null>(null)
 
 // Computed
 const elements = computed(() => store.currentLanguage?.elements || [])
@@ -396,12 +407,18 @@ const getElementTypeIcon = (type: string) => {
 
 const updateCanvasPreview = () => {
   // Prüfe ob alle notwendigen Objekte verfügbar sind
-  if (!selectedElement.value && !canvasRef.value) {
+  if (!selectedElement.value) {
+    return
+  }
+
+  // Verwende drawingCanvasRef statt canvasRef
+  if (!drawingCanvasRef.value?.graph) {
+    console.warn('Drawing canvas or graph not available yet')
     return
   }
 
   try {
-    const graph = canvasRef.value.graph
+    const graph = drawingCanvasRef.value.graph
     const parent = graph.getDefaultParent()
 
     if (!parent) {
@@ -441,7 +458,8 @@ const updateCanvasPreview = () => {
       if (element.type === 'predefined' && element.predefinedShape) {
         style.shape = element.predefinedShape
       } else if (element.type === 'canvas2d') {
-        // TODO: Custom Shape Implementation
+        // Verwende die registrierte Custom Shape
+        style.shape = element.id
       }
 
       // Erstelle Geometry mit Connection Constraints
@@ -490,7 +508,7 @@ const updateCanvasPreview = () => {
       nextTick(() => {
         try {
           if (graph && graph.fit) {
-            graph.fit()
+            // graph.fit()
             // Element selektieren um Anchor Points zu zeigen
             if (element.anchorPoints.length > 0) {
               graph.setSelectionCell(cell)
@@ -505,6 +523,243 @@ const updateCanvasPreview = () => {
     }
   } catch (error) {
     console.error('Error in updateCanvasPreview:', error)
+  }
+}
+
+// Event Handlers für erweiterte Canvas-Integration
+const handleElementUpdate = () => {
+  // Canvas aktualisieren
+  if (drawingCanvasRef.value?.graph) {
+    // Direkte Löschung über das Graph-Objekt
+    const graph = drawingCanvasRef.value.graph
+    const cells = graph.getChildCells()
+    if (cells.length > 0) {
+      graph.removeCells(cells)
+    }
+
+    registerCustomShapes()
+    addElementToCanvas()
+  } else {
+    // Versuche es später nochmal, wenn das Canvas noch nicht bereit ist
+    setTimeout(() => {
+      handleElementUpdate()
+    }, 500)
+  }
+}
+
+const addElementToCanvas = () => {
+  const canvas = drawingCanvasRef.value
+  if (canvas && canvas.graph && elementDefinition.value) {
+    const parent = canvas.graph.getDefaultParent()
+    canvas.graph.getDataModel().beginUpdate()
+    try {
+      createElementFromDefinition(elementDefinition.value, parent)
+      canvas.graph.refresh()
+      canvas.graph.view.validate()
+    } finally {
+      canvas.graph.getDataModel().endUpdate()
+    }
+  }
+}
+
+const createElementFromDefinition = (definition: DiagramElement | ChildElement, parent: any): any => {
+  const canvas = drawingCanvasRef.value
+  if (!canvas || !canvas.graph) return null
+
+  // Position und Größe ermitteln
+  const isChildElement = 'position' in definition
+  const x = isChildElement ? definition.position.x : definition.x
+  const y = isChildElement ? definition.position.y : definition.y
+  const width = isChildElement ? definition.position.width : definition.width
+  const height = isChildElement ? definition.position.height : definition.height
+  const relative = isChildElement ? definition.position.relative : false
+
+  // Shape-Name ermitteln
+  const shapeName = definition.type === 'canvas2d' ? definition.id : definition.predefinedShape || 'rectangle'
+
+  // Haupt-Element erstellen
+  const mainElement = canvas.graph.insertVertex({
+    parent: parent,
+    id: undefined,
+    value: definition.label,
+    x,
+    y,
+    width,
+    height,
+    style: {
+      ...definition.style,
+      shape: shapeName,
+      editable: true,
+      resizable: true,
+      selectable: true,
+      connectable: definition.connectable ?? true
+    },
+    relative: relative,
+    geometryClass: definition.type === 'canvas2d' ? getCustomGeometry(definition) : undefined
+  })
+
+  mainElement.setConnectable(definition.connectable ?? true)
+
+  // Child-Elemente rekursiv hinzufügen
+  if ('children' in definition && definition.children) {
+    definition.children.forEach((child) => {
+      const childElement = createElementFromDefinition(child, mainElement)
+      if (childElement && child.position.relative) {
+        childElement.geometry!.relative = true
+      }
+    })
+  }
+
+  return mainElement
+}
+
+const registerCustomShapes = () => {
+  if (!elementDefinition.value) return
+
+  // Registriere Canvas2D Shape für Haupt-Element
+  if (elementDefinition.value.type === 'canvas2d' && elementDefinition.value.canvas) {
+    registerCustomShape(elementDefinition.value.id, elementDefinition.value.canvas)
+  }
+
+  // Registriere Canvas2D Shapes für alle Child-Elemente rekursiv
+  registerChildShapes(elementDefinition.value.children)
+}
+
+const registerChildShapes = (children: ChildElement[]) => {
+  children.forEach((child) => {
+    if (child.type === 'canvas2d' && child.canvas) {
+      registerCustomShape(child.id, child.canvas)
+    }
+
+    // Rekursiv für verschachtelte Children
+    if (child.children && child.children.length > 0) {
+      registerChildShapes(child.children)
+    }
+  })
+}
+
+const registerCustomShape = (shapeId: string, canvasCommands: string) => {
+  class DynamicCustomShape extends Shape {
+    override paintBackground(c: AbstractCanvas2D, x: number, y: number, w: number, h: number) {
+      c.translate(x, y)
+
+      const lines = canvasCommands.trim().split('\n')
+      let pathStarted = false
+
+      for (const line of lines) {
+        const [cmd, ...args] = line.trim().split(/\s+/)
+        const nums = args.map(Number)
+
+        if (nums.some((n) => isNaN(n))) {
+          console.warn(`Ungültige Zahlen in: ${line}`)
+          continue
+        }
+
+        switch (cmd.toUpperCase()) {
+          case 'MOVE':
+            if (pathStarted) {
+              c.stroke()
+              c.end()
+              pathStarted = false
+            }
+            c.begin()
+            c.moveTo(w * nums[0], h * nums[1])
+            pathStarted = true
+            break
+
+          case 'LINE':
+            if (nums.length === 2) {
+              c.lineTo(w * nums[0], h * nums[1])
+            } else if (nums.length === 4) {
+              if (pathStarted) {
+                c.stroke()
+                c.end()
+                pathStarted = false
+              }
+              c.begin()
+              c.moveTo(w * nums[0], h * nums[1])
+              c.lineTo(w * nums[2], h * nums[3])
+              c.stroke()
+              c.end()
+            }
+            break
+
+          case 'RECT':
+            if (nums.length === 4) {
+              if (pathStarted) {
+                c.stroke()
+                c.end()
+                pathStarted = false
+              }
+              c.begin()
+              c.rect(w * nums[0], h * nums[1], w * nums[2], h * nums[3])
+              c.fillAndStroke()
+              c.end()
+            }
+            break
+
+          case 'ELLIPSE':
+            if (nums.length === 4) {
+              if (pathStarted) {
+                c.stroke()
+                c.end()
+                pathStarted = false
+              }
+              c.begin()
+              c.ellipse(w * nums[0], h * nums[1], w * nums[2], h * nums[3])
+              c.fillAndStroke()
+              c.end()
+            }
+            break
+        }
+      }
+
+      if (pathStarted) {
+        c.stroke()
+        c.end()
+      }
+    }
+  }
+
+  ShapeRegistry.add(shapeId, DynamicCustomShape)
+}
+
+const getCustomGeometry = (definition: DiagramElement | ChildElement) => {
+  let anchorPoints: Array<{ x: number; y: number }>
+
+  if ('anchorPoints' in definition) {
+    anchorPoints = definition.anchorPoints
+  } else {
+    // Standard-Anchor-Points für Child-Elemente
+    anchorPoints = [
+      { x: 0, y: 0.5 },
+      { x: 0.5, y: 0 },
+      { x: 1, y: 0.5 },
+      { x: 0.5, y: 1 }
+    ]
+  }
+
+  const anchorPointsCopy = JSON.parse(JSON.stringify(anchorPoints))
+  return class extends Geometry {
+    constraints = anchorPointsCopy.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
+  }
+}
+
+// Sprachen-ID aus Route laden
+const loadLanguageFromRoute = () => {
+  const languageId = props.id || (route.params.id as string)
+
+  if (languageId) {
+    const language = languages.find((lang) => lang.id === languageId)
+    if (language) {
+      setCurrentLanguage(language)
+      console.log('Sprache aus Route geladen:', language.name)
+
+      // TODO: Hier würden die spezifischen Elemente, Verbindungen und Syntax
+      // der geladenen Sprache in den Editor geladen werden
+    } else {
+      console.warn('Sprache mit ID nicht gefunden:', languageId)
+    }
   }
 }
 
@@ -532,16 +787,24 @@ const updateAll = () => {
   debouncedStoreUpdate()
 }
 
+// Watch für selectedElement -> elementDefinition sync und Updates
 watch(
   selectedElement,
-  () => {
-    debouncedUpdate()
+  (newElement) => {
+    if (newElement) {
+      elementDefinition.value = { ...newElement }
+      handleElementUpdate()
+      debouncedUpdate()
+    }
   },
-  { deep: true }
+  { immediate: true, deep: true }
 )
 
 // Lifecycle
 onMounted(() => {
+  // Route laden
+  loadLanguageFromRoute()
+
   if (elements.value.length > 0) {
     selectedElementId.value = elements.value[0].id
   }
@@ -553,9 +816,9 @@ onMounted(() => {
       return
     }
 
-    if (canvasRef.value?.graph) {
+    if (drawingCanvasRef.value?.graph) {
       // Canvas ist bereit, lade Vorschau
-      updateCanvasPreview()
+      handleElementUpdate()
     } else {
       // Versuche es nach kurzer Zeit erneut
       setTimeout(() => initializeCanvas(attempts + 1), 200)
