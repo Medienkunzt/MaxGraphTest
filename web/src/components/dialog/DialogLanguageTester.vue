@@ -31,7 +31,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import type { DiagramLanguage } from '@/types/DiagramLanguage'
+import type { DiagramLanguage } from '@/model/DiagramLanguage'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 
 interface Props {

@@ -1,11 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { DiagramLanguage } from '@/types/DiagramLanguage'
+import type { DiagramLanguage, DiagramElement, DiagramConnection, DiagramSyntax } from '@/model/DiagramLanguage'
 
 export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   // State
   const languages = ref<DiagramLanguage[]>([])
   const currentLanguage = ref<DiagramLanguage | null>(null)
+
+  // Initialisierung mit Beispieldaten
+  const initializeWithExampleData = () => {
+    if (languages.value.length === 0) {
+      const exampleLanguage = createExampleLanguage()
+      languages.value.push(exampleLanguage)
+    }
+  }
 
   // Actions
   const createLanguage = (name: string, tags?: string[]): DiagramLanguage => {
@@ -53,9 +61,321 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     currentLanguage.value = language
   }
 
+  const getLanguageById = (id: string): DiagramLanguage | undefined => {
+    return languages.value.find((lang) => lang.id === id)
+  }
+
+  // Element-Management
+  const addElementToLanguage = (languageId: string, element: DiagramElement) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      language.elements.push(element)
+    }
+  }
+
+  const updateElementInLanguage = (languageId: string, elementId: string, updates: Partial<DiagramElement>) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      const elementIndex = language.elements.findIndex((elem) => elem.id === elementId)
+      if (elementIndex !== -1) {
+        language.elements[elementIndex] = { ...language.elements[elementIndex], ...updates }
+      }
+    }
+  }
+
+  const removeElementFromLanguage = (languageId: string, elementId: string) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      const elementIndex = language.elements.findIndex((elem) => elem.id === elementId)
+      if (elementIndex !== -1) {
+        language.elements.splice(elementIndex, 1)
+      }
+    }
+  }
+
+  // Connection-Management
+  const addConnectionToLanguage = (languageId: string, connection: DiagramConnection) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      language.connections.push(connection)
+    }
+  }
+
+  const updateConnectionInLanguage = (languageId: string, connectionId: string, updates: Partial<DiagramConnection>) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      const connectionIndex = language.connections.findIndex((conn) => conn.id === connectionId)
+      if (connectionIndex !== -1) {
+        language.connections[connectionIndex] = { ...language.connections[connectionIndex], ...updates }
+      }
+    }
+  }
+
+  const removeConnectionFromLanguage = (languageId: string, connectionId: string) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      const connectionIndex = language.connections.findIndex((conn) => conn.id === connectionId)
+      if (connectionIndex !== -1) {
+        language.connections.splice(connectionIndex, 1)
+      }
+    }
+  }
+
+  // Syntax-Management
+  const addSyntaxToLanguage = (languageId: string, syntax: DiagramSyntax) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      language.syntax.push(syntax)
+    }
+  }
+
+  const updateSyntaxInLanguage = (languageId: string, syntaxId: string, updates: Partial<DiagramSyntax>) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      const syntaxIndex = language.syntax.findIndex((syn) => syn.id === syntaxId)
+      if (syntaxIndex !== -1) {
+        language.syntax[syntaxIndex] = { ...language.syntax[syntaxIndex], ...updates }
+      }
+    }
+  }
+
+  const removeSyntaxFromLanguage = (languageId: string, syntaxId: string) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      const syntaxIndex = language.syntax.findIndex((syn) => syn.id === syntaxId)
+      if (syntaxIndex !== -1) {
+        language.syntax.splice(syntaxIndex, 1)
+      }
+    }
+  }
+
   // Hilfsfunktion für ID-Generierung
   const generateId = (): string => {
     return 'id_' + Math.random().toString(36).substring(2, 9)
+  }
+
+  // Beispielsprache erstellen
+  const createExampleLanguage = (): DiagramLanguage => {
+    return {
+      id: 'uml-class-diagram',
+      name: 'UML Klassendiagramm',
+      tags: ['UML', 'Objektorientiert', 'Software-Architektur'],
+      elements: [
+        {
+          id: 'class-element',
+          name: 'Klasse',
+          label: 'Klasse',
+          type: 'canvas2d',
+          x: 50,
+          y: 50,
+          width: 120,
+          height: 80,
+          canvas: 'RECT 0 0 1 1\nMOVE 0 0.3\nLINE 1 0.3',
+          style: {
+            strokeColor: '#000000',
+            fillColor: '#ffffff',
+            strokeWidth: 2,
+            fontSize: 12,
+            fontColor: '#000000',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [
+            {
+              id: 'attributes',
+              label: 'Attributes',
+              type: 'predefined',
+              predefinedShape: 'label',
+              position: {
+                x: 0,
+                y: 1,
+                width: 100,
+                height: 20,
+                relative: true
+              },
+              style: {
+                strokeColor: 'transparent',
+                fillColor: 'transparent',
+                align: 'left',
+                verticalAlign: 'top',
+                fontSize: 10
+              },
+              connectable: false,
+              children: []
+            }
+          ],
+          connectable: true,
+          resizable: true,
+          movable: true
+        },
+        {
+          id: 'actor-element',
+          name: 'Akteur',
+          label: 'Akteur',
+          type: 'predefined',
+          x: 50,
+          y: 50,
+          width: 60,
+          height: 80,
+          predefinedShape: 'actor',
+          style: {
+            strokeColor: '#000000',
+            fillColor: '#e1f5fe',
+            strokeWidth: 2,
+            fontSize: 10,
+            fontColor: '#000000',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'bottom'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: false,
+          movable: true
+        },
+        {
+          id: 'interface-element',
+          name: 'Interface',
+          label: 'Interface',
+          type: 'canvas2d',
+          x: 50,
+          y: 50,
+          width: 120,
+          height: 60,
+          canvas: 'RECT 0 0 1 1\nMOVE 0.1 0.1\nLINE 0.9 0.1\nMOVE 0.1 0.2\nLINE 0.9 0.2',
+          style: {
+            strokeColor: '#666666',
+            fillColor: '#f5f5f5',
+            strokeWidth: 1,
+            fontSize: 11,
+            fontColor: '#666666',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true
+        },
+        {
+          id: 'abstract-class-element',
+          name: 'Abstrakte Klasse',
+          label: 'Abstrakte Klasse',
+          type: 'canvas2d',
+          x: 50,
+          y: 50,
+          width: 140,
+          height: 80,
+          canvas: 'RECT 0 0 1 1\nMOVE 0 0.25\nLINE 1 0.25\nMOVE 0 0.5\nLINE 1 0.5',
+          style: {
+            strokeColor: '#000000',
+            fillColor: '#fffacd',
+            strokeWidth: 2,
+            fontSize: 12,
+            fontColor: '#000000',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true
+        }
+      ],
+      connections: [
+        {
+          id: 'inheritance-connection',
+          name: 'Vererbung',
+          label: 'Vererbung',
+          targetArrow: 'classicThin',
+          lineStyle: 'solid',
+          color: '#000000',
+          width: 2
+        },
+        {
+          id: 'implementation-connection',
+          name: 'Implementierung',
+          label: 'Implementierung',
+          targetArrow: 'classicThin',
+          lineStyle: 'dashed',
+          color: '#000000',
+          width: 2
+        },
+        {
+          id: 'association-connection',
+          name: 'Assoziation',
+          label: 'Assoziation',
+          lineStyle: 'solid',
+          color: '#000000',
+          width: 1
+        },
+        {
+          id: 'aggregation-connection',
+          name: 'Aggregation',
+          label: 'Aggregation',
+          sourceArrow: 'diamond',
+          lineStyle: 'solid',
+          color: '#000000',
+          width: 1
+        },
+        {
+          id: 'composition-connection',
+          name: 'Komposition',
+          label: 'Komposition',
+          sourceArrow: 'diamondThin',
+          lineStyle: 'solid',
+          color: '#000000',
+          width: 2
+        }
+      ],
+      syntax: [
+        {
+          id: 'class-naming',
+          name: 'Klassenbenennung',
+          description: 'Klassen sollten in PascalCase benannt werden',
+          rules: ['Verwende PascalCase für Klassennamen', 'Keine Umlaute in Klassennamen', 'Beginne mit einem Großbuchstaben']
+        },
+        {
+          id: 'method-visibility',
+          name: 'Methodensichtbarkeit',
+          description: 'Sichtbarkeitsmodifikatoren für Methoden',
+          rules: ['+ für public', '- für private', '# für protected', '~ für package']
+        },
+        {
+          id: 'stereotype-usage',
+          name: 'Stereotype-Verwendung',
+          description: 'Verwendung von UML-Stereotypen',
+          rules: ['<<interface>> für Interfaces', '<<abstract>> für abstrakte Klassen', '<<entity>> für Entitäten']
+        }
+      ]
+    }
   }
 
   return {
@@ -67,6 +387,25 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     createLanguage,
     updateLanguage,
     deleteLanguage,
-    setCurrentLanguage
+    setCurrentLanguage,
+    getLanguageById,
+
+    // Element actions
+    addElementToLanguage,
+    updateElementInLanguage,
+    removeElementFromLanguage,
+
+    // Connection actions
+    addConnectionToLanguage,
+    updateConnectionInLanguage,
+    removeConnectionFromLanguage,
+
+    // Syntax actions
+    addSyntaxToLanguage,
+    updateSyntaxInLanguage,
+    removeSyntaxFromLanguage,
+
+    // Initialization
+    initializeWithExampleData
   }
 })

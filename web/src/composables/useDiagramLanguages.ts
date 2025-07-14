@@ -15,6 +15,25 @@ export function useDiagramLanguages() {
     createLanguage: store.createLanguage,
     updateLanguage: store.updateLanguage,
     deleteLanguage: store.deleteLanguage,
-    setCurrentLanguage: store.setCurrentLanguage
+    setCurrentLanguage: store.setCurrentLanguage,
+    getLanguageById: store.getLanguageById,
+
+    // Element actions
+    addElementToLanguage: store.addElementToLanguage,
+    updateElementInLanguage: store.updateElementInLanguage,
+    removeElementFromLanguage: store.removeElementFromLanguage,
+
+    // Connection actions
+    addConnectionToLanguage: store.addConnectionToLanguage,
+    updateConnectionInLanguage: store.updateConnectionInLanguage,
+    removeConnectionFromLanguage: store.removeConnectionFromLanguage,
+
+    // Syntax actions
+    addSyntaxToLanguage: store.addSyntaxToLanguage,
+    updateSyntaxInLanguage: store.updateSyntaxInLanguage,
+    removeSyntaxFromLanguage: store.removeSyntaxFromLanguage,
+
+    // Initialization
+    initializeWithExampleData: store.initializeWithExampleData
   }
 }

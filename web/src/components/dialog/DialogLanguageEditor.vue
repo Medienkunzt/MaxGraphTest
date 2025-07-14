@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { DiagramLanguage } from '@/types/DiagramLanguage'
+import type { DiagramLanguage } from '@/model/DiagramLanguage'
 
 interface Props {
   modelValue: boolean

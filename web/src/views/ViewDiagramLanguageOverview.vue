@@ -83,17 +83,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
-import type { DiagramLanguage } from '@/types/DiagramLanguage'
+import type { DiagramLanguage } from '@/model/DiagramLanguage'
 import DialogLanguageEditor from '@/components/dialog/DialogLanguageEditor.vue'
 import DialogLanguageTester from '@/components/dialog/DialogLanguageTester.vue'
 import DialogConfirm from '@/components/dialog/DialogConfirm.vue'
 
 const router = useRouter()
 
-const { languages, createLanguage, updateLanguage, deleteLanguage: deleteLanguageFromStore, setCurrentLanguage } = useDiagramLanguages()
+const { languages, createLanguage, updateLanguage, deleteLanguage: deleteLanguageFromStore, setCurrentLanguage, initializeWithExampleData } = useDiagramLanguages()
 
 // Dialog States
 const showLanguageDialog = ref(false)
@@ -151,11 +151,6 @@ const editLanguage = (language: DiagramLanguage) => {
   showLanguageDialog.value = true
 }
 
-const viewLanguage = (language: DiagramLanguage) => {
-  selectedLanguage.value = language
-  showTesterDialog.value = true
-}
-
 const tryLanguage = (language: DiagramLanguage) => {
   selectedLanguage.value = language
   showTesterDialog.value = true
@@ -192,4 +187,9 @@ const handleSaveLanguage = (data: { name: string; tags: string[] }, language?: D
     setCurrentLanguage(newLanguage)
   }
 }
+
+// Initialisierung beim Mount
+onMounted(() => {
+  initializeWithExampleData()
+})
 </script>

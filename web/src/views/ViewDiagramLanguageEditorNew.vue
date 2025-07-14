@@ -55,7 +55,7 @@ interface Props {
 
 defineProps<Props>()
 const route = useRoute()
-const { languages, currentLanguage, setCurrentLanguage, initializeWithExampleData } = useDiagramLanguages()
+const { languages, currentLanguage, setCurrentLanguage } = useDiagramLanguages()
 
 // Active Editor State
 const activeEditor = ref<'elements' | 'connections' | 'syntax'>('elements')
@@ -72,6 +72,7 @@ const loadLanguageFromRoute = () => {
 }
 
 onMounted(() => {
+  // Sprachen-ID aus Route laden
   loadLanguageFromRoute()
 })
 
