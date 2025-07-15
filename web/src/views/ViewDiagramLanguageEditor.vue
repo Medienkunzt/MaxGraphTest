@@ -72,10 +72,10 @@ const loadLanguageFromRoute = () => {
 }
 
 onMounted(() => {
+  initializeWithExampleData()
   loadLanguageFromRoute()
 })
 
-// Watch für Route-Änderungen
 watch(
   () => route.params.id,
   () => {

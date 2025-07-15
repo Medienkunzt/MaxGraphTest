@@ -140,6 +140,10 @@ const headers = [
   }
 ]
 
+onMounted(() => {
+  initializeWithExampleData()
+})
+
 // Event Handler
 const createNewLanguage = () => {
   selectedLanguage.value = null
@@ -187,9 +191,4 @@ const handleSaveLanguage = (data: { name: string; tags: string[] }, language?: D
     setCurrentLanguage(newLanguage)
   }
 }
-
-// Initialisierung beim Mount
-onMounted(() => {
-  initializeWithExampleData()
-})
 </script>
