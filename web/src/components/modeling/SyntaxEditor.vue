@@ -3,36 +3,7 @@
     <v-row no-gutters>
       <!-- Syntax-Regeln Liste (links) -->
       <v-col cols="4" class="pr-2">
-        <v-card>
-          <v-card-title class="d-flex align-center justify-space-between py-2">
-            <span class="text-h6">Syntax-Regeln</span>
-            <v-btn color="primary" variant="tonal" size="small" prepend-icon="mdi-plus" @click="addNewRule"> Neue Regel </v-btn>
-          </v-card-title>
-
-          <v-divider />
-
-          <v-list density="compact">
-            <v-list-item v-for="rule in syntaxRules" :key="rule.id" :active="selectedRuleId === rule.id" class="cursor-pointer" @click="selectRule(rule.id)">
-              <template #prepend>
-                <v-icon :color="getRuleTypeColor(rule.type)" size="small">
-                  {{ getRuleTypeIcon(rule.type) }}
-                </v-icon>
-              </template>
-
-              <v-list-item-title>{{ rule.name }}</v-list-item-title>
-              <v-list-item-subtitle>{{ rule.type }}</v-list-item-subtitle>
-
-              <template #append>
-                <v-chip :color="rule.severity === 'error' ? 'error' : rule.severity === 'warning' ? 'warning' : 'info'" variant="tonal" size="x-small" class="mr-2">
-                  {{ rule.severity }}
-                </v-chip>
-                <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click.stop="deleteRule(rule.id)" />
-              </template>
-            </v-list-item>
-          </v-list>
-
-          <v-card-text v-if="syntaxRules.length === 0" class="text-center text-medium-emphasis"> Keine Syntax-Regeln definiert </v-card-text>
-        </v-card>
+        <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-id="selectedRuleId" empty-text="Keine Syntax-Regeln definiert" title-field="name" :show-severity-chip="true" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
       </v-col>
 
       <!-- Regel-Editor (mitte) -->
@@ -201,6 +172,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
+import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
 import type { GraphDataModel } from '@maxgraph/core'
 
 // Types
@@ -399,24 +371,19 @@ const deleteRule = (ruleId: string) => {
   }
 }
 
-const getRuleTypeColor = (type: string) => {
-  const colors: Record<string, string> = {
-    structure: 'blue',
-    connection: 'green',
-    attribute: 'orange',
-    naming: 'purple'
-  }
-  return colors[type] || 'grey'
+// Icon und Color Maps für EntityList
+const ruleIconMap = {
+  structure: 'mdi-sitemap',
+  connection: 'mdi-connection',
+  attribute: 'mdi-format-list-bulleted',
+  naming: 'mdi-text'
 }
 
-const getRuleTypeIcon = (type: string) => {
-  const icons: Record<string, string> = {
-    structure: 'mdi-sitemap',
-    connection: 'mdi-connection',
-    attribute: 'mdi-format-list-bulleted',
-    naming: 'mdi-text'
-  }
-  return icons[type] || 'mdi-code-braces'
+const ruleColorMap = {
+  structure: 'blue',
+  connection: 'green',
+  attribute: 'orange',
+  naming: 'purple'
 }
 
 const testRule = () => {

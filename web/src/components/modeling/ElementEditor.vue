@@ -3,33 +3,7 @@
     <v-row no-gutters>
       <!-- Element-Liste (links) -->
       <v-col cols="4" class="pr-2">
-        <v-card>
-          <v-card-title class="d-flex align-center justify-space-between py-2">
-            <span class="text-h6">Elemente</span>
-            <v-btn color="primary" variant="tonal" size="small" prepend-icon="mdi-plus" @click="addNewElement"> Neues Element </v-btn>
-          </v-card-title>
-
-          <v-divider />
-
-          <v-list density="compact">
-            <v-list-item v-for="element in elements" :key="element.id" :active="selectedElementId === element.id" class="cursor-pointer" @click="selectElement(element.id)">
-              <template #prepend>
-                <v-icon :color="getElementTypeColor(element.type)" size="small">
-                  {{ getElementTypeIcon(element.type) }}
-                </v-icon>
-              </template>
-
-              <v-list-item-title>{{ element.label }}</v-list-item-title>
-              <v-list-item-subtitle>{{ element.type }}</v-list-item-subtitle>
-
-              <template #append>
-                <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click.stop="deleteElement(element.id)" />
-              </template>
-            </v-list-item>
-          </v-list>
-
-          <v-card-text v-if="elements.length === 0" class="text-center text-medium-emphasis"> Keine Elemente definiert </v-card-text>
-        </v-card>
+        <EditorEntityList title="Elemente" add-button-text="Neues Element" :items="elements" :selected-id="selectedElementId" empty-text="Keine Elemente definiert" :icon-map="elementIconMap" :color-map="elementColorMap" @add="addNewElement" @select="selectElement" @delete="deleteElement" />
       </v-col>
 
       <!-- Element-Editor (mitte) -->
@@ -225,6 +199,7 @@ import type { GraphDataModel } from '@maxgraph/core'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { DiagramElement, ChildElement } from '@/model/DiagramLanguage'
+import EditorEntityList from './EditorEntityList.vue'
 
 // Props
 interface Props {
@@ -397,12 +372,27 @@ const removeChildElement = (index: number) => {
   }
 }
 
-const getElementTypeColor = (type: string) => {
-  return type === 'canvas2d' ? 'blue' : 'green'
+// Icon und Color Maps für EntityList
+const elementIconMap = {
+  rectangle: 'mdi-rectangle-outline',
+  ellipse: 'mdi-ellipse-outline',
+  diamond: 'mdi-rhombus-outline',
+  triangle: 'mdi-triangle-outline',
+  circle: 'mdi-circle-outline',
+  canvas2d: 'mdi-draw',
+  predefined: 'mdi-shape',
+  image: 'mdi-image'
 }
 
-const getElementTypeIcon = (type: string) => {
-  return type === 'canvas2d' ? 'mdi-draw' : 'mdi-shape'
+const elementColorMap = {
+  rectangle: 'blue',
+  ellipse: 'green',
+  diamond: 'orange',
+  triangle: 'purple',
+  circle: 'teal',
+  canvas2d: 'indigo',
+  predefined: 'cyan',
+  image: 'pink'
 }
 
 const updateCanvasPreview = () => {

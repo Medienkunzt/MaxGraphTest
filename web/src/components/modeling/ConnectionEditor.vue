@@ -3,33 +3,7 @@
     <v-row no-gutters>
       <!-- Liste der Verbindungen (links) -->
       <v-col cols="4" class="pr-2">
-        <v-card>
-          <v-card-title class="d-flex align-center justify-space-between py-2">
-            <span class="text-h6">Verbindungen</span>
-            <v-btn color="primary" variant="tonal" size="small" prepend-icon="mdi-plus" @click="addNewConnection"> Neue Verbindung </v-btn>
-          </v-card-title>
-
-          <v-divider />
-
-          <v-list density="compact">
-            <v-list-item v-for="connection in connections" :key="connection.id" :active="selectedConnectionId === connection.id" class="cursor-pointer" @click="selectConnection(connection.id)">
-              <template #prepend>
-                <v-icon :color="getConnectionTypeColor(connection.type)" size="small">
-                  {{ getConnectionTypeIcon(connection.type) }}
-                </v-icon>
-              </template>
-
-              <v-list-item-title>{{ connection.name }}</v-list-item-title>
-              <v-list-item-subtitle>{{ connection.type }}</v-list-item-subtitle>
-
-              <template #append>
-                <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click.stop="deleteConnection(connection.id)" />
-              </template>
-            </v-list-item>
-          </v-list>
-
-          <v-card-text v-if="connections.length === 0" class="text-center text-medium-emphasis"> Keine Verbindungen definiert </v-card-text>
-        </v-card>
+        <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-id="selectedConnectionId" empty-text="Keine Verbindungen definiert" title-field="name" :icon-map="connectionIconMap" :color-map="connectionColorMap" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
       </v-col>
 
       <!-- Editor (mitte) -->
@@ -137,6 +111,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import type { GraphDataModel } from '@maxgraph/core'
+import EditorEntityList from './EditorEntityList.vue'
 
 // Types
 interface ConnectionStyle {
@@ -334,28 +309,23 @@ const deleteConnection = (connectionId: string) => {
   }
 }
 
-const getConnectionTypeColor = (type: string) => {
-  const colors: Record<string, string> = {
-    association: 'blue',
-    inheritance: 'green',
-    composition: 'red',
-    aggregation: 'orange',
-    dependency: 'purple',
-    realization: 'teal'
-  }
-  return colors[type] || 'grey'
+// Icon und Color Maps für EntityList
+const connectionIconMap = {
+  association: 'mdi-minus',
+  inheritance: 'mdi-triangle-outline',
+  composition: 'mdi-rhombus',
+  aggregation: 'mdi-rhombus-outline',
+  dependency: 'mdi-dots-horizontal',
+  realization: 'mdi-triangle'
 }
 
-const getConnectionTypeIcon = (type: string) => {
-  const icons: Record<string, string> = {
-    association: 'mdi-minus',
-    inheritance: 'mdi-triangle-outline',
-    composition: 'mdi-rhombus',
-    aggregation: 'mdi-rhombus-outline',
-    dependency: 'mdi-dots-horizontal',
-    realization: 'mdi-triangle'
-  }
-  return icons[type] || 'mdi-connection'
+const connectionColorMap = {
+  association: 'blue',
+  inheritance: 'green',
+  composition: 'red',
+  aggregation: 'orange',
+  dependency: 'purple',
+  realization: 'teal'
 }
 
 const updateCanvasPreview = () => {
