@@ -16,6 +16,7 @@
           <v-btn value="elements" prepend-icon="mdi-shape"> Elemente </v-btn>
           <v-btn value="connections" prepend-icon="mdi-connection"> Verbindungen </v-btn>
           <v-btn value="syntax" prepend-icon="mdi-code-braces"> Syntax </v-btn>
+          <v-btn value="settings" prepend-icon="mdi-cog"> Globale Einstellungen </v-btn>
         </v-btn-toggle>
       </v-card-title>
     </v-card>
@@ -36,6 +37,11 @@
       <div v-show="activeEditor === 'syntax'" class="editor-panel">
         <SyntaxEditor />
       </div>
+
+      <!-- Globale Einstellungen -->
+      <div v-show="activeEditor === 'settings'" class="editor-panel">
+        <GlobalSettingsEditor />
+      </div>
     </div>
   </v-container>
 </template>
@@ -47,6 +53,7 @@ import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import ElementEditor from '@/components/modeling/ElementEditor.vue'
 import ConnectionEditor from '@/components/modeling/ConnectionEditor.vue'
 import SyntaxEditor from '@/components/modeling/SyntaxEditor.vue'
+import GlobalSettingsEditor from '@/components/modeling/GlobalSettingsEditor.vue'
 
 // Props für die Route-Parameter
 interface Props {
@@ -58,7 +65,7 @@ const route = useRoute()
 const { languages, currentLanguage, setCurrentLanguage, initializeWithExampleData } = useDiagramLanguages()
 
 // Active Editor State
-const activeEditor = ref<'elements' | 'connections' | 'syntax'>('elements')
+const activeEditor = ref<'elements' | 'connections' | 'syntax' | 'settings'>('elements')
 
 // Sprachen-ID aus Route laden
 const loadLanguageFromRoute = () => {

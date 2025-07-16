@@ -44,7 +44,7 @@ import { ShapeRegistry } from '@maxgraph/core'
 import type { GraphDataModel } from '@maxgraph/core'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
-import type { DiagramElement, ChildElement } from '@/model/DiagramLanguage'
+import type { DiagramElement, ChildElement } from '@/model/Element'
 import EditorEntityList from './EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import ElementEditorForm from './form/ElementEditorForm.vue'
@@ -328,6 +328,47 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
   // Shape-Name ermitteln
   const shapeName = definition.type === 'canvas2d' ? definition.id : definition.predefinedShape || 'rectangle'
 
+  // Spezielle Swimlane-Behandlung
+  const isSwimlane = definition.predefinedShape === 'swimlane'
+
+  // Style mit Swimlane-spezifischen Eigenschaften
+  const cellStyle: any = {
+    ...definition.style,
+    shape: shapeName,
+    editable: true,
+    resizable: true,
+    selectable: true,
+    connectable: definition.connectable ?? true
+  }
+
+  // Füge Swimlane-spezifische Style-Properties hinzu
+  if (isSwimlane && definition.style) {
+    // Basierend auf Swimlanes.js Beispiel
+    cellStyle.shape = 'swimlane'
+    cellStyle.verticalAlign = 'middle'
+    cellStyle.labelBackgroundColor = definition.style.labelBackgroundColor || 'white'
+    cellStyle.fontSize = definition.style.fontSize || 11
+    cellStyle.startSize = definition.style.startSize || 22
+    cellStyle.horizontal = definition.style.horizontal || false
+    cellStyle.fontColor = definition.style.fontColor || 'black'
+    cellStyle.strokeColor = definition.style.strokeColor || 'black'
+    cellStyle.foldable = definition.style.foldable !== false // Default true
+
+    // Entferne fillColor für Swimlanes (wie im Beispiel)
+    delete cellStyle.fillColor
+
+    // Verbindungsregeln
+    if (definition.style.allowDanglingEdges !== undefined) {
+      cellStyle.allowDanglingEdges = definition.style.allowDanglingEdges
+    }
+    if (definition.style.dropEnabled !== undefined) {
+      cellStyle.dropEnabled = definition.style.dropEnabled
+    }
+    if (definition.style.splitEnabled !== undefined) {
+      cellStyle.splitEnabled = definition.style.splitEnabled
+    }
+  }
+
   // Haupt-Element erstellen
   const mainElement = canvas.graph.insertVertex({
     parent: parent,
@@ -337,23 +378,36 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
     y,
     width,
     height,
-    style: {
-      ...definition.style,
-      shape: shapeName,
-      editable: true,
-      resizable: true,
-      selectable: true,
-      connectable: definition.connectable ?? true
-    },
+    style: cellStyle,
     relative: relative,
     geometryClass: definition.type === 'canvas2d' ? getCustomGeometry(definition) : undefined
   })
 
-  mainElement.setConnectable(definition.connectable ?? true)
+  // Swimlane-spezifische Konfiguration
+  if (isSwimlane) {
+    // Swimlane nicht verbindbar machen (wie im Beispiel)
+    mainElement.setConnectable(false)
+
+    // Spezielle getStyle Funktion für Collapse/Expand Verhalten (aus Swimlanes.js)
+    const originalGetStyle = mainElement.getStyle.bind(mainElement)
+    mainElement.getStyle = function () {
+      if (!this.isCollapsed()) {
+        return originalGetStyle()
+      }
+      // Erstelle eine Kopie des Originalstils für das collapsed Verhalten
+      const style = { ...originalGetStyle() }
+      style.horizontal = true
+      style.align = 'left'
+      style.spacingLeft = 14
+      return style
+    }
+  } else {
+    mainElement.setConnectable(definition.connectable ?? true)
+  }
 
   // Child-Elemente rekursiv hinzufügen
   if ('children' in definition && definition.children) {
-    definition.children.forEach((child) => {
+    definition.children.forEach((child: ChildElement) => {
       const childElement = createElementFromDefinition(child, mainElement)
       if (childElement && child.position.relative) {
         childElement.geometry!.relative = true

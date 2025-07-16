@@ -28,7 +28,7 @@
     <v-alert v-if="isSwimlaneType" type="info" variant="tonal" class="mb-3">
       <v-icon class="mr-2">mdi-view-column</v-icon>
       <strong>Swimlane Element</strong>
-      <div class="text-caption mt-1">Beachten Sie die Swimlane-spezifischen Einstellungen im unteren Bereich des Formulars.</div>
+      <div class="text-caption mt-1">Element-spezifische Einstellungen. Für globale Swimlane-Einstellungen verwenden Sie den Tab "Globale Einstellungen".</div>
     </v-alert>
 
     <!-- Erweiterte Einstellungen -->

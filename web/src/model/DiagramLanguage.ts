@@ -1,6 +1,7 @@
 import type { DiagramElement } from './Element'
 import type { DiagramConnection } from './Connection'
 import type { DiagramSyntax } from './Syntax'
+import type { GlobalSettings } from './GlobalSettings'
 
 export interface DiagramLanguage {
   id: string
@@ -9,4 +10,5 @@ export interface DiagramLanguage {
   elements: DiagramElement[]
   connections: DiagramConnection[]
   syntax: DiagramSyntax[]
+  globalSettings?: GlobalSettings
 }

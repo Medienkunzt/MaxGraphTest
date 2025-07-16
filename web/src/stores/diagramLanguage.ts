@@ -30,7 +30,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     return newLanguage
   }
 
-  const updateLanguage = (id: string, updates: Partial<Pick<DiagramLanguage, 'name' | 'tags'>>) => {
+  const updateLanguage = (id: string, updates: Partial<DiagramLanguage>) => {
     const index = languages.value.findIndex((lang) => lang.id === id)
     if (index !== -1) {
       languages.value[index] = {

@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ConnectionConstraint } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ConnectionConstraint, SwimlaneManager, StackLayout, LayoutManager } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
@@ -272,6 +272,10 @@ const initGraph = () => {
   }
 
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = EdgeStyle.OrthConnector
+
+  // Swimlane-Unterstützung implementieren (basierend auf Swimlanes.js)
+  // Entferne globale Styles - jedes Element hat seine eigenen Einstellungen
+  setupSwimlaneSupport()
 
   parent.value = graph.value.getDefaultParent()
 
@@ -741,6 +745,8 @@ const forceGridRepaint = () => {
     }, 100)
   }
 }
+
+const setupSwimlaneSupport = () => {}
 
 defineExpose({
   graph
