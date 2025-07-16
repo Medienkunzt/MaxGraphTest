@@ -1,7 +1,7 @@
 <template>
   <v-card v-if="selectedItem">
     <v-card-title class="py-2">
-      <span class="text-h6">{{ getDisplayName() }}</span>
+      <span class="text-h6">{{ selectedItem.name }} </span>
     </v-card-title>
 
     <v-divider />
@@ -21,7 +21,6 @@
 </template>
 
 <script setup lang="ts">
-// Props
 interface Props {
   type: 'element' | 'connection' | 'syntax'
   selectedItem?: any
@@ -31,18 +30,9 @@ const props = withDefaults(defineProps<Props>(), {
   selectedItem: undefined
 })
 
-// Emits
 defineEmits<{
   update: []
 }>()
-
-// Methods
-const getDisplayName = (): string => {
-  if (!props.selectedItem) return ''
-
-  // Alle Interfaces haben jetzt konsistente label und name Properties
-  return props.selectedItem.label || props.selectedItem.name || 'Unbenannter Eintrag'
-}
 
 const getEmptyIcon = (): string => {
   switch (props.type) {
