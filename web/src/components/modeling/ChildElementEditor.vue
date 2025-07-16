@@ -50,7 +50,7 @@
     <!-- Predefined Shape Selector -->
     <v-row v-if="localElement.type === 'predefined'">
       <v-col cols="12">
-        <v-select v-model="localElement.predefinedShape" :items="predefinedShapes" label="Vordefinierte Shape" item-title="label" item-value="value" />
+        <v-select v-model="localElement.predefinedShape" :items="predefinedShapes" label="Vordefinierte Shape" item-label="label" item-value="value" />
       </v-col>
     </v-row>
 

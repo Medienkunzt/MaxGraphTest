@@ -99,7 +99,7 @@
       <v-expansion-panel v-if="isSwimlaneType">
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-view-column</v-icon>
-          Swimlane-Einstellungen
+          Element-spezifische Swimlane-Einstellungen
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <v-row>
@@ -159,7 +159,7 @@
 
               <v-textarea v-if="child.type === 'canvas2d'" v-model="child.canvas" label="Canvas2D Befehle" variant="outlined" density="compact" rows="2" class="mb-2" @input="updateAll" />
 
-              <v-select v-if="child.type === 'predefined'" v-model="child.predefinedShape" :items="predefinedShapes" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-2" @update:model-value="updateAll" />
+              <v-select v-if="child.type === 'predefined'" v-model="child.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-2" @update:model-value="updateAll" />
 
               <!-- Position -->
               <v-row>
