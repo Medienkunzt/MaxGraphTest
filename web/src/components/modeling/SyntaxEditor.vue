@@ -8,109 +8,8 @@
 
       <!-- Regel-Editor (mitte) -->
       <v-col cols="4" class="px-1">
-        <v-card v-if="selectedRule">
-          <v-card-title class="py-2">
-            <span class="text-h6">{{ selectedRule.name }}</span>
-          </v-card-title>
-
-          <v-divider />
-
-          <v-card-text>
-            <!-- Grundeinstellungen -->
-            <v-text-field v-model="selectedRule.name" label="Regel-Name" variant="outlined" density="compact" class="mb-3" />
-
-            <v-select v-model="selectedRule.type" :items="ruleTypes" label="Regel-Typ" variant="outlined" density="compact" class="mb-3" />
-
-            <v-select v-model="selectedRule.severity" :items="severityLevels" label="Schweregrad" variant="outlined" density="compact" class="mb-3" />
-
-            <v-textarea v-model="selectedRule.description" label="Beschreibung" variant="outlined" density="compact" rows="2" class="mb-3" />
-
-            <!-- Regel-spezifische Einstellungen -->
-            <v-expansion-panels variant="accordion">
-              <!-- Struktur-Regeln -->
-              <v-expansion-panel v-if="selectedRule.type === 'structure'">
-                <v-expansion-panel-title>
-                  <v-icon class="mr-2">mdi-sitemap</v-icon>
-                  Struktur-Bedingungen
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-select v-model="selectedRule.config.elementType" :items="elementTypes" label="Element-Typ" variant="outlined" density="compact" class="mb-3" multiple chips />
-
-                  <v-text-field v-model.number="selectedRule.config.minOccurrences" label="Minimale Anzahl" variant="outlined" density="compact" type="number" class="mb-3" />
-
-                  <v-text-field v-model.number="selectedRule.config.maxOccurrences" label="Maximale Anzahl" variant="outlined" density="compact" type="number" class="mb-3" />
-
-                  <v-checkbox v-model="selectedRule.config.requiresContainer" label="Benötigt Container-Element" density="compact" />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <!-- Verbindungs-Regeln -->
-              <v-expansion-panel v-if="selectedRule.type === 'connection'">
-                <v-expansion-panel-title>
-                  <v-icon class="mr-2">mdi-connection</v-icon>
-                  Verbindungs-Bedingungen
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-select v-model="selectedRule.config.sourceTypes" :items="elementTypes" label="Erlaubte Quell-Typen" variant="outlined" density="compact" class="mb-3" multiple chips />
-
-                  <v-select v-model="selectedRule.config.targetTypes" :items="elementTypes" label="Erlaubte Ziel-Typen" variant="outlined" density="compact" class="mb-3" multiple chips />
-
-                  <v-select v-model="selectedRule.config.connectionTypes" :items="connectionTypes" label="Erlaubte Verbindungs-Typen" variant="outlined" density="compact" class="mb-3" multiple chips />
-
-                  <v-checkbox v-model="selectedRule.config.allowSelfConnection" label="Selbstverbindung erlauben" density="compact" />
-
-                  <v-checkbox v-model="selectedRule.config.allowMultipleConnections" label="Mehrfachverbindungen erlauben" density="compact" />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <!-- Attribute-Regeln -->
-              <v-expansion-panel v-if="selectedRule.type === 'attribute'">
-                <v-expansion-panel-title>
-                  <v-icon class="mr-2">mdi-format-list-bulleted</v-icon>
-                  Attribut-Bedingungen
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-text-field v-model="selectedRule.config.attributeName" label="Attribut-Name" variant="outlined" density="compact" class="mb-3" />
-
-                  <v-select v-model="selectedRule.config.requiredFor" :items="elementTypes" label="Erforderlich für Element-Typen" variant="outlined" density="compact" class="mb-3" multiple chips />
-
-                  <v-text-field v-model="selectedRule.config.pattern" label="Regex-Pattern (optional)" variant="outlined" density="compact" class="mb-3" hint="Regulärer Ausdruck zur Validierung des Attribut-Werts" persistent-hint />
-
-                  <v-checkbox v-model="selectedRule.config.required" label="Attribut ist erforderlich" density="compact" />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <!-- Naming-Regeln -->
-              <v-expansion-panel v-if="selectedRule.type === 'naming'">
-                <v-expansion-panel-title>
-                  <v-icon class="mr-2">mdi-text</v-icon>
-                  Benennungs-Bedingungen
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-select v-model="selectedRule.config.appliesTo" :items="elementTypes" label="Anwendbar auf Element-Typen" variant="outlined" density="compact" class="mb-3" multiple chips />
-
-                  <v-text-field v-model="selectedRule.config.pattern" label="Benennungs-Pattern" variant="outlined" density="compact" class="mb-3" hint="z.B. [A-Z][a-zA-Z0-9]* für PascalCase" persistent-hint />
-
-                  <v-text-field v-model="selectedRule.config.prefix" label="Erforderlicher Prefix (optional)" variant="outlined" density="compact" class="mb-3" />
-
-                  <v-text-field v-model="selectedRule.config.suffix" label="Erforderlicher Suffix (optional)" variant="outlined" density="compact" class="mb-3" />
-
-                  <v-checkbox v-model="selectedRule.config.caseSensitive" label="Groß-/Kleinschreibung beachten" density="compact" />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-            </v-expansion-panels>
-
-            <!-- Test-Button -->
-            <v-btn color="primary" variant="outlined" prepend-icon="mdi-play" class="mt-4" block @click="testRule"> Regel Testen </v-btn>
-          </v-card-text>
-        </v-card>
-
-        <v-card v-else>
-          <v-card-text class="text-center text-medium-emphasis">
-            <v-icon size="64" class="mb-4">mdi-code-braces</v-icon>
-            <div>Wählen Sie eine Syntax-Regel aus der Liste aus</div>
-          </v-card-text>
-        </v-card>
+        <BasicEditorForm type="syntax" :selected-item="selectedRule" />
+        <SyntaxEditorForm v-if="selectedRule" :selected-rule="selectedRule" @update="updateAll" />
       </v-col>
 
       <!-- Validierungs-Vorschau (rechts) -->
@@ -173,7 +72,9 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
+import BasicEditorForm from './form/BasicEditorForm.vue'
 import type { GraphDataModel } from '@maxgraph/core'
+import SyntaxEditorForm from './form/SyntaxEditorForm.vue'
 
 // Types
 interface SyntaxRuleConfig {
@@ -310,37 +211,12 @@ const canvasConfig = computed(() => ({
   zoomEnabled: true
 }))
 
-// Options
-const ruleTypes = [
-  { title: 'Struktur-Regel', value: 'structure' },
-  { title: 'Verbindungs-Regel', value: 'connection' },
-  { title: 'Attribut-Regel', value: 'attribute' },
-  { title: 'Benennungs-Regel', value: 'naming' }
-]
-
-const severityLevels = [
-  { title: 'Fehler', value: 'error' },
-  { title: 'Warnung', value: 'warning' },
-  { title: 'Information', value: 'info' }
-]
-
-const elementTypes = [
-  { title: 'Klasse', value: 'class' },
-  { title: 'Interface', value: 'interface' },
-  { title: 'Abstrakte Klasse', value: 'abstract-class' },
-  { title: 'Enumeration', value: 'enum' },
-  { title: 'Package', value: 'package' }
-]
-
-const connectionTypes = [
-  { title: 'Vererbung', value: 'inheritance' },
-  { title: 'Association', value: 'association' },
-  { title: 'Komposition', value: 'composition' },
-  { title: 'Aggregation', value: 'aggregation' },
-  { title: 'Abhängigkeit', value: 'dependency' }
-]
-
 // Methods
+const updateAll = () => {
+  // Update logic can be added here if needed
+  console.log('Syntax rule updated')
+  runValidation()
+}
 const selectRule = (ruleId: string) => {
   selectedRuleId.value = ruleId
   runValidation()
@@ -384,13 +260,6 @@ const ruleColorMap = {
   connection: 'green',
   attribute: 'orange',
   naming: 'purple'
-}
-
-const testRule = () => {
-  if (!selectedRule.value) return
-
-  // Hier würde normalerweise die Regel gegen das aktuelle Diagramm getestet
-  runValidation()
 }
 
 const runValidation = () => {

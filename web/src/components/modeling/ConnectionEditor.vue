@@ -8,81 +8,8 @@
 
       <!-- Editor (mitte) -->
       <v-col cols="4" class="px-1">
-        <v-card v-if="selectedConnection">
-          <v-card-title class="py-2">
-            <span class="text-h6">{{ selectedConnection.name }}</span>
-          </v-card-title>
-
-          <v-divider />
-
-          <v-card-text>
-            <!-- Grundeinstellungen -->
-            <v-text-field v-model="selectedConnection.name" label="Name" variant="outlined" density="compact" class="mb-3" />
-
-            <v-select v-model="selectedConnection.type" :items="connectionTypes" label="Verbindungstyp" variant="outlined" density="compact" class="mb-3" />
-
-            <!-- Linien-Style -->
-            <v-expansion-panels variant="accordion">
-              <v-expansion-panel>
-                <v-expansion-panel-title>
-                  <v-icon class="mr-2">mdi-format-paint</v-icon>
-                  Linien-Style
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-select v-model="selectedConnection.style.lineStyle" :items="lineStyles" label="Linienstil" variant="outlined" density="compact" class="mb-3" />
-
-                  <v-text-field v-model="selectedConnection.style.strokeColor" label="Linienfarbe" variant="outlined" density="compact" type="color" class="mb-3" />
-
-                  <v-slider v-model="selectedConnection.style.strokeWidth" label="Linienstärke" min="1" max="10" step="1" thumb-label class="mb-3" />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <v-expansion-panel>
-                <v-expansion-panel-title>
-                  <v-icon class="mr-2">mdi-arrow-right</v-icon>
-                  Pfeilspitzen
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-select v-model="selectedConnection.style.startArrow" :items="arrowTypes" label="Start-Pfeil" variant="outlined" density="compact" class="mb-3" />
-
-                  <v-select v-model="selectedConnection.style.endArrow" :items="arrowTypes" label="End-Pfeil" variant="outlined" density="compact" class="mb-3" />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-
-              <v-expansion-panel>
-                <v-expansion-panel-title>
-                  <v-icon class="mr-2">mdi-text</v-icon>
-                  Beschriftung
-                </v-expansion-panel-title>
-                <v-expansion-panel-text>
-                  <v-text-field v-model="selectedConnection.label.text" label="Label Text" variant="outlined" density="compact" class="mb-3" />
-
-                  <v-select v-model="selectedConnection.label.position" :items="labelPositions" label="Label Position" variant="outlined" density="compact" class="mb-3" />
-
-                  <v-slider v-model="selectedConnection.label.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" />
-                </v-expansion-panel-text>
-              </v-expansion-panel>
-            </v-expansion-panels>
-
-            <!-- Validierungsregeln -->
-            <v-card variant="outlined" class="mt-4">
-              <v-card-subtitle>Validierungsregeln</v-card-subtitle>
-              <v-card-text>
-                <v-checkbox v-model="selectedConnection.validation.allowSelfConnection" label="Selbstverbindung erlauben" density="compact" />
-                <v-checkbox v-model="selectedConnection.validation.allowMultipleConnections" label="Mehrfachverbindungen erlauben" density="compact" />
-                <v-text-field v-model="selectedConnection.validation.sourceElementTypes" label="Erlaubte Quell-Elementtypen (kommagetrennt)" variant="outlined" density="compact" hint="Leer = alle Typen erlaubt" persistent-hint />
-                <v-text-field v-model="selectedConnection.validation.targetElementTypes" label="Erlaubte Ziel-Elementtypen (kommagetrennt)" variant="outlined" density="compact" hint="Leer = alle Typen erlaubt" persistent-hint />
-              </v-card-text>
-            </v-card>
-          </v-card-text>
-        </v-card>
-
-        <v-card v-else>
-          <v-card-text class="text-center text-medium-emphasis">
-            <v-icon size="64" class="mb-4">mdi-connection</v-icon>
-            <div>Wählen Sie eine Verbindung aus der Liste aus</div>
-          </v-card-text>
-        </v-card>
+        <BasicEditorForm type="connection" :selected-item="selectedConnection" />
+        <ConnectionEditorForm v-if="selectedConnection" :selected-connection="selectedConnection" @update="updateAll" />
       </v-col>
 
       <!-- Canvas Vorschau (rechts) -->
@@ -112,6 +39,8 @@ import { ref, computed, watch, onMounted } from 'vue'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import type { GraphDataModel } from '@maxgraph/core'
 import EditorEntityList from './EditorEntityList.vue'
+import BasicEditorForm from './form/BasicEditorForm.vue'
+import ConnectionEditorForm from './form/ConnectionEditorForm.vue'
 
 // Types
 interface ConnectionStyle {
@@ -234,37 +163,11 @@ const canvasConfig = computed(() => ({
   zoomEnabled: true
 }))
 
-// Options
-const connectionTypes = [
-  { title: 'Association', value: 'association' },
-  { title: 'Vererbung', value: 'inheritance' },
-  { title: 'Komposition', value: 'composition' },
-  { title: 'Aggregation', value: 'aggregation' },
-  { title: 'Abhängigkeit', value: 'dependency' },
-  { title: 'Realisierung', value: 'realization' }
-]
-
-const lineStyles = [
-  { title: 'Durchgezogen', value: 'solid' },
-  { title: 'Gestrichelt', value: 'dashed' },
-  { title: 'Gepunktet', value: 'dotted' }
-]
-
-const arrowTypes = [
-  { title: 'Kein Pfeil', value: 'none' },
-  { title: 'Pfeil', value: 'arrow' },
-  { title: 'Dreieck', value: 'triangle' },
-  { title: 'Diamant', value: 'diamond' },
-  { title: 'Kreis', value: 'circle' }
-]
-
-const labelPositions = [
-  { title: 'Mitte', value: 'center' },
-  { title: 'Anfang', value: 'start' },
-  { title: 'Ende', value: 'end' }
-]
-
 // Methods
+const updateAll = () => {
+  // Update logic can be added here if needed
+  console.log('Connection updated')
+}
 const selectConnection = (connectionId: string) => {
   selectedConnectionId.value = connectionId
   updateCanvasPreview()
