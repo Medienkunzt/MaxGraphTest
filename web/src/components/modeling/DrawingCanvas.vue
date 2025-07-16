@@ -241,6 +241,26 @@ const initGraph = () => {
     InternalEvent.disableContextMenu(graphContainer.value!)
   }
 
+  // Graph-Container-Hintergrund transparent machen
+  if (graphContainer.value) {
+    graphContainer.value.style.backgroundColor = 'transparent'
+  }
+
+  // MaxGraph-Container selbst transparent machen
+  if (graph.value.container) {
+    graph.value.container.style.backgroundColor = 'transparent'
+    graph.value.container.style.background = 'transparent'
+  }
+
+  // Auch den SVG-Container transparent machen (falls vorhanden)
+  setTimeout(() => {
+    const svgElement = graph.value?.container.querySelector('svg')
+    if (svgElement) {
+      svgElement.style.backgroundColor = 'transparent'
+      svgElement.style.background = 'transparent'
+    }
+  }, 100)
+
   // Raster-Konfiguration
   graph.value.setGridEnabled(true)
   graph.value.gridSize = gridSize.value
@@ -734,7 +754,7 @@ defineExpose({
   height: calc(100vh - 200px);
   border: 1px solid #ddd;
   border-radius: 4px;
-  background-color: #fafafa;
+  background-color: transparent;
 }
 
 .grid-container {
@@ -743,7 +763,7 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   overflow: hidden;
 }
@@ -754,7 +774,7 @@ defineExpose({
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   opacity: 1;
   background: transparent;

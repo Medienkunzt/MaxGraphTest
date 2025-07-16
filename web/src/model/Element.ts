@@ -7,6 +7,18 @@ export interface ElementStyle {
   fontFamily: string
   align: string
   verticalAlign: string
+  // Swimlane-spezifische Eigenschaften (basierend auf MaxGraph Beispielen)
+  startSize?: number
+  horizontal?: boolean
+  foldable?: boolean
+  labelBackgroundColor?: string
+  layoutType?: string
+  resizeParent?: boolean
+  stackLayout?: boolean
+  // Verbindungsregeln
+  allowDanglingEdges?: boolean
+  dropEnabled?: boolean
+  splitEnabled?: boolean
 }
 
 export interface AnchorPoint {

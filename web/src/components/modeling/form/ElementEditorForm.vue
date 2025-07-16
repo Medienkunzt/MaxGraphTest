@@ -24,6 +24,13 @@
     <!-- Predefined Shape -->
     <v-select v-if="element.type === 'predefined'" v-model="element.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
 
+    <!-- Swimlane Beschreibung -->
+    <v-alert v-if="isSwimlaneType" type="info" variant="tonal" class="mb-3">
+      <v-icon class="mr-2">mdi-view-column</v-icon>
+      <strong>Swimlane Element</strong>
+      <div class="text-caption mt-1">Beachten Sie die Swimlane-spezifischen Einstellungen im unteren Bereich des Formulars.</div>
+    </v-alert>
+
     <!-- Erweiterte Einstellungen -->
     <v-expansion-panels variant="accordion">
       <v-expansion-panel>
@@ -88,6 +95,46 @@
         </v-expansion-panel-text>
       </v-expansion-panel>
 
+      <!-- Swimlane-spezifische Einstellungen -->
+      <v-expansion-panel v-if="isSwimlaneType">
+        <v-expansion-panel-title>
+          <v-icon class="mr-2">mdi-view-column</v-icon>
+          Swimlane-Einstellungen
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <v-row>
+            <v-col cols="6">
+              <v-text-field v-model.number="element.style.startSize" label="Start-Größe" variant="outlined" density="compact" type="number" hint="Größe der Kopfzeile/Startspalte" persistent-hint @input="updateAll" />
+            </v-col>
+            <v-col cols="6">
+              <v-checkbox v-model="element.style.horizontal" label="Horizontal" density="compact" hint="Orientierung der Swimlane" @update:model-value="updateAll" />
+            </v-col>
+          </v-row>
+
+          <v-checkbox v-model="element.style.foldable" label="Einklappbar" density="compact" hint="Swimlane kann eingeklappt werden" class="mb-3" @update:model-value="updateAll" />
+
+          <v-text-field v-model="element.style.labelBackgroundColor" label="Label Hintergrundfarbe" variant="outlined" density="compact" type="color" class="mb-3" @input="updateAll" />
+
+          <!-- Swimlane-spezifische Einstellungen basierend auf den Beispielen -->
+          <v-select v-if="element.predefinedShape === 'swimlane'" v-model="element.style.layoutType" :items="layoutTypes" label="Layout-Verwaltung" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+
+          <v-checkbox v-if="element.predefinedShape === 'swimlane'" v-model="element.style.resizeParent" label="Parent-Größe anpassen" density="compact" hint="Größenänderungen an Parent-Container weitergeben (SwimlaneManager)" class="mb-3" @update:model-value="updateAll" />
+
+          <v-checkbox v-if="element.predefinedShape === 'swimlane'" v-model="element.style.stackLayout" label="Stack-Layout aktivieren" density="compact" hint="Automatisches Stapeln von Child-Elementen" @update:model-value="updateAll" />
+
+          <!-- Zusätzliche Swimlane-Einstellungen -->
+          <v-divider class="my-4" />
+
+          <h4 class="text-subtitle-2 mb-3">Verbindungsregeln</h4>
+
+          <v-checkbox v-model="element.style.allowDanglingEdges" label="Freischwebende Verbindungen erlauben" density="compact" hint="Verbindungen ohne Ziel-Element zulassen" class="mb-2" @update:model-value="updateAll" />
+
+          <v-checkbox v-model="element.style.dropEnabled" label="Drop-Operationen aktivieren" density="compact" hint="Elemente können in diese Swimlane verschoben werden" class="mb-2" @update:model-value="updateAll" />
+
+          <v-checkbox v-model="element.style.splitEnabled" label="Edge-Splitting aktivieren" density="compact" hint="Verbindungen können durch Ablegen geteilt werden" @update:model-value="updateAll" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
       <v-expansion-panel>
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-family-tree</v-icon>
@@ -144,8 +191,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { DiagramElement, ChildElement } from '@/model/DiagramLanguage'
+import { computed, watch } from 'vue'
+import type { DiagramElement } from '@/model/Element'
+import type { ChildElement } from '@/model/Element'
 
 // Props
 interface Props {
@@ -176,12 +224,58 @@ const predefinedShapes = [
   { label: 'Triangle', value: 'triangle' },
   { label: 'Hexagon', value: 'hexagon' },
   { label: 'Cloud', value: 'cloud' },
-  { label: 'Actor', value: 'actor' }
+  { label: 'Actor', value: 'actor' },
+  { label: 'Swimlane', value: 'swimlane' }
 ]
+
+const layoutTypes = [
+  { title: 'Automatisches Layout', value: 'auto' },
+  { title: 'Manuelles Layout', value: 'manual' }
+]
+
+// Computed Properties
+const isSwimlaneType = computed(() => {
+  return element.value.predefinedShape === 'swimlane'
+})
 
 // Methods
 const updateAll = () => {
   emit('update')
+}
+
+const initializeSwimlaneDefaults = () => {
+  if (isSwimlaneType.value && element.value.style) {
+    // Setze Standardwerte für Swimlane-Eigenschaften wenn sie noch nicht existieren
+    if (element.value.style.startSize === undefined) {
+      element.value.style.startSize = 22
+    }
+    if (element.value.style.horizontal === undefined) {
+      element.value.style.horizontal = false
+    }
+    if (element.value.style.foldable === undefined) {
+      element.value.style.foldable = true
+    }
+    if (element.value.style.labelBackgroundColor === undefined) {
+      element.value.style.labelBackgroundColor = 'white'
+    }
+    if (element.value.style.stackLayout === undefined) {
+      element.value.style.stackLayout = true
+    }
+    if (element.value.style.resizeParent === undefined) {
+      element.value.style.resizeParent = false
+    }
+    // Verbindungsregeln für Swimlanes
+    if (element.value.style.allowDanglingEdges === undefined) {
+      element.value.style.allowDanglingEdges = false
+    }
+    if (element.value.style.dropEnabled === undefined) {
+      element.value.style.dropEnabled = true
+    }
+    if (element.value.style.splitEnabled === undefined) {
+      element.value.style.splitEnabled = false
+    }
+    updateAll()
+  }
 }
 
 const addAnchorPoint = () => {
@@ -229,4 +323,15 @@ const removeChildElement = (index: number) => {
     updateAll()
   }
 }
+
+// Watcher für Änderungen der Shape-Typ
+watch(
+  () => element.value.predefinedShape,
+  (newShape) => {
+    if (newShape === 'swimlane') {
+      initializeSwimlaneDefaults()
+    }
+  },
+  { immediate: true }
+)
 </script>
