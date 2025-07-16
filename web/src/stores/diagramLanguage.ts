@@ -313,66 +313,170 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         {
           id: 'inheritance-connection',
           name: 'Vererbung',
-          label: 'Vererbung',
-          targetArrow: 'classicThin',
-          lineStyle: 'solid',
-          color: '#000000',
-          width: 2
+          label: 'erbt von',
+          type: 'inheritance',
+          style: {
+            lineStyle: 'solid',
+            strokeColor: '#000000',
+            strokeWidth: 2,
+            startArrow: 'none',
+            endArrow: 'classic'
+          },
+          labelStyle: {
+            position: 'middle',
+            fontSize: 10
+          },
+          validation: {
+            allowSelfConnection: false,
+            allowMultipleConnections: false,
+            sourceElementTypes: 'class,abstract-class',
+            targetElementTypes: 'class,abstract-class'
+          }
         },
         {
           id: 'implementation-connection',
           name: 'Implementierung',
-          label: 'Implementierung',
-          targetArrow: 'classicThin',
-          lineStyle: 'dashed',
-          color: '#000000',
-          width: 2
+          label: 'implementiert',
+          type: 'realization',
+          style: {
+            lineStyle: 'dashed',
+            strokeColor: '#000000',
+            strokeWidth: 2,
+            startArrow: 'none',
+            endArrow: 'classic'
+          },
+          labelStyle: {
+            position: 'middle',
+            fontSize: 10
+          },
+          validation: {
+            allowSelfConnection: false,
+            allowMultipleConnections: true,
+            sourceElementTypes: 'class',
+            targetElementTypes: 'interface'
+          }
         },
         {
           id: 'association-connection',
           name: 'Assoziation',
-          label: 'Assoziation',
-          lineStyle: 'solid',
-          color: '#000000',
-          width: 1
+          label: '',
+          type: 'association',
+          style: {
+            lineStyle: 'solid',
+            strokeColor: '#000000',
+            strokeWidth: 1,
+            startArrow: 'none',
+            endArrow: 'none'
+          },
+          labelStyle: {
+            position: 'middle',
+            fontSize: 10
+          },
+          validation: {
+            allowSelfConnection: true,
+            allowMultipleConnections: true,
+            sourceElementTypes: '*',
+            targetElementTypes: '*'
+          }
         },
         {
           id: 'aggregation-connection',
           name: 'Aggregation',
-          label: 'Aggregation',
-          sourceArrow: 'diamond',
-          lineStyle: 'solid',
-          color: '#000000',
-          width: 1
+          label: 'besteht aus',
+          type: 'aggregation',
+          style: {
+            lineStyle: 'solid',
+            strokeColor: '#000000',
+            strokeWidth: 1,
+            startArrow: 'diamond',
+            endArrow: 'none'
+          },
+          labelStyle: {
+            position: 'middle',
+            fontSize: 10
+          },
+          validation: {
+            allowSelfConnection: false,
+            allowMultipleConnections: true,
+            sourceElementTypes: 'class',
+            targetElementTypes: 'class'
+          }
         },
         {
           id: 'composition-connection',
           name: 'Komposition',
-          label: 'Komposition',
-          sourceArrow: 'diamondThin',
-          lineStyle: 'solid',
-          color: '#000000',
-          width: 2
+          label: 'enthält',
+          type: 'composition',
+          style: {
+            lineStyle: 'solid',
+            strokeColor: '#000000',
+            strokeWidth: 2,
+            startArrow: 'filled-diamond',
+            endArrow: 'none'
+          },
+          labelStyle: {
+            position: 'middle',
+            fontSize: 10
+          },
+          validation: {
+            allowSelfConnection: false,
+            allowMultipleConnections: true,
+            sourceElementTypes: 'class',
+            targetElementTypes: 'class'
+          }
         }
       ],
       syntax: [
         {
           id: 'class-naming',
           name: 'Klassenbenennung',
+          label: 'Klassenbenennung',
+          type: 'naming',
+          severity: 'warning',
           description: 'Klassen sollten in PascalCase benannt werden',
-          rules: ['Verwende PascalCase für Klassennamen', 'Keine Umlaute in Klassennamen', 'Beginne mit einem Großbuchstaben']
+          config: {
+            appliesTo: ['class', 'abstract-class'],
+            pattern: '[A-Z][a-zA-Z0-9]*',
+            caseSensitive: true
+          }
         },
         {
           id: 'method-visibility',
           name: 'Methodensichtbarkeit',
+          label: 'Methodensichtbarkeit',
+          type: 'attribute',
+          severity: 'info',
           description: 'Sichtbarkeitsmodifikatoren für Methoden',
-          rules: ['+ für public', '- für private', '# für protected', '~ für package']
+          config: {
+            attributeName: 'visibility',
+            requiredFor: ['class', 'abstract-class'],
+            pattern: '[+\\-#~].*'
+          }
         },
         {
           id: 'stereotype-usage',
           name: 'Stereotype-Verwendung',
+          label: 'Stereotype-Verwendung',
+          type: 'attribute',
+          severity: 'info',
           description: 'Verwendung von UML-Stereotypen',
-          rules: ['<<interface>> für Interfaces', '<<abstract>> für abstrakte Klassen', '<<entity>> für Entitäten']
+          config: {
+            attributeName: 'stereotype',
+            pattern: '<<[a-zA-Z]+>>'
+          }
+        },
+        {
+          id: 'inheritance-structure',
+          name: 'Vererbungsstruktur',
+          label: 'Vererbungsstruktur',
+          type: 'structure',
+          severity: 'error',
+          description: 'Vererbungshierarchie sollte nicht zu tief sein',
+          config: {
+            elementType: ['class'],
+            maxOccurrences: 5,
+            requiresContainer: false
+          }
         }
       ]
     }

@@ -8,8 +8,9 @@
 
       <!-- Editor (mitte) -->
       <v-col cols="4" class="px-1">
-        <BasicEditorForm type="connection" :selected-item="selectedConnection" />
-        <ConnectionEditorForm v-if="selectedConnection" :selected-connection="selectedConnection" @update="updateAll" />
+        <BasicEditorForm type="connection" :selected-item="selectedConnection">
+          <ConnectionEditorForm v-if="selectedConnection" :selected-connection="selectedConnection" @update="updateAll" />
+        </BasicEditorForm>
       </v-col>
 
       <!-- Canvas Vorschau (rechts) -->
@@ -280,7 +281,7 @@ const updateCanvasPreview = () => {
       parent,
       source: vertex1,
       target: vertex2,
-      value: conn.label.text,
+      value: conn.label,
       style: {
         strokeColor: conn.style.strokeColor,
         strokeWidth: conn.style.strokeWidth,

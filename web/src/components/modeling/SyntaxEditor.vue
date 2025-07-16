@@ -8,8 +8,9 @@
 
       <!-- Regel-Editor (mitte) -->
       <v-col cols="4" class="px-1">
-        <BasicEditorForm type="syntax" :selected-item="selectedRule" />
-        <SyntaxEditorForm v-if="selectedRule" :selected-rule="selectedRule" @update="updateAll" />
+        <BasicEditorForm type="syntax" :selected-item="selectedRule">
+          <SyntaxEditorForm v-if="selectedRule" :selected-rule="selectedRule" @update="updateAll" />
+        </BasicEditorForm>
       </v-col>
 
       <!-- Validierungs-Vorschau (rechts) -->
@@ -75,44 +76,11 @@ import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import type { GraphDataModel } from '@maxgraph/core'
 import SyntaxEditorForm from './form/SyntaxEditorForm.vue'
+import type { DiagramSyntax } from '@/model/DiagramLanguage'
+import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 
-// Types
-interface SyntaxRuleConfig {
-  // Struktur-Regeln
-  elementType?: string[]
-  minOccurrences?: number
-  maxOccurrences?: number
-  requiresContainer?: boolean
-
-  // Verbindungs-Regeln
-  sourceTypes?: string[]
-  targetTypes?: string[]
-  connectionTypes?: string[]
-  allowSelfConnection?: boolean
-  allowMultipleConnections?: boolean
-
-  // Attribut-Regeln
-  attributeName?: string
-  requiredFor?: string[]
-  pattern?: string
-  required?: boolean
-
-  // Naming-Regeln
-  appliesTo?: string[]
-  prefix?: string
-  suffix?: string
-  caseSensitive?: boolean
-}
-
-interface SyntaxRule {
-  id: string
-  name: string
-  type: string
-  severity: 'error' | 'warning' | 'info'
-  description: string
-  config: SyntaxRuleConfig
-  active: boolean
-}
+// Store
+const store = useDiagramLanguageStore()
 
 interface ValidationResult {
   id: string
@@ -121,65 +89,8 @@ interface ValidationResult {
   element: string
 }
 
-// Dummy Data
-const syntaxRules = ref<SyntaxRule[]>([
-  {
-    id: 'class-naming',
-    name: 'Klassen-Benennung',
-    type: 'naming',
-    severity: 'error',
-    description: 'Klassen müssen mit Großbuchstaben beginnen und PascalCase verwenden',
-    config: {
-      appliesTo: ['class'],
-      pattern: '[A-Z][a-zA-Z0-9]*',
-      caseSensitive: true
-    },
-    active: true
-  },
-  {
-    id: 'inheritance-structure',
-    name: 'Vererbungs-Struktur',
-    type: 'connection',
-    severity: 'error',
-    description: 'Vererbung ist nur zwischen Klassen erlaubt',
-    config: {
-      sourceTypes: ['class'],
-      targetTypes: ['class'],
-      connectionTypes: ['inheritance'],
-      allowSelfConnection: false,
-      allowMultipleConnections: false
-    },
-    active: true
-  },
-  {
-    id: 'min-attributes',
-    name: 'Minimale Attribute',
-    type: 'structure',
-    severity: 'warning',
-    description: 'Klassen sollten mindestens ein Attribut haben',
-    config: {
-      elementType: ['class'],
-      minOccurrences: 1,
-      requiresContainer: false
-    },
-    active: true
-  },
-  {
-    id: 'name-attribute',
-    name: 'Name-Attribut',
-    type: 'attribute',
-    severity: 'error',
-    description: 'Jede Klasse muss ein Name-Attribut haben',
-    config: {
-      attributeName: 'name',
-      requiredFor: ['class'],
-      required: true,
-      pattern: '[a-zA-Z][a-zA-Z0-9_]*'
-    },
-    active: true
-  }
-])
-
+// Data
+const syntaxRules = computed(() => store.currentLanguage?.syntax || [])
 // State
 const selectedRuleId = ref<string>('')
 const canvasModel = ref<GraphDataModel>()
@@ -200,7 +111,7 @@ const validationResults = ref<ValidationResult[]>([
 ])
 
 // Computed
-const selectedRule = computed(() => syntaxRules.value.find((rule) => rule.id === selectedRuleId.value))
+const selectedRule = computed(() => syntaxRules.value.find((rule: DiagramSyntax) => rule.id === selectedRuleId.value))
 
 const canvasConfig = computed(() => ({
   width: '100%',
@@ -223,24 +134,25 @@ const selectRule = (ruleId: string) => {
 }
 
 const addNewRule = () => {
-  const newRule: SyntaxRule = {
+  const newRule: DiagramSyntax = {
     id: `rule_${Date.now()}`,
     name: 'Neue Regel',
     type: 'structure',
     severity: 'warning',
     description: '',
-    config: {},
-    active: true
+    config: {}
   }
 
-  syntaxRules.value.push(newRule)
+  if (store.currentLanguage) {
+    store.currentLanguage.syntax.push(newRule)
+  }
   selectedRuleId.value = newRule.id
 }
 
 const deleteRule = (ruleId: string) => {
-  const index = syntaxRules.value.findIndex((rule) => rule.id === ruleId)
-  if (index !== -1) {
-    syntaxRules.value.splice(index, 1)
+  const index = syntaxRules.value.findIndex((rule: DiagramSyntax) => rule.id === ruleId)
+  if (index !== -1 && store.currentLanguage) {
+    store.currentLanguage.syntax.splice(index, 1)
     if (selectedRuleId.value === ruleId) {
       selectedRuleId.value = syntaxRules.value.length > 0 ? syntaxRules.value[0].id : ''
     }

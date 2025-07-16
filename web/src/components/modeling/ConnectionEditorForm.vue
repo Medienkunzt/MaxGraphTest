@@ -39,11 +39,11 @@
           Beschriftung
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <v-text-field v-model="connection.label" label="Label Text" variant="outlined" density="compact" class="mb-3" @input="updateAll" />
+          <v-text-field v-model="connection.label.text" label="Label Text" variant="outlined" density="compact" class="mb-3" @input="updateAll" />
 
-          <v-select v-model="connection.labelStyle.position" :items="labelPositions" label="Label Position" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+          <v-select v-model="connection.label.position" :items="labelPositions" label="Label Position" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
 
-          <v-slider v-model="connection.labelStyle.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
+          <v-slider v-model="connection.label.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
