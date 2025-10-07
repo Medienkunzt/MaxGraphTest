@@ -211,7 +211,7 @@ const initGraph = () => {
   // Configure panning handler to detect panning state
   const panningHandler = graph.value.getPlugin<PanningHandler>('PanningHandler')
   if (panningHandler) {
-    // Override panning methods to track state
+    // Override panning methods to track state and update view
     const originalMouseDown = (panningHandler as any).mouseDown
     const originalMouseUp = (panningHandler as any).mouseUp
 
@@ -223,6 +223,20 @@ const initGraph = () => {
       setTimeout(() => {
         isPanning.value = false
       }, 100) // Small delay to ensure smooth transition
+      nextTick(() => {
+        if (graph.value) {
+          graph.value.view.validate()
+          graph.value.refresh()
+
+          // Update der Selection
+          const selectionCells = graph.value.getSelectionCells()
+          if (selectionCells && selectionCells.length > 0) {
+            // Force update durch erneutes Setzen der Selection
+            graph.value.setSelectionCells(selectionCells)
+          }
+        }
+      })
+
       return originalMouseUp.call(this, sender, me)
     }
   }
@@ -613,10 +627,18 @@ const emitUpdatedModel = () => {
 // Zoom und Fit Funktionen
 const zoomIn = () => {
   graph.value?.zoomIn()
+  nextTick(() => {
+    graph.value?.view.validate()
+    graph.value?.refresh()
+  })
 }
 
 const zoomOut = () => {
   graph.value?.zoomOut()
+  nextTick(() => {
+    graph.value?.view.validate()
+    graph.value?.refresh()
+  })
 }
 
 const fitToWindow = () => {
@@ -624,6 +646,11 @@ const fitToWindow = () => {
     const fitPlugin = graph.value.getPlugin<FitPlugin>('fit')
     if (fitPlugin) {
       fitPlugin.fit()
+      // Explizite View-Validierung nach Fit
+      nextTick(() => {
+        graph.value?.view.validate()
+        graph.value?.refresh()
+      })
     }
   }
 }
