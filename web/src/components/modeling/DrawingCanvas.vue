@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ConnectionConstraint, SwimlaneManager, StackLayout, LayoutManager } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ConnectionConstraint, SwimlaneManager, StackLayout, LayoutManager, FitPlugin } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
@@ -139,7 +139,7 @@ const canvasGrid = ref<HTMLCanvasElement>()
 const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
-const plugins = ref<GraphPluginConstructor[]>([MyCustomConnectionHandler, PanningHandler, CellEditorHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
+const plugins = ref<GraphPluginConstructor[]>([MyCustomConnectionHandler, PanningHandler, CellEditorHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler, FitPlugin])
 
 onMounted(() => {
   initGraph()
@@ -209,7 +209,7 @@ const initGraph = () => {
   graph.value.setPanning(true)
 
   // Configure panning handler to detect panning state
-  const panningHandler = graph.value.getPlugin('PanningHandler')
+  const panningHandler = graph.value.getPlugin<PanningHandler>('PanningHandler')
   if (panningHandler) {
     // Override panning methods to track state
     const originalMouseDown = (panningHandler as any).mouseDown
@@ -228,7 +228,7 @@ const initGraph = () => {
   }
 
   // Configure selection handler like in Grid.js
-  const selectionHandler = graph.value.getPlugin('SelectionHandler')
+  const selectionHandler = graph.value.getPlugin<SelectionHandler>('SelectionHandler')
   if (selectionHandler) {
     ;(selectionHandler as any).scaleGrid = true
   }
@@ -621,7 +621,10 @@ const zoomOut = () => {
 
 const fitToWindow = () => {
   if (graph.value) {
-    graph.value.fit()
+    const fitPlugin = graph.value.getPlugin<FitPlugin>('fit')
+    if (fitPlugin) {
+      fitPlugin.fit()
+    }
   }
 }
 
