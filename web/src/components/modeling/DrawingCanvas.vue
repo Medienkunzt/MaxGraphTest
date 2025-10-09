@@ -750,29 +750,26 @@ const clearSelection = () => {
 const toggleGrid = () => {
   snapToGrid.value = !snapToGrid.value
   updateSnapToGrid()
+  nextTick(() => {
+    graph.value?.view.validate()
+    graph.value?.refresh()
+  })
 }
 
 // Debug-Funktion um das Raster zu forcieren
 const forceGridRepaint = () => {
-  console.log('Force grid repaint called')
   if (graph.value) {
-    console.log('Graph exists, snapToGrid:', snapToGrid.value)
-    console.log('Canvas:', canvasGrid.value)
-
-    // Mehrfacher Repaint-Versuch
-    setTimeout(() => {
-      graph.value?.view.validateBackground()
-      if ((graph.value as any).repaintGrid) {
-        ;(graph.value as any).repaintGrid()
-      }
-    }, 10)
-
     setTimeout(() => {
       graph.value?.view.validateBackground()
       if ((graph.value as any).repaintGrid) {
         ;(graph.value as any).repaintGrid()
       }
     }, 100)
+
+    nextTick(() => {
+      graph.value?.view.validate()
+      graph.value?.refresh()
+    })
   }
 }
 
