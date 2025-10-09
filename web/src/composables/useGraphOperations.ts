@@ -17,14 +17,45 @@ import { cellArrayUtils } from '@maxgraph/core'
 export function useGraphOperations(graph: Ref<Graph | undefined>, parent?: Ref<Cell | undefined>) {
   /**
    * Löscht alle aktuell ausgewählten Zellen
+   * Löscht auch verbundene Kanten mit
    */
   const deleteSelected = () => {
     if (!graph.value) return
 
     const cells = graph.value.getSelectionCells()
-    if (cells.length > 0) {
-      graph.value.removeCells(cells)
-    }
+    if (cells.length === 0) return
+
+    // Sammle alle zu löschenden Zellen inklusive verbundener Edges
+    const cellsToDelete: Cell[] = []
+
+    cells.forEach((cell) => {
+      cellsToDelete.push(cell)
+
+      // Wenn es ein Knoten ist, sammle alle verbundenen Kanten
+      if (cell.isVertex()) {
+        const edges = graph.value!.getEdges(cell) // Alle verbundenen Kanten
+        edges.forEach((edge) => {
+          if (!cellsToDelete.includes(edge)) {
+            cellsToDelete.push(edge)
+          }
+        })
+      }
+    })
+
+    // Zerstöre die SVG-Shapes aller zu löschenden Zellen
+    cellsToDelete.forEach((cell) => {
+      const state = graph.value!.view.getState(cell)
+      if (state?.shape) {
+        state.shape.destroy()
+      }
+    })
+
+    // Entferne alle gesammelten Zellen
+    graph.value.removeCells(cellsToDelete)
+
+    // View aufräumen
+    graph.value.view.validate()
+    graph.value.refresh()
   }
 
   /**
