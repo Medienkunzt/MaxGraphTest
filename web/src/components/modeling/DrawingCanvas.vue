@@ -33,44 +33,11 @@
           <canvas ref="canvasGrid" class="grid-canvas"></canvas>
         </div>
 
-        <!-- Floating Button Group unten links -->
-        <div class="floating-button-group" :class="{ 'hidden-during-pan': isPanning }">
-          <v-btn-group size="small" density="compact" variant="outlined">
-            <v-btn icon="mdi-magnify-minus" title="Herauszoomen" @click="zoomOut" />
-            <v-btn icon="mdi-fit-to-page" title="An Fenster anpassen" @click="fitToWindow" />
-            <v-btn icon="mdi-magnify-plus" title="Hineinzoomen" @click="zoomIn" />
-            <v-btn :icon="snapToGrid ? 'mdi-grid' : 'mdi-grid-off'" :color="snapToGrid ? 'primary' : 'grey'" title="Raster umschalten" @click="toggleGrid" />
-            <v-btn icon="mdi-refresh" title="Raster neu laden" @click="forceGridRepaint" />
-          </v-btn-group>
-        </div>
+        <!-- Graph Controls Component -->
+        <GraphControls @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
 
-        <!-- Floating Settings Menu unten rechts -->
-        <div class="floating-settings-menu" :class="{ 'hidden-during-pan': isPanning }">
-          <v-menu v-model="settingsMenuOpen" :close-on-content-click="false" location="top">
-            <template #activator="{ props: activatorProps }">
-              <v-btn v-bind="activatorProps" icon="mdi-chevron-up" size="small" density="compact" variant="outlined" title="Einstellungen" :class="{ 'settings-active': settingsMenuOpen }" />
-            </template>
-            <v-card class="settings-card" min-width="280">
-              <v-card-title class="py-2 px-3">
-                <v-icon class="mr-2">mdi-cog</v-icon>
-                Einstellungen
-              </v-card-title>
-              <v-card-text class="py-2 px-3">
-                <v-row dense>
-                  <v-col cols="12">
-                    <v-text-field v-model="gridSize" label="Raster (px)" type="number" density="compact" variant="outlined" min="5" max="100" hint="Empfohlen: 5-25" @input="updateGridSize" />
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field v-model="tolerance" label="Toleranz (px)" type="number" density="compact" variant="outlined" min="1" max="50" hint="Mauserkennung in px" @input="updateTolerance" />
-                  </v-col>
-                  <v-col cols="12">
-                    <v-select v-model="snapToGrid" label="Raster-Snap" :items="snapOptions" density="compact" variant="outlined" @update:model-value="updateSnapToGrid" />
-                  </v-col>
-                </v-row>
-              </v-card-text>
-            </v-card>
-          </v-menu>
-        </div>
+        <!-- Graph Settings Component -->
+        <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" />
       </div>
     </v-card-text>
   </v-card>
@@ -78,8 +45,11 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ConnectionConstraint, SwimlaneManager, StackLayout, LayoutManager, FitPlugin } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, Geometry, MaxToolbar, cellArrayUtils, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, Point, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, FitPlugin } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
+import { provideGraphContext } from '@/composables/useGraphContext'
+import GraphSettings from './GraphSettings.vue'
+import GraphControls from './GraphControls.vue'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
 import img_ellipse from '@/assets/images/ellipse.gif'
@@ -125,14 +95,7 @@ const emit = defineEmits(['update:model'])
 const gridSize = ref(10)
 const snapToGrid = ref(true)
 const tolerance = ref(10)
-const settingsMenuOpen = ref(false)
 const isPanning = ref(false)
-
-// Optionen für Dropdown-Menüs
-const snapOptions = ref([
-  { title: 'Ein', value: true },
-  { title: 'Aus', value: false }
-])
 
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
@@ -140,6 +103,15 @@ const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
 const plugins = ref<GraphPluginConstructor[]>([MyCustomConnectionHandler, PanningHandler, CellEditorHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler, FitPlugin])
+
+// Stelle Graph-Context für Child-Komponenten bereit
+provideGraphContext({
+  graph,
+  isPanning,
+  gridSize,
+  snapToGrid,
+  tolerance
+})
 
 onMounted(() => {
   initGraph()
@@ -813,95 +785,6 @@ defineExpose({
   background: transparent;
 }
 
-.floating-button-group {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  z-index: 10;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  padding: 8px;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 2px 6px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.floating-button-group .v-btn-group {
-  box-shadow: none;
-}
-
-.floating-button-group .v-btn {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  transition: all 0.2s ease;
-}
-
-.floating-button-group .v-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.floating-settings-menu {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  z-index: 10;
-}
-
-.floating-settings-menu .v-btn {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  transition: all 0.2s ease;
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 2px 6px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(8px);
-}
-
-.floating-settings-menu .v-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  transform: translateY(-1px);
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, 0.2),
-    0 3px 8px rgba(0, 0, 0, 0.15);
-}
-
-.floating-settings-menu .v-btn.settings-active {
-  background: rgba(25, 118, 210, 0.1);
-  border-color: #1976d2;
-  color: #1976d2;
-}
-
-.settings-card {
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.15),
-    0 4px 12px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(12px);
-}
-
-.settings-card .v-card-title {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  font-size: 0.875rem;
-  font-weight: 600;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.settings-card .v-text-field,
-.settings-card .v-select {
-  margin-bottom: 8px;
-}
-
-.settings-card .v-text-field :deep(.v-field__input),
-.settings-card .v-select :deep(.v-field__input) {
-  min-height: 32px !important;
-  padding: 4px 8px !important;
-  font-size: 0.875rem;
-}
-
 .toolbar-actions {
   display: flex;
   align-items: center;
@@ -933,13 +816,6 @@ defineExpose({
   padding: 4px 8px; /* Kompakteres Padding */
   gap: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Verstecke floating controls während des Pannens */
-.hidden-during-pan {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
 }
 
 /* Kompakte Eingabefelder */
