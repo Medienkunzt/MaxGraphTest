@@ -335,7 +335,7 @@ const buildLanguageShapes = computed(() => {
 
         // Build geometry with connection constraints from anchor points
         const geometry = new Geometry(x, y, width, height)
-        
+
         if (element.anchorPoints && element.anchorPoints.length > 0) {
           const constraints = element.anchorPoints.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
           ;(geometry as any).constraints = constraints
@@ -392,12 +392,7 @@ const setupSwimlaneSupport = () => {
     isPool(cell: Cell | null): boolean
     isSwimlane(cell: Cell | null): boolean
     getSwimlaneAt(x: number, y: number, parent?: Cell | null): Cell | null
-    getDropTarget(
-      cells: Cell[] | null,
-      evt?: Event | null,
-      target?: Cell | null,
-      clone?: boolean
-    ): Cell | null
+    getDropTarget(cells: Cell[] | null, evt?: Event | null, target?: Cell | null, clone?: boolean): Cell | null
     getPointForEvent(evt: MouseEvent): Point
   }
 
