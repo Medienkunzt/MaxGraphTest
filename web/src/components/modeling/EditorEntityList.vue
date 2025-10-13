@@ -108,6 +108,9 @@ const getDefaultIcon = (type: string) => {
     ellipse: 'mdi-ellipse-outline',
     diamond: 'mdi-rhombus-outline',
     triangle: 'mdi-triangle-outline',
+    canvas2d: 'mdi-draw',
+    predefined: 'mdi-shape',
+    swimlane: 'mdi-view-column',
     class: 'mdi-file-outline',
     interface: 'mdi-file-code-outline',
     // Connection types
@@ -133,6 +136,9 @@ const getDefaultColor = (type: string) => {
     ellipse: 'green',
     diamond: 'orange',
     triangle: 'purple',
+    canvas2d: 'indigo',
+    predefined: 'cyan',
+    swimlane: 'deep-purple',
     class: 'blue',
     interface: 'teal',
     // Connection types

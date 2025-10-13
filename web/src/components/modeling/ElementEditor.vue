@@ -142,7 +142,8 @@ const elementIconMap = {
   circle: 'mdi-circle-outline',
   canvas2d: 'mdi-draw',
   predefined: 'mdi-shape',
-  image: 'mdi-image'
+  image: 'mdi-image',
+  swimlane: 'mdi-view-column'
 }
 
 const elementColorMap = {
@@ -153,7 +154,8 @@ const elementColorMap = {
   circle: 'teal',
   canvas2d: 'indigo',
   predefined: 'cyan',
-  image: 'pink'
+  image: 'pink',
+  swimlane: 'deep-purple'
 }
 
 const updateCanvasPreview = () => {
@@ -188,81 +190,85 @@ const updateCanvasPreview = () => {
     try {
       // Erstelle Element mit korrekten MaxGraph-Strukturen
       const element = selectedElement.value!
+      let createdCell: Cell | null = null
 
-      // Style für MaxGraph zusammenstellen
-      const style: any = {
-        strokeColor: element.style.strokeColor,
-        fillColor: element.style.fillColor,
-        strokeWidth: element.style.strokeWidth,
-        fontSize: element.style.fontSize,
-        fontColor: element.style.fontColor,
-        fontFamily: element.style.fontFamily || 'Arial',
-        align: element.style.align || 'center',
-        verticalAlign: element.style.verticalAlign || 'middle',
-        editable: true,
-        resizable: element.resizable,
-        movable: element.movable,
-        connectable: element.connectable
+      if (element.type === 'swimlane') {
+        createElementFromDefinition(element, parent)
+      } else {
+        // Style für MaxGraph zusammenstellen
+        const style: any = {
+          strokeColor: element.style.strokeColor,
+          fillColor: element.style.fillColor,
+          strokeWidth: element.style.strokeWidth,
+          fontSize: element.style.fontSize,
+          fontColor: element.style.fontColor,
+          fontFamily: element.style.fontFamily || 'Arial',
+          align: element.style.align || 'center',
+          verticalAlign: element.style.verticalAlign || 'middle',
+          editable: true,
+          resizable: element.resizable,
+          movable: element.movable,
+          connectable: element.connectable
+        }
+
+        // Shape bestimmen
+        if (element.type === 'predefined' && element.predefinedShape) {
+          style.shape = element.predefinedShape
+        } else if (element.type === 'canvas2d') {
+          // Verwende die registrierte Custom Shape
+          style.shape = element.id
+        }
+
+        // Erstelle Geometry mit Connection Constraints
+        const geometry = new Geometry(50, 50, element.width, element.height)
+
+        // Anchor Points als Connection Constraints hinzufügen
+        if (element.anchorPoints && element.anchorPoints.length > 0) {
+          const constraints = element.anchorPoints.map((point: any) => new ConnectionConstraint(new Point(point.x, point.y), false))
+
+          // Füge Constraints zur Geometry hinzu (MaxGraph-spezifisch)
+          ;(geometry as any).constraints = constraints
+        }
+
+        // Erstelle Cell
+        createdCell = new Cell(element.label, geometry, style)
+        createdCell.setVertex(true)
+        createdCell.setConnectable(element.connectable)
+
+        // Füge Element zum Graph hinzu
+        graph.addCell(createdCell, parent)
+
+        // Child-Elemente hinzufügen
+        if (element.children && element.children.length > 0) {
+          element.children.forEach((child: any) => {
+            const childGeometry = new Geometry(child.position.x, child.position.y, child.position.width, child.position.height)
+            childGeometry.relative = child.position.relative
+
+            const childStyle: any = {
+              ...child.style,
+              shape: child.predefinedShape || 'label'
+            }
+
+            const childCell = new Cell(child.label, childGeometry, childStyle)
+            childCell.setVertex(true)
+            childCell.setConnectable(child.connectable || false)
+
+            graph.addCell(childCell, createdCell as Cell)
+          })
+        }
       }
 
-      // Shape bestimmen
-      if (element.type === 'predefined' && element.predefinedShape) {
-        style.shape = element.predefinedShape
-      } else if (element.type === 'canvas2d') {
-        // Verwende die registrierte Custom Shape
-        style.shape = element.id
-      }
-
-      // Erstelle Geometry mit Connection Constraints
-      const geometry = new Geometry(50, 50, element.width, element.height)
-
-      // Anchor Points als Connection Constraints hinzufügen
-      if (element.anchorPoints && element.anchorPoints.length > 0) {
-        const constraints = element.anchorPoints.map((point: any) => new ConnectionConstraint(new Point(point.x, point.y), false))
-
-        // Füge Constraints zur Geometry hinzu (MaxGraph-spezifisch)
-        ;(geometry as any).constraints = constraints
-      }
-
-      // Erstelle Cell
-      const cell = new Cell(element.label, geometry, style)
-      cell.setVertex(true)
-      cell.setConnectable(element.connectable)
-
-      // Füge Element zum Graph hinzu
-      graph.addCell(cell, parent)
-
-      // Child-Elemente hinzufügen
-      if (element.children && element.children.length > 0) {
-        element.children.forEach((child: any) => {
-          const childGeometry = new Geometry(child.position.x, child.position.y, child.position.width, child.position.height)
-          childGeometry.relative = child.position.relative
-
-          const childStyle: any = {
-            ...child.style,
-            shape: child.predefinedShape || 'label'
-          }
-
-          const childCell = new Cell(child.label, childGeometry, childStyle)
-          childCell.setVertex(true)
-          childCell.setConnectable(child.connectable || false)
-
-          graph.addCell(childCell, cell)
-        })
-      }
-
-      // View aktualisieren
-      graph.refresh()
-      graph.view.validate()
+      // KEINE manuellen refresh/validate Aufrufe - wird automatisch durch endUpdate() gemacht
+      // (wie in Swimlanes.js Beispiel)
 
       // Nach kurzer Verzögerung fit to window
       nextTick(() => {
         try {
-          if (graph && graph.fit) {
+          if (graph && graph.fit && element.type !== 'swimlane') {
             // graph.fit()
             // Element selektieren um Anchor Points zu zeigen
-            if (element.anchorPoints.length > 0) {
-              graph.setSelectionCell(cell)
+            if (element.anchorPoints.length > 0 && createdCell) {
+              graph.setSelectionCell(createdCell)
             }
           }
         } catch (fitError) {
@@ -302,14 +308,13 @@ const addElementToCanvas = () => {
   const canvas = drawingCanvasRef.value
   if (canvas && canvas.graph && elementDefinition.value) {
     const parent = canvas.graph.getDefaultParent()
-    canvas.graph.getDataModel().beginUpdate()
-    try {
-      createElementFromDefinition(elementDefinition.value, parent)
-      canvas.graph.refresh()
-      canvas.graph.view.validate()
-    } finally {
-      canvas.graph.getDataModel().endUpdate()
-    }
+    // Verwende batchUpdate wie im Swimlanes.js Beispiel
+    canvas.graph.batchUpdate(() => {
+      if (elementDefinition.value) {
+        createElementFromDefinition(elementDefinition.value, parent)
+      }
+      // KEINE manuellen refresh/validate Aufrufe
+    })
   }
 }
 
@@ -326,47 +331,59 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
   const relative = isChildElement ? definition.position.relative : false
 
   // Shape-Name ermitteln
-  const shapeName = definition.type === 'canvas2d' ? definition.id : definition.predefinedShape || 'rectangle'
+  const shapeName = definition.type === 'canvas2d' 
+    ? definition.id 
+    : definition.type === 'swimlane' 
+      ? 'swimlane' 
+      : definition.predefinedShape || 'rectangle'
 
   // Spezielle Swimlane-Behandlung
-  const isSwimlane = definition.predefinedShape === 'swimlane'
+  const isSwimlane = definition.type === 'swimlane'
 
-  // Style mit Swimlane-spezifischen Eigenschaften
-  const cellStyle: any = {
-    ...definition.style,
-    shape: shapeName,
-    editable: true,
-    resizable: true,
-    selectable: true,
-    connectable: definition.connectable ?? true
+  // Style-Objekt erstellen
+  let cellStyle: any
+
+  if (isSwimlane) {
+    // Swimlane-Style basierend auf Swimlanes.js Beispiel
+    // WICHTIG: Nicht definition.style spreaden, sondern explizit setzen
+    cellStyle = {
+      shape: 'swimlane',
+      verticalAlign: 'middle',
+      labelBackgroundColor: definition.style?.labelBackgroundColor || 'white',
+      fontSize: definition.style?.fontSize || 11,
+      startSize: definition.style?.startSize || 22,
+      horizontal: definition.style?.horizontal || false,
+      fontColor: definition.style?.fontColor || 'black',
+      strokeColor: definition.style?.strokeColor || 'black',
+      foldable: definition.style?.foldable !== false,
+      editable: true,
+      resizable: true,
+      selectable: true
+    }
+    // fillColor wird NICHT gesetzt (wie im Beispiel)
+  } else {
+    // Normaler Style für andere Shapes
+    cellStyle = {
+      ...definition.style,
+      shape: shapeName,
+      editable: true,
+      resizable: true,
+      selectable: true,
+      connectable: definition.connectable ?? true
+    }
   }
 
-  // Füge Swimlane-spezifische Style-Properties hinzu
-  if (isSwimlane && definition.style) {
-    // Basierend auf Swimlanes.js Beispiel
-    cellStyle.shape = 'swimlane'
-    cellStyle.verticalAlign = 'middle'
-    cellStyle.labelBackgroundColor = definition.style.labelBackgroundColor || 'white'
-    cellStyle.fontSize = definition.style.fontSize || 11
-    cellStyle.startSize = definition.style.startSize || 22
-    cellStyle.horizontal = definition.style.horizontal || false
-    cellStyle.fontColor = definition.style.fontColor || 'black'
-    cellStyle.strokeColor = definition.style.strokeColor || 'black'
-    cellStyle.foldable = definition.style.foldable !== false // Default true
-
-    // Entferne fillColor für Swimlanes (wie im Beispiel)
-    delete cellStyle.fillColor
-
-    // Verbindungsregeln
-    if (definition.style.allowDanglingEdges !== undefined) {
-      cellStyle.allowDanglingEdges = definition.style.allowDanglingEdges
+  // getStyle Funktion für Collapse/Expand (aus Swimlanes.js)
+  const getStyle = function (this: any) {
+    if (!this.isCollapsed()) {
+      return this.style
     }
-    if (definition.style.dropEnabled !== undefined) {
-      cellStyle.dropEnabled = definition.style.dropEnabled
-    }
-    if (definition.style.splitEnabled !== undefined) {
-      cellStyle.splitEnabled = definition.style.splitEnabled
-    }
+    // Erstelle eine Kopie des Originalstils für das collapsed Verhalten
+    const style = { ...this.style }
+    style.horizontal = true
+    style.align = 'left'
+    style.spacingLeft = 14
+    return style
   }
 
   // Haupt-Element erstellen
@@ -383,24 +400,13 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
     geometryClass: definition.type === 'canvas2d' ? getCustomGeometry(definition) : undefined
   })
 
+  // Setze getStyle für alle Elemente (wie im Swimlanes.js Beispiel)
+  mainElement.getStyle = getStyle
+
   // Swimlane-spezifische Konfiguration
   if (isSwimlane) {
     // Swimlane nicht verbindbar machen (wie im Beispiel)
     mainElement.setConnectable(false)
-
-    // Spezielle getStyle Funktion für Collapse/Expand Verhalten (aus Swimlanes.js)
-    const originalGetStyle = mainElement.getStyle.bind(mainElement)
-    mainElement.getStyle = function () {
-      if (!this.isCollapsed()) {
-        return originalGetStyle()
-      }
-      // Erstelle eine Kopie des Originalstils für das collapsed Verhalten
-      const style = { ...originalGetStyle() }
-      style.horizontal = true
-      style.align = 'left'
-      style.spacingLeft = 14
-      return style
-    }
   } else {
     mainElement.setConnectable(definition.connectable ?? true)
   }

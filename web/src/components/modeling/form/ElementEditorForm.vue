@@ -16,7 +16,7 @@
     </v-row>
 
     <!-- Shape-Typ -->
-    <v-select v-model="element.type" :items="shapeTypes" label="Shape-Typ" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+    <v-select v-model="element.type" :items="shapeTypes" label="Shape-Typ" variant="outlined" density="compact" class="mb-3" @update:model-value="onTypeChange" />
 
     <!-- Canvas2D Editor -->
     <v-textarea v-if="element.type === 'canvas2d'" v-model="element.canvas" label="Canvas2D Befehle" variant="outlined" density="compact" rows="4" class="mb-3" hint="Befehle: MOVE x y, LINE x y, RECT x y w h, ELLIPSE x y w h" persistent-hint @input="updateAll" />
@@ -25,10 +25,10 @@
     <v-select v-if="element.type === 'predefined'" v-model="element.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
 
     <!-- Swimlane Beschreibung -->
-    <v-alert v-if="isSwimlaneType" type="info" variant="tonal" class="mb-3">
+    <v-alert v-if="element.type === 'swimlane'" type="info" variant="tonal" class="mb-3">
       <v-icon class="mr-2">mdi-view-column</v-icon>
-      <strong>Swimlane Element</strong>
-      <div class="text-caption mt-1">Element-spezifische Einstellungen. Für globale Swimlane-Einstellungen verwenden Sie den Tab "Globale Einstellungen".</div>
+      <strong>Swimlane Container-Element</strong>
+      <div class="text-caption mt-1">Swimlanes eignen sich perfekt für Container wie Klassendiagramme, Use-Cases und andere strukturierte Elemente.</div>
     </v-alert>
 
     <!-- Erweiterte Einstellungen -->
@@ -99,7 +99,7 @@
       <v-expansion-panel v-if="isSwimlaneType">
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-view-column</v-icon>
-          Element-spezifische Swimlane-Einstellungen
+          Swimlane-Einstellungen
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <v-row>
@@ -116,11 +116,11 @@
           <v-text-field v-model="element.style.labelBackgroundColor" label="Label Hintergrundfarbe" variant="outlined" density="compact" type="color" class="mb-3" @input="updateAll" />
 
           <!-- Swimlane-spezifische Einstellungen basierend auf den Beispielen -->
-          <v-select v-if="element.predefinedShape === 'swimlane'" v-model="element.style.layoutType" :items="layoutTypes" label="Layout-Verwaltung" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+          <v-select v-if="isSwimlaneType" v-model="element.style.layoutType" :items="layoutTypes" label="Layout-Verwaltung" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
 
-          <v-checkbox v-if="element.predefinedShape === 'swimlane'" v-model="element.style.resizeParent" label="Parent-Größe anpassen" density="compact" hint="Größenänderungen an Parent-Container weitergeben (SwimlaneManager)" class="mb-3" @update:model-value="updateAll" />
+          <v-checkbox v-if="isSwimlaneType" v-model="element.style.resizeParent" label="Parent-Größe anpassen" density="compact" hint="Größenänderungen an Parent-Container weitergeben (SwimlaneManager)" class="mb-3" @update:model-value="updateAll" />
 
-          <v-checkbox v-if="element.predefinedShape === 'swimlane'" v-model="element.style.stackLayout" label="Stack-Layout aktivieren" density="compact" hint="Automatisches Stapeln von Child-Elementen" @update:model-value="updateAll" />
+          <v-checkbox v-if="isSwimlaneType" v-model="element.style.stackLayout" label="Stack-Layout aktivieren" density="compact" hint="Automatisches Stapeln von Child-Elementen" @update:model-value="updateAll" />
 
           <!-- Zusätzliche Swimlane-Einstellungen -->
           <v-divider class="my-4" />
@@ -141,12 +141,21 @@
           Child Elemente
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <div class="d-flex align-center mb-3">
-            <span class="text-subtitle-2 mr-3">Verschachtelte Elemente</span>
-            <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addChildElement"> Child hinzufügen </v-btn>
-          </div>
+          <!-- Swimlane Container Editor -->
+          <SwimlaneContainerEditor
+            v-if="isSwimlaneType"
+            :element="element"
+            @update="updateAll"
+          />
 
-          <v-card v-for="(child, index) in element.children" :key="child.id" variant="outlined" class="mb-3">
+          <!-- Standard Child-Elemente Editor -->
+          <div v-if="!isSwimlaneType || (element.children && element.children.length === 0)">
+            <div class="d-flex align-center mb-3">
+              <span class="text-subtitle-2 mr-3">Verschachtelte Elemente</span>
+              <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addChildElement"> Child hinzufügen </v-btn>
+            </div>
+
+            <v-card v-for="(child, index) in element.children" :key="child.id" variant="outlined" class="mb-3">
             <v-card-title class="d-flex align-center justify-space-between py-2">
               <span class="text-subtitle-2">{{ child.label }}</span>
               <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="removeChildElement(index)" />
@@ -183,17 +192,17 @@
             </v-card-text>
           </v-card>
 
-          <v-alert v-if="element.children.length === 0" type="info" variant="tonal" class="mt-2"> Keine Child Elemente definiert </v-alert>
+            <v-alert v-if="element.children.length === 0" type="info" variant="tonal" class="mt-2"> Keine Child Elemente definiert </v-alert>
+          </div>
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
   </div>
-</template>
-
-<script setup lang="ts">
+</template><script setup lang="ts">
 import { computed, watch } from 'vue'
 import type { DiagramElement } from '@/model/Element'
 import type { ChildElement } from '@/model/Element'
+import SwimlaneContainerEditor from './SwimlaneContainerEditor.vue'
 
 // Props
 interface Props {
@@ -213,7 +222,8 @@ const emit = defineEmits<{
 // Options
 const shapeTypes = [
   { title: 'Canvas2D Shape', value: 'canvas2d' },
-  { title: 'Vordefinierte Shape', value: 'predefined' }
+  { title: 'Vordefinierte Shape', value: 'predefined' },
+  { title: 'Swimlane Container', value: 'swimlane' }
 ]
 
 const predefinedShapes = [
@@ -224,8 +234,7 @@ const predefinedShapes = [
   { label: 'Triangle', value: 'triangle' },
   { label: 'Hexagon', value: 'hexagon' },
   { label: 'Cloud', value: 'cloud' },
-  { label: 'Actor', value: 'actor' },
-  { label: 'Swimlane', value: 'swimlane' }
+  { label: 'Actor', value: 'actor' }
 ]
 
 const layoutTypes = [
@@ -235,12 +244,19 @@ const layoutTypes = [
 
 // Computed Properties
 const isSwimlaneType = computed(() => {
-  return element.value.predefinedShape === 'swimlane'
+  return element.value.type === 'swimlane'
 })
 
 // Methods
 const updateAll = () => {
   emit('update')
+}
+
+const onTypeChange = (newType: string) => {
+  if (newType === 'swimlane') {
+    initializeSwimlaneDefaults()
+  }
+  updateAll()
 }
 
 const initializeSwimlaneDefaults = () => {
@@ -326,9 +342,9 @@ const removeChildElement = (index: number) => {
 
 // Watcher für Änderungen der Shape-Typ
 watch(
-  () => element.value.predefinedShape,
-  (newShape) => {
-    if (newShape === 'swimlane') {
+  () => element.value.type,
+  (newType) => {
+    if (newType === 'swimlane') {
       initializeSwimlaneDefaults()
     }
   },

@@ -29,7 +29,7 @@ export interface AnchorPoint {
 export interface ChildElement {
   id: string
   label: string
-  type: 'canvas2d' | 'predefined'
+  type: 'canvas2d' | 'predefined' | 'swimlane'
   position: {
     x: number
     y: number
@@ -52,7 +52,7 @@ export interface DiagramElement {
   y: number
   width: number
   height: number
-  type: 'canvas2d' | 'predefined'
+  type: 'canvas2d' | 'predefined' | 'swimlane'
   canvas?: string
   predefinedShape?: string
   style: ElementStyle

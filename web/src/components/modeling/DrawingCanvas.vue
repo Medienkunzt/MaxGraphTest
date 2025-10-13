@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, SwimlaneManager, StackLayout, LayoutManager } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -142,6 +142,11 @@ onMounted(() => {
   })
 
   graph.value!.getDataModel().addListener(InternalEvent.CHANGE, () => {
+    // Verhindere unnötige Refreshes während Batch-Updates
+    if (graph.value?.getDataModel().updateLevel && graph.value.getDataModel().updateLevel > 0) {
+      return
+    }
+    
     graph.value?.refresh()
     graph.value?.view.validate()
     emitUpdatedModel()
@@ -278,7 +283,107 @@ const emitUpdatedModel = () => {
   emit('update:model', graph.value!.getDataModel())
 }
 
-const setupSwimlaneSupport = () => {}
+const setupSwimlaneSupport = () => {
+  if (!graph.value) return
+
+  const g = graph.value
+  const model = g.getDataModel()
+
+  // Erweiterte Graph-Typdefinition für Swimlane-spezifische Methoden
+  type CustomGraph = Graph & {
+    isPool(cell: Cell | null): boolean
+    isSwimlane(cell: Cell | null): boolean
+  }
+
+  // Füge Hilfsfunktion hinzu um Pools zu identifizieren
+  ;(g as CustomGraph).isPool = function (cell: Cell | null) {
+    const parent = cell?.getParent()
+    return parent?.getParent() == model.getRoot()
+  }
+
+  // SwimlaneManager für automatische Größenanpassung der Geschwister-Swimlanes
+  new SwimlaneManager(g)
+
+  // StackLayout für automatisches Stapeln von Child-Elementen in Swimlanes
+  const layout = new StackLayout(g, false)
+
+  // Macht sicher dass alle Children in die Parent-Swimlane passen
+  layout.resizeParent = true
+
+  // Wendet die Größe auf Children an wenn Parent-Größe sich ändert
+  layout.fill = true
+
+  // Nur Swimlanes sollen vom Layout verwaltet werden
+  layout.isVertexIgnored = function (vertex) {
+    return !g.isSwimlane(vertex)
+  }
+
+  // LayoutManager hält die Lanes und Pools gestapelt
+  const layoutMgr = new LayoutManager(g)
+
+  layoutMgr.getLayout = function (cell) {
+    if (
+      cell &&
+      !cell.isEdge() &&
+      cell.getChildCount() > 0 &&
+      (cell.getParent() == model.getRoot() || (g as CustomGraph).isPool(cell))
+    ) {
+      layout.fill = (g as CustomGraph).isPool(cell)
+      return layout
+    }
+    return null
+  }
+
+  // Drop-Funktionalität aktivieren
+  g.setDropEnabled(true)
+  g.setSplitEnabled(false)
+
+  // Definiere gültige Drop-Targets
+  g.isValidDropTarget = function (this: CustomGraph, target, cells, evt) {
+    if (this.isSplitEnabled() && this.isSplitTarget(target, cells, evt)) {
+      return true
+    }
+
+    let lane = false
+    let pool = false
+    let cell = false
+
+    // Prüfe ob Lanes oder Pools ausgewählt sind
+    cells ??= []
+    for (let i = 0; i < cells.length; i++) {
+      const tmp = cells[i].getParent()
+      lane = lane || this.isPool(tmp)
+      pool = pool || this.isPool(cells[i])
+      cell = cell || !(lane || pool)
+    }
+
+    // Erlaubt das Droppen von Cells in Swimlanes/Pools
+    return (
+      !pool &&
+      cell != lane &&
+      ((lane && this.isPool(target)) || (cell && this.isSwimlane(target)))
+    )
+  }
+
+  // Verhindere das Entfernen von Cells aus Parent beim Verschieben innerhalb des Graph
+  const selectionHandler = g.getPlugin<SelectionHandler>('SelectionHandler')
+  if (selectionHandler) {
+    selectionHandler.setRemoveCellsFromParent(false)
+  }
+
+  // Keeps widths on collapse/expand
+  const foldingHandler = function (_sender: any, evt: any) {
+    const cells = evt.getProperty('cells')
+    for (let i = 0; i < cells.length; i++) {
+      const geo = cells[i].getGeometry()
+      if (geo.alternateBounds != null) {
+        geo.width = geo.alternateBounds.width
+      }
+    }
+  }
+
+  g.addListener(InternalEvent.FOLD_CELLS, foldingHandler)
+}
 
 defineExpose({
   graph
