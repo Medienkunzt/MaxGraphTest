@@ -146,7 +146,7 @@ onMounted(() => {
     if (graph.value?.getDataModel().updateLevel && graph.value.getDataModel().updateLevel > 0) {
       return
     }
-    
+
     graph.value?.refresh()
     graph.value?.view.validate()
     emitUpdatedModel()
@@ -322,12 +322,7 @@ const setupSwimlaneSupport = () => {
   const layoutMgr = new LayoutManager(g)
 
   layoutMgr.getLayout = function (cell) {
-    if (
-      cell &&
-      !cell.isEdge() &&
-      cell.getChildCount() > 0 &&
-      (cell.getParent() == model.getRoot() || (g as CustomGraph).isPool(cell))
-    ) {
+    if (cell && !cell.isEdge() && cell.getChildCount() > 0 && (cell.getParent() == model.getRoot() || (g as CustomGraph).isPool(cell))) {
       layout.fill = (g as CustomGraph).isPool(cell)
       return layout
     }
@@ -358,11 +353,7 @@ const setupSwimlaneSupport = () => {
     }
 
     // Erlaubt das Droppen von Cells in Swimlanes/Pools
-    return (
-      !pool &&
-      cell != lane &&
-      ((lane && this.isPool(target)) || (cell && this.isSwimlane(target)))
-    )
+    return !pool && cell != lane && ((lane && this.isPool(target)) || (cell && this.isSwimlane(target)))
   }
 
   // Verhindere das Entfernen von Cells aus Parent beim Verschieben innerhalb des Graph

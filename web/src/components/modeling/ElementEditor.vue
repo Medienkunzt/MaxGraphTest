@@ -331,11 +331,7 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
   const relative = isChildElement ? definition.position.relative : false
 
   // Shape-Name ermitteln
-  const shapeName = definition.type === 'canvas2d' 
-    ? definition.id 
-    : definition.type === 'swimlane' 
-      ? 'swimlane' 
-      : definition.predefinedShape || 'rectangle'
+  const shapeName = definition.type === 'canvas2d' ? definition.id : definition.type === 'swimlane' ? 'swimlane' : definition.predefinedShape || 'rectangle'
 
   // Spezielle Swimlane-Behandlung
   const isSwimlane = definition.type === 'swimlane'

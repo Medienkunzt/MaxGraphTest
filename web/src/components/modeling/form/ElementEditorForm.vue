@@ -142,11 +142,7 @@
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <!-- Swimlane Container Editor -->
-          <SwimlaneContainerEditor
-            v-if="isSwimlaneType"
-            :element="element"
-            @update="updateAll"
-          />
+          <SwimlaneContainerEditor v-if="isSwimlaneType" :element="element" @update="updateAll" />
 
           <!-- Standard Child-Elemente Editor -->
           <div v-if="!isSwimlaneType || (element.children && element.children.length === 0)">
@@ -156,41 +152,41 @@
             </div>
 
             <v-card v-for="(child, index) in element.children" :key="child.id" variant="outlined" class="mb-3">
-            <v-card-title class="d-flex align-center justify-space-between py-2">
-              <span class="text-subtitle-2">{{ child.label }}</span>
-              <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="removeChildElement(index)" />
-            </v-card-title>
+              <v-card-title class="d-flex align-center justify-space-between py-2">
+                <span class="text-subtitle-2">{{ child.label }}</span>
+                <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="removeChildElement(index)" />
+              </v-card-title>
 
-            <v-card-text>
-              <v-text-field v-model="child.label" label="Child Label" variant="outlined" density="compact" class="mb-2" @input="updateAll" />
+              <v-card-text>
+                <v-text-field v-model="child.label" label="Child Label" variant="outlined" density="compact" class="mb-2" @input="updateAll" />
 
-              <v-select v-model="child.type" :items="shapeTypes" label="Child Typ" variant="outlined" density="compact" class="mb-2" @update:model-value="updateAll" />
+                <v-select v-model="child.type" :items="shapeTypes" label="Child Typ" variant="outlined" density="compact" class="mb-2" @update:model-value="updateAll" />
 
-              <v-textarea v-if="child.type === 'canvas2d'" v-model="child.canvas" label="Canvas2D Befehle" variant="outlined" density="compact" rows="2" class="mb-2" @input="updateAll" />
+                <v-textarea v-if="child.type === 'canvas2d'" v-model="child.canvas" label="Canvas2D Befehle" variant="outlined" density="compact" rows="2" class="mb-2" @input="updateAll" />
 
-              <v-select v-if="child.type === 'predefined'" v-model="child.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-2" @update:model-value="updateAll" />
+                <v-select v-if="child.type === 'predefined'" v-model="child.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-2" @update:model-value="updateAll" />
 
-              <!-- Position -->
-              <v-row>
-                <v-col cols="3">
-                  <v-text-field v-model.number="child.position.x" label="X" variant="outlined" density="compact" type="number" step="0.1" @input="updateAll" />
-                </v-col>
-                <v-col cols="3">
-                  <v-text-field v-model.number="child.position.y" label="Y" variant="outlined" density="compact" type="number" step="0.1" @input="updateAll" />
-                </v-col>
-                <v-col cols="3">
-                  <v-text-field v-model.number="child.position.width" label="Breite" variant="outlined" density="compact" type="number" @input="updateAll" />
-                </v-col>
-                <v-col cols="3">
-                  <v-text-field v-model.number="child.position.height" label="Höhe" variant="outlined" density="compact" type="number" @input="updateAll" />
-                </v-col>
-              </v-row>
+                <!-- Position -->
+                <v-row>
+                  <v-col cols="3">
+                    <v-text-field v-model.number="child.position.x" label="X" variant="outlined" density="compact" type="number" step="0.1" @input="updateAll" />
+                  </v-col>
+                  <v-col cols="3">
+                    <v-text-field v-model.number="child.position.y" label="Y" variant="outlined" density="compact" type="number" step="0.1" @input="updateAll" />
+                  </v-col>
+                  <v-col cols="3">
+                    <v-text-field v-model.number="child.position.width" label="Breite" variant="outlined" density="compact" type="number" @input="updateAll" />
+                  </v-col>
+                  <v-col cols="3">
+                    <v-text-field v-model.number="child.position.height" label="Höhe" variant="outlined" density="compact" type="number" @input="updateAll" />
+                  </v-col>
+                </v-row>
 
-              <v-checkbox v-model="child.position.relative" label="Relative Positionierung" density="compact" class="mb-2" @update:model-value="updateAll" />
+                <v-checkbox v-model="child.position.relative" label="Relative Positionierung" density="compact" class="mb-2" @update:model-value="updateAll" />
 
-              <v-checkbox v-model="child.connectable" label="Verbindbar" density="compact" @update:model-value="updateAll" />
-            </v-card-text>
-          </v-card>
+                <v-checkbox v-model="child.connectable" label="Verbindbar" density="compact" @update:model-value="updateAll" />
+              </v-card-text>
+            </v-card>
 
             <v-alert v-if="element.children.length === 0" type="info" variant="tonal" class="mt-2"> Keine Child Elemente definiert </v-alert>
           </div>
@@ -198,7 +194,8 @@
       </v-expansion-panel>
     </v-expansion-panels>
   </div>
-</template><script setup lang="ts">
+</template>
+<script setup lang="ts">
 import { computed, watch } from 'vue'
 import type { DiagramElement } from '@/model/Element'
 import type { ChildElement } from '@/model/Element'
