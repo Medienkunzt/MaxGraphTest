@@ -1,21 +1,25 @@
 <template>
-  <v-container fluid class="pa-2">
-    <v-row no-gutters>
+  <v-container fluid class="pa-2 editor-surface">
+    <v-row no-gutters class="editor-row">
       <!-- Liste der Verbindungen (links) -->
-      <v-col cols="4" class="pr-2">
-        <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-id="selectedConnectionId" empty-text="Keine Verbindungen definiert" title-field="name" :icon-map="connectionIconMap" :color-map="connectionColorMap" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
+      <v-col cols="4" class="pr-2 editor-col">
+        <div class="scroll-column">
+          <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-id="selectedConnectionId" empty-text="Keine Verbindungen definiert" title-field="name" :icon-map="connectionIconMap" :color-map="connectionColorMap" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
+        </div>
       </v-col>
 
       <!-- Editor (mitte) -->
-      <v-col cols="4" class="px-1">
-        <BasicEditorForm type="connection" :selected-item="selectedConnection">
-          <ConnectionEditorForm v-if="selectedConnection" :selected-connection="selectedConnection" @update="updateAll" />
-        </BasicEditorForm>
+      <v-col cols="4" class="px-1 editor-col">
+        <div class="scroll-column">
+          <BasicEditorForm type="connection" :selected-item="selectedConnection">
+            <ConnectionEditorForm v-if="selectedConnection" :selected-connection="selectedConnection" @update="updateAll" />
+          </BasicEditorForm>
+        </div>
       </v-col>
 
       <!-- Canvas Vorschau (rechts) -->
-      <v-col cols="4" class="pl-2">
-        <v-card>
+      <v-col cols="4" class="pl-2 preview-column">
+        <v-card class="preview-card">
           <v-card-title class="py-2">
             <span class="text-h6">Vorschau</span>
           </v-card-title>
@@ -323,6 +327,46 @@ onMounted(() => {
 <style scoped>
 .cursor-pointer {
   cursor: pointer;
+}
+
+.editor-surface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-row {
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-col,
+.preview-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.scroll-column {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.preview-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-card :deep(.v-card-text) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .preview-canvas {

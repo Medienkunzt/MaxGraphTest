@@ -15,6 +15,10 @@ export interface ElementStyle {
   layoutType?: string
   resizeParent?: boolean
   stackLayout?: boolean
+  containerMode?: boolean
+  childLayout?: 'stack' | 'grid' | 'none'
+  childSpacing?: number
+  autoResizeChildren?: boolean
   // Verbindungsregeln
   allowDanglingEdges?: boolean
   dropEnabled?: boolean

@@ -97,6 +97,9 @@ watch(
 }
 
 .editor-panel {
-  min-height: calc(100vh - 200px);
+  height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 </style>

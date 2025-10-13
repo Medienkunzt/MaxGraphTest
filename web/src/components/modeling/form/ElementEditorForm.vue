@@ -258,6 +258,9 @@ const onTypeChange = (newType: string) => {
 
 const initializeSwimlaneDefaults = () => {
   if (isSwimlaneType.value && element.value.style) {
+    if (!element.value.children) {
+      element.value.children = []
+    }
     // Setze Standardwerte für Swimlane-Eigenschaften wenn sie noch nicht existieren
     if (element.value.style.startSize === undefined) {
       element.value.style.startSize = 22
@@ -276,6 +279,18 @@ const initializeSwimlaneDefaults = () => {
     }
     if (element.value.style.resizeParent === undefined) {
       element.value.style.resizeParent = false
+    }
+    if (element.value.style.containerMode === undefined) {
+      element.value.style.containerMode = false
+    }
+    if (element.value.style.childLayout === undefined) {
+      element.value.style.childLayout = 'stack'
+    }
+    if (element.value.style.childSpacing === undefined) {
+      element.value.style.childSpacing = 10
+    }
+    if (element.value.style.autoResizeChildren === undefined) {
+      element.value.style.autoResizeChildren = true
     }
     // Verbindungsregeln für Swimlanes
     if (element.value.style.allowDanglingEdges === undefined) {

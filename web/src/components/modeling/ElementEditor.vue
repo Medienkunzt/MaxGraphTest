@@ -1,21 +1,25 @@
 <template>
-  <v-container fluid class="pa-2">
-    <v-row no-gutters>
+  <v-container fluid class="pa-2 editor-surface">
+    <v-row no-gutters class="editor-row">
       <!-- Element-Liste (links) -->
-      <v-col cols="4" class="pr-2">
-        <EditorEntityList title="Elemente" add-button-text="Neues Element" :items="elements" :selected-id="selectedElementId" empty-text="Keine Elemente definiert" :icon-map="elementIconMap" :color-map="elementColorMap" @add="addNewElement" @select="selectElement" @delete="deleteElement" />
+      <v-col cols="4" class="pr-2 editor-col">
+        <div class="scroll-column">
+          <EditorEntityList title="Elemente" add-button-text="Neues Element" :items="elements" :selected-id="selectedElementId" empty-text="Keine Elemente definiert" :icon-map="elementIconMap" :color-map="elementColorMap" @add="addNewElement" @select="selectElement" @delete="deleteElement" />
+        </div>
       </v-col>
 
       <!-- Element-Editor (mitte) -->
-      <v-col cols="4" class="px-1">
-        <BasicEditorForm type="element" :selected-item="selectedElement">
-          <ElementEditorForm v-if="selectedElement" :selected-element="selectedElement" @update="updateAll" />
-        </BasicEditorForm>
+      <v-col cols="4" class="px-1 editor-col">
+        <div class="scroll-column">
+          <BasicEditorForm type="element" :selected-item="selectedElement">
+            <ElementEditorForm v-if="selectedElement" :selected-element="selectedElement" @update="updateAll" />
+          </BasicEditorForm>
+        </div>
       </v-col>
 
       <!-- Canvas Vorschau (rechts) -->
-      <v-col cols="4" class="pl-2">
-        <v-card>
+      <v-col cols="4" class="pl-2 preview-column">
+        <v-card class="preview-card">
           <v-card-title class="py-2">
             <span class="text-h6">Vorschau</span>
           </v-card-title>
@@ -340,24 +344,34 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
   let cellStyle: any
 
   if (isSwimlane) {
+    const swimlaneStyle = definition.style ?? {}
+
     // Swimlane-Style basierend auf Swimlanes.js Beispiel
-    // WICHTIG: Nicht definition.style spreaden, sondern explizit setzen
+    // WICHTIG: Nicht definition.style komplett spreaden, sondern gezielt übernehmen
     cellStyle = {
       shape: 'swimlane',
       verticalAlign: 'middle',
-      labelBackgroundColor: definition.style?.labelBackgroundColor || 'white',
-      fontSize: definition.style?.fontSize || 11,
-      startSize: definition.style?.startSize || 22,
-      horizontal: definition.style?.horizontal || false,
-      fontColor: definition.style?.fontColor || 'black',
-      strokeColor: definition.style?.strokeColor || 'black',
-      foldable: definition.style?.foldable !== false,
-      stackLayout: definition.style?.stackLayout ? '1' : '0',
+      labelBackgroundColor: swimlaneStyle.labelBackgroundColor ?? 'white',
+      fontSize: swimlaneStyle.fontSize ?? 11,
+      startSize: swimlaneStyle.startSize ?? 22,
+      horizontal: swimlaneStyle.horizontal ?? false,
+      fontColor: swimlaneStyle.fontColor ?? 'black',
+      strokeColor: swimlaneStyle.strokeColor ?? 'black',
+      foldable: swimlaneStyle.foldable !== false,
+      stackLayout: swimlaneStyle.stackLayout ?? false,
+      dropEnabled: swimlaneStyle.dropEnabled ?? true,
+      allowDanglingEdges: swimlaneStyle.allowDanglingEdges ?? false,
+      splitEnabled: swimlaneStyle.splitEnabled ?? false,
+      resizeParent: swimlaneStyle.resizeParent ?? false,
+      ...(swimlaneStyle.layoutType ? { layoutType: swimlaneStyle.layoutType } : {}),
       editable: true,
       resizable: true,
       selectable: true
     }
-    // fillColor wird NICHT gesetzt (wie im Beispiel)
+
+    if (swimlaneStyle.fillColor) {
+      cellStyle.fillColor = swimlaneStyle.fillColor
+    }
   } else {
     // Normaler Style für andere Shapes
     cellStyle = {
@@ -645,7 +659,49 @@ onMounted(() => {
   cursor: pointer;
 }
 
+.editor-surface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-row {
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-col,
+.preview-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.scroll-column {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.preview-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-card :deep(.v-card-text) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .preview-canvas {
+  flex: 1;
+  min-height: 280px;
   border-radius: 4px;
   overflow: hidden;
 }

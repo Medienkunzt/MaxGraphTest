@@ -1,6 +1,6 @@
 <template>
   <v-card class="pa-2" height="100%" width="100%">
-    <v-card-text class="pa-1">
+    <v-card-text class="pa-1 canvas-content">
       <!-- Erweiterte Toolbar -->
       <div v-if="props.showToolbar" class="toolbar-actions mb-2">
         <!-- MaxGraph Toolbar Container -->
@@ -324,6 +324,25 @@ const setupSwimlaneSupport = () => {
     return rawValue !== 0 && rawValue !== false
   }
 
+  const isDropEnabledForSwimlane = (cell: Cell | null) => {
+    if (!cell || !g.isSwimlane(cell)) {
+      return false
+    }
+
+    const style = g.getCellStyle(cell) as Record<string, any>
+    const rawValue = style?.dropEnabled
+
+    if (rawValue === undefined || rawValue === null) {
+      return true
+    }
+
+    if (typeof rawValue === 'string') {
+      return rawValue !== '0' && rawValue.toLowerCase() !== 'false'
+    }
+
+    return rawValue !== 0 && rawValue !== false
+  }
+
   // StackLayout für automatisches Stapeln von Child-Elementen in Swimlanes
   const layout = new StackLayout(g, false)
 
@@ -373,7 +392,16 @@ const setupSwimlaneSupport = () => {
     }
 
     // Erlaubt das Droppen von Cells in Swimlanes/Pools
-    return !pool && cell != lane && ((lane && this.isPool(target)) || (cell && this.isSwimlane(target)))
+    const targetParent = target?.getParent?.() ?? null
+    const swimlaneTarget = target && this.isSwimlane(target) ? target : targetParent && this.isSwimlane(targetParent) ? targetParent : null
+
+    if (swimlaneTarget && !isDropEnabledForSwimlane(swimlaneTarget)) {
+      return false
+    }
+
+    const effectiveTarget = swimlaneTarget ?? target
+
+    return !pool && cell != lane && ((lane && this.isPool(effectiveTarget)) || (cell && this.isSwimlane(effectiveTarget)))
   }
 
   // Verhindere das Entfernen von Cells aus Parent beim Verschieben innerhalb des Graph
@@ -421,13 +449,22 @@ defineExpose({
 </script>
 
 <style scoped>
+.canvas-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
 .graph-container {
   position: relative;
   width: 100%;
-  height: calc(100vh - 200px);
+  flex: 1;
+  min-height: 280px;
   border: 1px solid #ddd;
   border-radius: 4px;
   background-color: transparent;
+  overflow: hidden;
 }
 
 .grid-container {

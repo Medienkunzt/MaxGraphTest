@@ -1,21 +1,25 @@
 <template>
-  <v-container fluid class="pa-2">
-    <v-row no-gutters>
+  <v-container fluid class="pa-2 editor-surface">
+    <v-row no-gutters class="editor-row">
       <!-- Syntax-Regeln Liste (links) -->
-      <v-col cols="4" class="pr-2">
-        <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-id="selectedRuleId" empty-text="Keine Syntax-Regeln definiert" title-field="name" :show-severity-chip="true" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
+      <v-col cols="4" class="pr-2 editor-col">
+        <div class="scroll-column">
+          <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-id="selectedRuleId" empty-text="Keine Syntax-Regeln definiert" title-field="name" :show-severity-chip="true" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
+        </div>
       </v-col>
 
       <!-- Regel-Editor (mitte) -->
-      <v-col cols="4" class="px-1">
-        <BasicEditorForm type="syntax" :selected-item="selectedRule">
-          <SyntaxEditorForm v-if="selectedRule" :selected-rule="selectedRule" @update="updateAll" />
-        </BasicEditorForm>
+      <v-col cols="4" class="px-1 editor-col">
+        <div class="scroll-column">
+          <BasicEditorForm type="syntax" :selected-item="selectedRule">
+            <SyntaxEditorForm v-if="selectedRule" :selected-rule="selectedRule" @update="updateAll" />
+          </BasicEditorForm>
+        </div>
       </v-col>
 
       <!-- Validierungs-Vorschau (rechts) -->
-      <v-col cols="4" class="pl-2">
-        <v-card>
+      <v-col cols="4" class="pl-2 preview-column">
+        <v-card class="preview-card">
           <v-card-title class="py-2">
             <span class="text-h6">Validierungs-Vorschau</span>
           </v-card-title>
@@ -279,6 +283,46 @@ onMounted(() => {
 <style scoped>
 .cursor-pointer {
   cursor: pointer;
+}
+
+.editor-surface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.editor-row {
+  flex: 1;
+  min-height: 0;
+}
+
+.editor-col,
+.preview-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.scroll-column {
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.preview-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-card :deep(.v-card-text) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .preview-canvas {

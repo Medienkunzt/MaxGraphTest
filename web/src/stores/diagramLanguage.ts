@@ -307,6 +307,78 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           connectable: true,
           resizable: true,
           movable: true
+        },
+        {
+          id: 'class-container-swimlane',
+          name: 'Klassen-Container',
+          label: 'Klasse',
+          type: 'swimlane',
+          x: 100,
+          y: 100,
+          width: 200,
+          height: 160,
+          style: {
+            strokeColor: '#1e88e5',
+            fillColor: '#e3f2fd',
+            strokeWidth: 2,
+            fontSize: 12,
+            fontColor: '#0d47a1',
+            fontFamily: 'Arial',
+            align: 'left',
+            verticalAlign: 'top',
+            startSize: 32,
+            horizontal: false,
+            foldable: true,
+            labelBackgroundColor: '#bbdefb',
+            stackLayout: false,
+            resizeParent: false,
+            dropEnabled: true,
+            allowDanglingEdges: true,
+            splitEnabled: false,
+            containerMode: false,
+            childLayout: 'stack',
+            childSpacing: 10,
+            autoResizeChildren: true
+          },
+          anchorPoints: [
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 },
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 }
+          ],
+          children: [],
+          connectable: false,
+          resizable: true,
+          movable: true
+        },
+        {
+          id: 'class-text-label',
+          name: 'Klassen-Label',
+          label: 'Neues Label',
+          type: 'predefined',
+          x: 0,
+          y: 0,
+          width: 120,
+          height: 24,
+          predefinedShape: 'label',
+          style: {
+            strokeColor: 'transparent',
+            fillColor: 'transparent',
+            strokeWidth: 0,
+            fontSize: 12,
+            fontColor: '#1b1b1b',
+            fontFamily: 'Arial',
+            align: 'left',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 }
+          ],
+          children: [],
+          connectable: false,
+          resizable: true,
+          movable: true
         }
       ],
       connections: [
