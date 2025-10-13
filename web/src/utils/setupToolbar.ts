@@ -125,7 +125,18 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
         // Transformiere die Koordinaten
         const pt = graph.value.getPointForEvent(evt as any)
 
-        const parentCell = parent.value ?? graph.value.getDefaultParent()
+        // Check if the shape being dropped is a swimlane
+        const isDroppingSwimlane = shape.style?.shape === 'swimlane' || graph.value.isSwimlane(cell)
+        
+        // Find the cell under the drop location (e.g., a swimlane)
+        const dropTarget = graph.value.getCellAt(pt.x, pt.y)
+        
+        // Use the drop target if it's a swimlane AND we're not dropping a swimlane
+        // Swimlanes should always be dropped on the root level
+        let parentCell = parent.value ?? graph.value.getDefaultParent()
+        if (!isDroppingSwimlane && dropTarget && graph.value.isSwimlane(dropTarget)) {
+          parentCell = dropTarget
+        }
 
         if (shape.dropHandler) {
           shape.dropHandler(graph.value, parentCell, { x: pt.x, y: pt.y })
@@ -134,8 +145,18 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
 
         const cloned = cellArrayUtils.cloneCell(cell)!
         if (cloned.geometry) {
-          cloned.geometry.x = pt.x
-          cloned.geometry.y = pt.y
+          // Create a new Geometry instance to avoid shared references
+          const newGeometry = new Geometry(pt.x, pt.y, cloned.geometry.width, cloned.geometry.height)
+          // Copy any additional geometry properties
+          if (cloned.geometry.alternateBounds) {
+            newGeometry.alternateBounds = new Geometry(
+              cloned.geometry.alternateBounds.x,
+              cloned.geometry.alternateBounds.y,
+              cloned.geometry.alternateBounds.width,
+              cloned.geometry.alternateBounds.height
+            ) as any
+          }
+          cloned.geometry = newGeometry
         }
 
         graph.value.addCell(cloned, parentCell)

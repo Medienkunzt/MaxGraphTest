@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, SwimlaneManager, StackLayout, LayoutManager, Geometry, ConnectionConstraint, Point } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, StackLayout, LayoutManager, Geometry, ConnectionConstraint, Point, EventObject } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -330,14 +330,18 @@ const buildLanguageShapes = computed(() => {
         const x = (position.x ?? 0) - width / 2
         const y = (position.y ?? 0) - height / 2
 
+        // Clone the style to avoid shared references
+        const styleClone = { ...baseStyle }
+
         // Build geometry with connection constraints from anchor points
         const geometry = new Geometry(x, y, width, height)
+        
         if (element.anchorPoints && element.anchorPoints.length > 0) {
           const constraints = element.anchorPoints.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
           ;(geometry as any).constraints = constraints
         }
 
-        const cellToInsert = new Cell(element.label ?? element.name, geometry, baseStyle)
+        const cellToInsert = new Cell(element.label ?? element.name, geometry, styleClone)
         cellToInsert.setVertex(true)
         cellToInsert.setConnectable(element.connectable ?? true)
         cellToInsert.setAttribute('diagramElementId', element.id)
@@ -387,6 +391,14 @@ const setupSwimlaneSupport = () => {
   type CustomGraph = Graph & {
     isPool(cell: Cell | null): boolean
     isSwimlane(cell: Cell | null): boolean
+    getSwimlaneAt(x: number, y: number, parent?: Cell | null): Cell | null
+    getDropTarget(
+      cells: Cell[] | null,
+      evt?: Event | null,
+      target?: Cell | null,
+      clone?: boolean
+    ): Cell | null
+    getPointForEvent(evt: MouseEvent): Point
   }
 
   // Füge Hilfsfunktion hinzu um Pools zu identifizieren
@@ -395,8 +407,10 @@ const setupSwimlaneSupport = () => {
     return parent?.getParent() == model.getRoot()
   }
 
-  // SwimlaneManager für automatische Größenanpassung der Geschwister-Swimlanes
-  new SwimlaneManager(g)
+  // SwimlaneManager synchronisiert die Größen aller Swimlanes auf gleicher Ebene
+  // Deaktiviert, damit Swimlanes unabhängig voneinander dimensioniert werden können
+  // Wenn gewünscht, kann dies über ein Style-Attribut gesteuert werden
+  // new SwimlaneManager(g)
 
   // Hilfsfunktion um zu prüfen, ob für eine Swimlane das automatische Stack-Layout aktiv ist
   const isStackLayoutEnabled = (cell: Cell | null) => {
@@ -462,9 +476,105 @@ const setupSwimlaneSupport = () => {
     return null
   }
 
+  const isMouseLikeEvent = (event: Event | null | undefined): event is MouseEvent => {
+    return !!event && 'clientX' in event && 'clientY' in event
+  }
+
+  const resolveSwimlaneTarget = (candidate: Cell | null | undefined): Cell | null => {
+    if (!candidate) {
+      return null
+    }
+
+    if (g.isSwimlane(candidate)) {
+      return candidate
+    }
+
+    const directParent = candidate.getParent?.() ?? null
+    if (directParent && g.isSwimlane(directParent)) {
+      return directParent
+    }
+
+    return null
+  }
+
   // Drop-Funktionalität aktivieren
   g.setDropEnabled(true)
   g.setSplitEnabled(false)
+
+  const defaultGetDropTarget = g.getDropTarget.bind(g) as CustomGraph['getDropTarget']
+
+  g.getDropTarget = function (this: CustomGraph, cells, evt, target, clone) {
+    let dropTarget = defaultGetDropTarget(cells ?? [], evt, target, clone)
+
+    const movedCells = cells ?? []
+    const hasRegularCell = movedCells.some((c) => !this.isSwimlane(c) && !this.isPool(c))
+
+    if (!hasRegularCell) {
+      return dropTarget
+    }
+
+    const swimlaneFromTarget = resolveSwimlaneTarget(dropTarget ?? target)
+    if (swimlaneFromTarget && isDropEnabledForSwimlane(swimlaneFromTarget)) {
+      return swimlaneFromTarget
+    }
+
+    if (isMouseLikeEvent(evt)) {
+      const point = this.getPointForEvent(evt)
+      const candidate = resolveSwimlaneTarget(this.getSwimlaneAt(point.x, point.y, null))
+      if (candidate && isDropEnabledForSwimlane(candidate)) {
+        return candidate
+      }
+    }
+
+    return dropTarget
+  }
+
+  let isProcessingMoveDrop = false
+  g.addListener(InternalEvent.MOVE_CELLS, function (this: CustomGraph, _sender: any, evt: EventObject) {
+    if (isProcessingMoveDrop) {
+      return
+    }
+
+    const targetFromEvent = evt.getProperty('target') as Cell | null
+    if (targetFromEvent) {
+      return
+    }
+
+    const movedCells = (evt.getProperty('cells') as Cell[] | undefined) ?? []
+    if (movedCells.length === 0) {
+      return
+    }
+
+    const nativeEvent = evt.getProperty('event') as MouseEvent | null
+    if (!nativeEvent) {
+      return
+    }
+
+    const firstMovable = movedCells.some((cell) => !this.isSwimlane(cell) && !this.isPool(cell))
+    if (!firstMovable) {
+      return
+    }
+
+    const point = this.getPointForEvent(nativeEvent)
+    const swimlaneAtPoint = this.getSwimlaneAt(point.x, point.y, null)
+
+    const potentialTarget = swimlaneAtPoint ?? null
+    if (!potentialTarget || !isDropEnabledForSwimlane(potentialTarget)) {
+      return
+    }
+
+    const needsReparent = movedCells.some((cell) => cell.getParent() !== potentialTarget)
+    if (!needsReparent) {
+      return
+    }
+
+    try {
+      isProcessingMoveDrop = true
+      this.moveCells(movedCells, 0, 0, false, potentialTarget, nativeEvent)
+    } finally {
+      isProcessingMoveDrop = false
+    }
+  })
 
   // Definiere gültige Drop-Targets
   g.isValidDropTarget = function (this: CustomGraph, target, cells, evt) {
@@ -472,20 +582,12 @@ const setupSwimlaneSupport = () => {
       return true
     }
 
-    let lane = false
-    let pool = false
-    let cell = false
-
-    // Prüfe ob Lanes oder Pools ausgewählt sind
     cells ??= []
-    for (let i = 0; i < cells.length; i++) {
-      const tmp = cells[i].getParent()
-      lane = lane || this.isPool(tmp)
-      pool = pool || this.isPool(cells[i])
-      cell = cell || !(lane || pool)
-    }
 
-    // Erlaubt das Droppen von Cells in Swimlanes/Pools
+    const hasSwimlaneCell = cells.some((c) => this.isSwimlane(c))
+    const hasPoolCell = cells.some((c) => this.isPool(c))
+    const hasRegularCell = cells.some((c) => !this.isSwimlane(c) && !this.isPool(c))
+
     const targetParent = target?.getParent?.() ?? null
     const swimlaneTarget = target && this.isSwimlane(target) ? target : targetParent && this.isSwimlane(targetParent) ? targetParent : null
 
@@ -495,13 +597,32 @@ const setupSwimlaneSupport = () => {
 
     const effectiveTarget = swimlaneTarget ?? target
 
-    return !pool && cell != lane && ((lane && this.isPool(effectiveTarget)) || (cell && this.isSwimlane(effectiveTarget)))
+    // Verhindere, dass Pools in andere Eltern verschoben werden
+    if (hasPoolCell) {
+      return !effectiveTarget || effectiveTarget === this.getDefaultParent()
+    }
+
+    // Swimlanes dürfen auf Root oder andere Swimlanes (Stacking) fallen
+    if (hasSwimlaneCell) {
+      return !effectiveTarget || this.isSwimlane(effectiveTarget)
+    }
+
+    // Reguläre Zellen dürfen überall hin, inkl. Swimlanes wenn erlaubt
+    if (hasRegularCell) {
+      if (effectiveTarget) {
+        return this.isSwimlane(effectiveTarget) ? isDropEnabledForSwimlane(effectiveTarget) : true
+      }
+      return true
+    }
+
+    return false
   }
 
   // Verhindere das Entfernen von Cells aus Parent beim Verschieben innerhalb des Graph
   const selectionHandler = g.getPlugin<SelectionHandler>('SelectionHandler')
   if (selectionHandler) {
-    selectionHandler.setRemoveCellsFromParent(false)
+    // Erlaube das Verschieben von Cells zwischen Parents (z.B. aus Swimlane heraus)
+    selectionHandler.setRemoveCellsFromParent(true)
   }
 
   // Erlaube explizit das Verschieben von Swimlanes

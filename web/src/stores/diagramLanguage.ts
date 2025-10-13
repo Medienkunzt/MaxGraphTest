@@ -327,7 +327,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'left',
             verticalAlign: 'top',
             startSize: 32,
-            horizontal: false,
+            horizontal: true,
             foldable: true,
             labelBackgroundColor: '#bbdefb',
             stackLayout: false,
