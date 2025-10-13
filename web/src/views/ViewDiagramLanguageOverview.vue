@@ -156,8 +156,8 @@ const editLanguage = (language: DiagramLanguage) => {
 }
 
 const tryLanguage = (language: DiagramLanguage) => {
-  selectedLanguage.value = language
-  showTesterDialog.value = true
+  setCurrentLanguage(language)
+  router.push({ name: 'Modeling', params: { languageId: language.id } })
 }
 
 const openInEditor = (language: DiagramLanguage) => {

@@ -44,8 +44,8 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, SwimlaneManager, StackLayout, LayoutManager } from '@maxgraph/core'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, SwimlaneManager, StackLayout, LayoutManager, Geometry, ConnectionConstraint, Point } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -56,16 +56,19 @@ import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
 import { setupPanningHandler } from '@/utils/setupPanningHandler'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
+import type { DiagramElement } from '@/model/Element'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
 import img_ellipse from '@/assets/images/ellipse.gif'
 import img_rhombus from '@/assets/images/rhombus.gif'
 import img_triangle from '@/assets/images/triangle.gif'
 import img_cloud from '@/assets/images/cloud.gif'
+import img_elementPlaceholder from '@/assets/images/rectangle.gif'
 
 class MyCustomConnectionHandler extends ConnectionHandler {
   // Enables connect preview for the default edge style
   override createEdgeState(_me: InternalMouseEvent) {
+    void _me
     const edge = this.graph.createEdge(null, '', null, null, null)
     return new CellState(this.graph.view, edge, this.graph.getCellStyle(edge))
   }
@@ -77,6 +80,7 @@ class MyCustomGraph extends Graph {
   }
 
   override getAllConnectionConstraints = (terminal: CellState | null, _source: boolean) => {
+    void _source
     return (terminal?.cell?.geometry as any)?.constraints ?? null
   }
 }
@@ -87,11 +91,13 @@ const props = withDefaults(
     allowEdit?: boolean
     showToolbar?: boolean
     contextMenu?: boolean
+    languageElements?: DiagramElement[]
   }>(),
   {
     allowEdit: true,
     showToolbar: true,
-    contextMenu: false
+    contextMenu: false,
+    languageElements: undefined
   }
 )
 
@@ -109,6 +115,15 @@ const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
 const plugins = ref<GraphPluginConstructor[]>([MyCustomConnectionHandler, PanningHandler, CellEditorHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
+const toolbarShapes = ref(
+  createDefaultShapes({
+    rectangle: img_rectangle,
+    ellipse: img_ellipse,
+    rhombus: img_rhombus,
+    triangle: img_triangle,
+    cloud: img_cloud
+  })
+)
 
 // Stelle Graph-Context für Child-Komponenten bereit
 provideGraphContext({
@@ -130,14 +145,7 @@ onMounted(() => {
   // Initialisiere Toolbar mit Verzögerung, um sicherzustellen dass Container verfügbar ist
   nextTick(() => {
     setTimeout(() => {
-      const shapes = createDefaultShapes({
-        rectangle: img_rectangle,
-        ellipse: img_ellipse,
-        rhombus: img_rhombus,
-        triangle: img_triangle,
-        cloud: img_cloud
-      })
-      setupToolbar(graph, toolbarContainer, parent, props.showToolbar, shapes)
+      initializeToolbar()
     }, 100)
   })
 
@@ -274,6 +282,92 @@ const initGraph = () => {
     }, 100)
   })
 }
+
+const buildLanguageShapes = computed(() => {
+  const elements = props.languageElements
+  if (!elements || elements.length === 0) {
+    return createDefaultShapes({
+      rectangle: img_rectangle,
+      ellipse: img_ellipse,
+      rhombus: img_rhombus,
+      triangle: img_triangle,
+      cloud: img_cloud
+    })
+  }
+
+  return elements.map((element) => {
+    const width = element.width ?? 120
+    const height = element.height ?? 80
+    const style = element.style ?? {}
+
+    const baseStyle: Record<string, any> = {
+      shape: element.type === 'swimlane' ? 'swimlane' : element.predefinedShape ?? 'rectangle',
+      strokeColor: style.strokeColor ?? '#424242',
+      fillColor: style.fillColor ?? '#f5f5f5',
+      strokeWidth: style.strokeWidth ?? 2,
+      fontSize: style.fontSize ?? 12,
+      fontColor: style.fontColor ?? '#1b1b1b',
+      fontFamily: style.fontFamily ?? 'Arial',
+      align: style.align ?? 'center',
+      verticalAlign: style.verticalAlign ?? 'middle'
+    }
+
+    if (element.type === 'swimlane') {
+      baseStyle.startSize = style.startSize ?? 32
+      baseStyle.horizontal = style.horizontal ?? false
+    }
+
+    return {
+      name: element.name,
+      label: element.label ?? element.name,
+      width,
+      height,
+      style: baseStyle,
+      tooltip: element.name,
+      image: img_elementPlaceholder,
+      dropHandler: (graphInstance: Graph, parentCell: Cell | undefined, position: { x?: number; y?: number }) => {
+        const parentTarget = parentCell ?? graphInstance.getDefaultParent()
+        const x = (position.x ?? 0) - width / 2
+        const y = (position.y ?? 0) - height / 2
+
+        // Build geometry with connection constraints from anchor points
+        const geometry = new Geometry(x, y, width, height)
+        if (element.anchorPoints && element.anchorPoints.length > 0) {
+          const constraints = element.anchorPoints.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
+          ;(geometry as any).constraints = constraints
+        }
+
+        const cellToInsert = new Cell(element.label ?? element.name, geometry, baseStyle)
+        cellToInsert.setVertex(true)
+        cellToInsert.setConnectable(element.connectable ?? true)
+        cellToInsert.setAttribute('diagramElementId', element.id)
+
+        graphInstance.addCell(cellToInsert, parentTarget)
+        graphInstance.setSelectionCell(cellToInsert)
+      }
+    }
+  })
+})
+
+const initializeToolbar = () => {
+  if (!props.showToolbar || !toolbarContainer.value || !graph.value) {
+    return
+  }
+
+  toolbarContainer.value.innerHTML = ''
+  toolbarShapes.value = buildLanguageShapes.value
+  setupToolbar(graph, toolbarContainer, parent, true, toolbarShapes.value)
+}
+
+watch(
+  () => props.languageElements,
+  () => {
+    nextTick(() => {
+      setTimeout(() => initializeToolbar(), 50)
+    })
+  },
+  { deep: true }
+)
 
 // Entfernte Shape-Toolbar-Funktionen - werden nicht mehr verwendet
 // createToolbarShape, createDropHandler, setupDraggableIcon, setupIconSelectionHighlight

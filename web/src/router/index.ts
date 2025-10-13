@@ -9,9 +9,10 @@ const router = createRouter({
       component: () => import('../views/ViewHome.vue')
     },
     {
-      path: '/modeling',
+      path: '/modeling/:languageId?',
       name: 'Modeling',
-      component: () => import('../views/ViewModeling.vue')
+      component: () => import('../views/ViewModeling.vue'),
+      props: true
     },
     {
       path: '/diagramLanguageEditor/:id?',

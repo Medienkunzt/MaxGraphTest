@@ -13,6 +13,8 @@ interface ShapeConfig {
   style: Record<string, any>
   tooltip: string
   image: string
+  label?: string
+  dropHandler?: (graph: Graph, parent: Cell | undefined, position: { x?: number; y?: number }) => void
 }
 
 /**
@@ -52,17 +54,24 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
 
     // Erstelle MaxGraph Toolbar Items
     for (const shape of shapes) {
-      const cell = new MaxGraphCell(null, new Geometry(0, 0, shape.width, shape.height), shape.style)
+      const cell = new MaxGraphCell(shape.label ?? shape.name, new Geometry(0, 0, shape.width, shape.height), shape.style)
       cell.setVertex(true)
 
       // Erstelle einen Drop-Handler für Drag & Drop
       const dropHandler = (graph: Graph, evt: MouseEvent, target: Cell | null, x?: number, y?: number) => {
+        const parentCell = parent.value ?? graph.getDefaultParent()
+
+        if (shape.dropHandler) {
+          shape.dropHandler(graph, parentCell, { x, y })
+          return
+        }
+
         const cloned = cellArrayUtils.cloneCell(cell)!
         if (cloned.geometry) {
           if (x != null) cloned.geometry.x = x
           if (y != null) cloned.geometry.y = y
         }
-        graph.addCell(cloned, parent.value!)
+        graph.addCell(cloned, parentCell)
         graph.setSelectionCell(cloned)
       }
 
@@ -116,13 +125,20 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
         // Transformiere die Koordinaten
         const pt = graph.value.getPointForEvent(evt as any)
 
+        const parentCell = parent.value ?? graph.value.getDefaultParent()
+
+        if (shape.dropHandler) {
+          shape.dropHandler(graph.value, parentCell, { x: pt.x, y: pt.y })
+          return
+        }
+
         const cloned = cellArrayUtils.cloneCell(cell)!
         if (cloned.geometry) {
           cloned.geometry.x = pt.x
           cloned.geometry.y = pt.y
         }
 
-        graph.value.addCell(cloned, parent.value!)
+        graph.value.addCell(cloned, parentCell)
         graph.value.setSelectionCell(cloned)
       }
     })
