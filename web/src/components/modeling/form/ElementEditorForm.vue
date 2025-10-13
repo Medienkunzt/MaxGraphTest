@@ -272,7 +272,7 @@ const initializeSwimlaneDefaults = () => {
       element.value.style.labelBackgroundColor = 'white'
     }
     if (element.value.style.stackLayout === undefined) {
-      element.value.style.stackLayout = true
+      element.value.style.stackLayout = false
     }
     if (element.value.style.resizeParent === undefined) {
       element.value.style.resizeParent = false

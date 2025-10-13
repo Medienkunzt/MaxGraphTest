@@ -304,6 +304,26 @@ const setupSwimlaneSupport = () => {
   // SwimlaneManager für automatische Größenanpassung der Geschwister-Swimlanes
   new SwimlaneManager(g)
 
+  // Hilfsfunktion um zu prüfen, ob für eine Swimlane das automatische Stack-Layout aktiv ist
+  const isStackLayoutEnabled = (cell: Cell | null) => {
+    if (!cell || !g.isSwimlane(cell)) {
+      return false
+    }
+
+    const style = g.getCellStyle(cell) as Record<string, any>
+    const rawValue = style?.stackLayout
+
+    if (rawValue === undefined || rawValue === null) {
+      return false
+    }
+
+    if (typeof rawValue === 'string') {
+      return rawValue !== '0' && rawValue.toLowerCase() !== 'false'
+    }
+
+    return rawValue !== 0 && rawValue !== false
+  }
+
   // StackLayout für automatisches Stapeln von Child-Elementen in Swimlanes
   const layout = new StackLayout(g, false)
 
@@ -315,14 +335,14 @@ const setupSwimlaneSupport = () => {
 
   // Nur Swimlanes sollen vom Layout verwaltet werden
   layout.isVertexIgnored = function (vertex) {
-    return !g.isSwimlane(vertex)
+    return !g.isSwimlane(vertex) || !isStackLayoutEnabled(vertex)
   }
 
   // LayoutManager hält die Lanes und Pools gestapelt
   const layoutMgr = new LayoutManager(g)
 
   layoutMgr.getLayout = function (cell) {
-    if (cell && !cell.isEdge() && cell.getChildCount() > 0 && (cell.getParent() == model.getRoot() || (g as CustomGraph).isPool(cell))) {
+    if (cell && !cell.isEdge() && cell.getChildCount() > 0 && g.isSwimlane(cell) && isStackLayoutEnabled(cell)) {
       layout.fill = (g as CustomGraph).isPool(cell)
       return layout
     }
@@ -360,6 +380,25 @@ const setupSwimlaneSupport = () => {
   const selectionHandler = g.getPlugin<SelectionHandler>('SelectionHandler')
   if (selectionHandler) {
     selectionHandler.setRemoveCellsFromParent(false)
+  }
+
+  // Erlaube explizit das Verschieben von Swimlanes
+  const defaultIsCellMovable = g.isCellMovable.bind(g)
+  g.isCellMovable = function (cell) {
+    if (cell && this.isSwimlane(cell)) {
+      return true
+    }
+    return defaultIsCellMovable(cell)
+  }
+
+  // Stelle sicher, dass Swimlanes einklappbar bleiben
+  const defaultIsCellFoldable = g.isCellFoldable.bind(g)
+  g.isCellFoldable = function (cell, collapse) {
+    if (cell && this.isSwimlane(cell)) {
+      const style = this.getCellStyle(cell)
+      return style?.foldable !== false
+    }
+    return defaultIsCellFoldable(cell, collapse)
   }
 
   // Keeps widths on collapse/expand

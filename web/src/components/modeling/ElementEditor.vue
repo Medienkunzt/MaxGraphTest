@@ -352,6 +352,7 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
       fontColor: definition.style?.fontColor || 'black',
       strokeColor: definition.style?.strokeColor || 'black',
       foldable: definition.style?.foldable !== false,
+      stackLayout: definition.style?.stackLayout ? '1' : '0',
       editable: true,
       resizable: true,
       selectable: true
