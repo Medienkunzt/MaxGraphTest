@@ -65,7 +65,7 @@ export function setupSwimlaneSupport(graph: Graph): void {
           })
           return cells // Verhindere die Bewegung, gib original cells zurück
         }
-        
+
         // Prüfe auch ob target ein Nachfahre (descendant) der zu bewegenden Cell ist
         let currentParent: Cell | null = target
         while (currentParent) {
@@ -80,7 +80,7 @@ export function setupSwimlaneSupport(graph: Graph): void {
         }
       }
     }
-    
+
     const result = originalMoveCells(cells, dx, dy, clone, target, evt)
 
     // Auto-Stack wenn Ziel-Parent eine Swimlane ist
@@ -412,7 +412,7 @@ export function addCellsToContainer(graph: Graph, cells: Cell[], target: Cell): 
       })
       return []
     }
-    
+
     // Prüfe ob target ein Nachfahre (descendant) der hinzuzufügenden Cell ist
     let currentParent: Cell | null = target
     while (currentParent) {
