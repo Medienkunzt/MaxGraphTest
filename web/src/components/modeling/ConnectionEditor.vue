@@ -46,43 +46,14 @@ import type { GraphDataModel } from '@maxgraph/core'
 import EditorEntityList from './EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import ConnectionEditorForm from './form/ConnectionEditorForm.vue'
-
-// Types
-interface ConnectionStyle {
-  lineStyle: string
-  strokeColor: string
-  strokeWidth: number
-  startArrow: string
-  endArrow: string
-}
-
-interface ConnectionLabel {
-  text: string
-  position: string
-  fontSize: number
-}
-
-interface ConnectionValidation {
-  allowSelfConnection: boolean
-  allowMultipleConnections: boolean
-  sourceElementTypes: string
-  targetElementTypes: string
-}
-
-interface Connection {
-  id: string
-  name: string
-  type: string
-  style: ConnectionStyle
-  label: ConnectionLabel
-  validation: ConnectionValidation
-}
+import type { DiagramConnection } from '@/model/DiagramLanguage'
 
 // Dummy Data
-const connections = ref<Connection[]>([
+const connections = ref<DiagramConnection[]>([
   {
     id: 'association',
     name: 'Association',
+    label: '',
     type: 'association',
     style: {
       lineStyle: 'solid',
@@ -91,9 +62,8 @@ const connections = ref<Connection[]>([
       startArrow: 'none',
       endArrow: 'none'
     },
-    label: {
-      text: '',
-      position: 'center',
+    labelStyle: {
+      position: 'middle',
       fontSize: 12
     },
     validation: {
@@ -106,17 +76,17 @@ const connections = ref<Connection[]>([
   {
     id: 'inheritance',
     name: 'Vererbung',
+    label: '',
     type: 'inheritance',
     style: {
       lineStyle: 'solid',
       strokeColor: '#000000',
       strokeWidth: 2,
       startArrow: 'none',
-      endArrow: 'triangle'
+      endArrow: 'classic'
     },
-    label: {
-      text: '',
-      position: 'center',
+    labelStyle: {
+      position: 'middle',
       fontSize: 12
     },
     validation: {
@@ -129,17 +99,17 @@ const connections = ref<Connection[]>([
   {
     id: 'dependency',
     name: 'Abhängigkeit',
+    label: '<<use>>',
     type: 'dependency',
     style: {
       lineStyle: 'dashed',
       strokeColor: '#666666',
       strokeWidth: 1,
       startArrow: 'none',
-      endArrow: 'arrow'
+      endArrow: 'classic'
     },
-    label: {
-      text: '<<use>>',
-      position: 'center',
+    labelStyle: {
+      position: 'middle',
       fontSize: 10
     },
     validation: {
@@ -179,9 +149,10 @@ const selectConnection = (connectionId: string) => {
 }
 
 const addNewConnection = () => {
-  const newConnection: Connection = {
+  const newConnection: DiagramConnection = {
     id: `connection_${Date.now()}`,
     name: 'Neue Verbindung',
+    label: '',
     type: 'association',
     style: {
       lineStyle: 'solid',
@@ -190,9 +161,8 @@ const addNewConnection = () => {
       startArrow: 'none',
       endArrow: 'none'
     },
-    label: {
-      text: '',
-      position: 'center',
+    labelStyle: {
+      position: 'middle',
       fontSize: 12
     },
     validation: {
@@ -293,8 +263,8 @@ const updateCanvasPreview = () => {
         dotted: conn.style.lineStyle === 'dotted',
         startArrow: conn.style.startArrow,
         endArrow: conn.style.endArrow,
-        fontSize: conn.label.fontSize,
-        labelPosition: conn.label.position
+        fontSize: conn.labelStyle.fontSize,
+        labelPosition: conn.labelStyle.position
       }
     })
   } finally {

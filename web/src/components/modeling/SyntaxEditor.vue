@@ -141,6 +141,7 @@ const addNewRule = () => {
   const newRule: DiagramSyntax = {
     id: `rule_${Date.now()}`,
     name: 'Neue Regel',
+    label: 'Neue Regel',
     type: 'structure',
     severity: 'warning',
     description: '',

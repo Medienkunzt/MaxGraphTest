@@ -112,7 +112,7 @@ const headers = [
     title: 'Tags',
     key: 'tags',
     sortable: false,
-    align: 'left' as const
+    align: 'start' as const
   },
   {
     title: 'Elemente',

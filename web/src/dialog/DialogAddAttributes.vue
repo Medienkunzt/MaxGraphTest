@@ -35,7 +35,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { useToolManagementStore } from '../stores/toolManagementStore'
 import { useDiagramStore } from '@/stores/diagramStore'
@@ -45,15 +45,19 @@ import type Attribute from '../model/diagram/Attribute'
 const toolManagementStore = useToolManagementStore()
 const diagramStore = useDiagramStore()
 
-const drag: any = ref()
+const drag = ref(false)
 const dialog = ref<boolean>(false)
 const newAttributeName = ref<string>('')
 
-toolManagementStore.$subscribe((mutation, state) => {
-  if (state.showModalAddAttributes != undefined) {
-    dialog.value = state.showModalAddAttributes
-  }
-})
+watch(
+  () => toolManagementStore.showModalAddAttributes,
+  (value) => {
+    if (value !== undefined) {
+      dialog.value = value
+    }
+  },
+  { immediate: true }
+)
 
 const deleteAttribute = (attribute: Attribute) => {
   //console.log(props.entity.attributes)
@@ -74,6 +78,7 @@ const addAttribute = () => {
 
   if (toolManagementStore.selectedEntity != undefined) {
     toolManagementStore.selectedEntity.attributes.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
       name: newAttributeName.value,
       pkey: false,
       fkey: false
@@ -84,7 +89,7 @@ const addAttribute = () => {
 }
 
 const closeModal = () => {
-  toolManagementStore.showModalAddAttributes = false
+  toolManagementStore.setShowModalAddAttributes(false)
 }
 </script>
 
