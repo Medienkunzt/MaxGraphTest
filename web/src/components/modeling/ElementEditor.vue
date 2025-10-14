@@ -28,7 +28,7 @@
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" />
             </div>
 
             <v-alert v-if="!selectedElement" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element aus, um eine Vorschau zu sehen </v-alert>
@@ -75,6 +75,8 @@ const elementDefinition = ref<DiagramElement | null>(null)
 
 // Computed
 const elements = computed(() => store.currentLanguage?.elements || [])
+
+const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
 
 const selectedElement = computed(() => elements.value.find((elem: DiagramElement) => elem.id === selectedElementId.value))
 
@@ -435,29 +437,23 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
   return mainElement
 }
 
-const registerCustomShapes = () => {
-  if (!elementDefinition.value) return
+const registerCustomShapes = (definition?: DiagramElement | ChildElement | null) => {
+  const target = definition ?? elementDefinition.value
+  if (!target) return
 
-  // Registriere Canvas2D Shape für Haupt-Element
-  if (elementDefinition.value.type === 'canvas2d' && elementDefinition.value.canvas) {
-    registerCustomShape(elementDefinition.value.id, elementDefinition.value.canvas)
-  }
-
-  // Registriere Canvas2D Shapes für alle Child-Elemente rekursiv
-  registerChildShapes(elementDefinition.value.children)
+  registerShapesRecursive(target)
 }
 
-const registerChildShapes = (children: ChildElement[]) => {
-  children.forEach((child) => {
-    if (child.type === 'canvas2d' && child.canvas) {
-      registerCustomShape(child.id, child.canvas)
-    }
+const registerShapesRecursive = (definition: DiagramElement | ChildElement | undefined) => {
+  if (!definition) return
 
-    // Rekursiv für verschachtelte Children
-    if (child.children && child.children.length > 0) {
-      registerChildShapes(child.children)
-    }
-  })
+  if (definition.type === 'canvas2d' && 'canvas' in definition && definition.canvas) {
+    registerCustomShape(definition.id, definition.canvas)
+  }
+
+  if ('children' in definition && definition.children && definition.children.length > 0) {
+    definition.children.forEach((child) => registerShapesRecursive(child))
+  }
 }
 
 const registerCustomShape = (shapeId: string, canvasCommands: string) => {
@@ -608,6 +604,14 @@ const updateAll = () => {
   debouncedUpdate()
   debouncedStoreUpdate()
 }
+
+watch(
+  languageElementsForCanvas,
+  (elements) => {
+    elements.forEach((element) => registerCustomShapes(element))
+  },
+  { immediate: true, deep: true }
+)
 
 // Watch für selectedElement -> elementDefinition sync und Updates
 watch(

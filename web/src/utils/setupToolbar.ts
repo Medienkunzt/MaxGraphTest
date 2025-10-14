@@ -17,6 +17,96 @@ interface ShapeConfig {
   dropHandler?: (graph: Graph, parent: Cell | undefined, position: { x?: number; y?: number }) => void
 }
 
+type ToolbarDropContext = {
+  getShapes: () => ShapeConfig[]
+  dragOverHandler?: (event: DragEvent) => void
+  dropHandler?: (event: DragEvent) => void
+}
+
+const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, shapes: ShapeConfig[]) => {
+  const graphContainer = graph.container as HTMLElement & {
+    __mxToolbarDropContext?: ToolbarDropContext
+  }
+
+  let context = graphContainer.__mxToolbarDropContext
+  if (!context) {
+    context = {
+      getShapes: () => shapes
+    }
+    graphContainer.__mxToolbarDropContext = context
+  }
+
+  context.getShapes = () => shapes
+
+  if (!context.dragOverHandler) {
+    context.dragOverHandler = (evt: DragEvent) => {
+      evt.preventDefault()
+      if (evt.dataTransfer) {
+        evt.dataTransfer.dropEffect = 'copy'
+      }
+    }
+
+    graphContainer.addEventListener('dragover', context.dragOverHandler)
+  }
+
+  if (!context.dropHandler) {
+    context.dropHandler = (evt: DragEvent) => {
+      evt.preventDefault()
+
+      const shapesList = context?.getShapes?.() ?? []
+      if (!shapesList.length) {
+        return
+      }
+
+      const { dataTransfer } = evt
+      if (!dataTransfer) {
+        return
+      }
+
+      const shapeName = dataTransfer.getData('text/plain')
+      const shape = shapesList.find((s) => s.name === shapeName)
+
+      if (!shape) {
+        return
+      }
+
+      const graphInstance = graph
+      const parentCell = parent.value ?? graphInstance.getDefaultParent()
+      const point = graphInstance.getPointForEvent(evt as any)
+
+      const templateCell = new MaxGraphCell(null, new Geometry(0, 0, shape.width, shape.height), shape.style)
+      templateCell.setVertex(true)
+
+      const isDroppingSwimlane = shape.style?.shape === 'swimlane' || graphInstance.isSwimlane(templateCell as unknown as Cell)
+      let effectiveParent = parentCell
+
+      const dropTarget = graphInstance.getCellAt(point.x, point.y)
+      if (!isDroppingSwimlane && dropTarget && graphInstance.isSwimlane(dropTarget)) {
+        effectiveParent = dropTarget
+      }
+
+      if (shape.dropHandler) {
+        shape.dropHandler(graphInstance, effectiveParent, { x: point.x, y: point.y })
+        return
+      }
+
+      const cloned = cellArrayUtils.cloneCell(templateCell)!
+      if (cloned.geometry) {
+        const newGeometry = new Geometry(point.x, point.y, cloned.geometry.width, cloned.geometry.height)
+        if (cloned.geometry.alternateBounds) {
+          newGeometry.alternateBounds = new Geometry(cloned.geometry.alternateBounds.x, cloned.geometry.alternateBounds.y, cloned.geometry.alternateBounds.width, cloned.geometry.alternateBounds.height) as any
+        }
+        cloned.geometry = newGeometry
+      }
+
+      graphInstance.addCell(cloned, effectiveParent)
+      graphInstance.setSelectionCell(cloned)
+    }
+
+    graphContainer.addEventListener('drop', context.dropHandler)
+  }
+}
+
 /**
  * Setup-Funktion für die MaxGraph Toolbar
  *
@@ -104,60 +194,7 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
       }
     }
 
-    // Konfiguriere Drop-Handler für den Graph-Container
-    const graphContainer = graph.value.container
-
-    graphContainer.addEventListener('dragover', (evt: DragEvent) => {
-      evt.preventDefault()
-      evt.dataTransfer!.dropEffect = 'copy'
-    })
-
-    graphContainer.addEventListener('drop', (evt: DragEvent) => {
-      evt.preventDefault()
-
-      const shapeName = evt.dataTransfer!.getData('text/plain')
-      const shape = shapes.find((s) => s.name === shapeName)
-
-      if (shape && graph.value) {
-        const cell = new MaxGraphCell(null, new Geometry(0, 0, shape.width, shape.height), shape.style)
-        cell.setVertex(true)
-
-        // Transformiere die Koordinaten
-        const pt = graph.value.getPointForEvent(evt as any)
-
-        // Check if the shape being dropped is a swimlane
-        const isDroppingSwimlane = shape.style?.shape === 'swimlane' || graph.value.isSwimlane(cell)
-
-        // Find the cell under the drop location (e.g., a swimlane)
-        const dropTarget = graph.value.getCellAt(pt.x, pt.y)
-
-        // Use the drop target if it's a swimlane AND we're not dropping a swimlane
-        // Swimlanes should always be dropped on the root level
-        let parentCell = parent.value ?? graph.value.getDefaultParent()
-        if (!isDroppingSwimlane && dropTarget && graph.value.isSwimlane(dropTarget)) {
-          parentCell = dropTarget
-        }
-
-        if (shape.dropHandler) {
-          shape.dropHandler(graph.value, parentCell, { x: pt.x, y: pt.y })
-          return
-        }
-
-        const cloned = cellArrayUtils.cloneCell(cell)!
-        if (cloned.geometry) {
-          // Create a new Geometry instance to avoid shared references
-          const newGeometry = new Geometry(pt.x, pt.y, cloned.geometry.width, cloned.geometry.height)
-          // Copy any additional geometry properties
-          if (cloned.geometry.alternateBounds) {
-            newGeometry.alternateBounds = new Geometry(cloned.geometry.alternateBounds.x, cloned.geometry.alternateBounds.y, cloned.geometry.alternateBounds.width, cloned.geometry.alternateBounds.height) as any
-          }
-          cloned.geometry = newGeometry
-        }
-
-        graph.value.addCell(cloned, parentCell)
-        graph.value.setSelectionCell(cloned)
-      }
-    })
+    ensureGraphDropHandlers(graph.value, parent, shapes)
   } catch (error) {
     console.error('Error initializing toolbar:', error)
   }
