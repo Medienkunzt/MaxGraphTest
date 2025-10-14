@@ -23,6 +23,46 @@ type ToolbarDropContext = {
   dropHandler?: (event: DragEvent) => void
 }
 
+const isTruthyAttribute = (value: string | null | undefined) => {
+  if (value === null || value === undefined) {
+    return false
+  }
+
+  const normalized = value.toString().trim().toLowerCase()
+  return normalized !== '' && normalized !== '0' && normalized !== 'false'
+}
+
+const resolveContainerSectionTarget = (cell: Cell | null): Cell | null => {
+  let current = cell
+
+  while (current) {
+    const attribute = (current as any).getAttribute?.('containerSection', null)
+    if (isTruthyAttribute(attribute)) {
+      return current
+    }
+    current = current.getParent?.() ?? null
+  }
+
+  return null
+}
+
+const resolveEffectiveParent = (graph: Graph, defaultParent: Cell, dropTarget: Cell | null, isSwimlaneDrop: boolean): Cell => {
+  if (isSwimlaneDrop) {
+    return defaultParent
+  }
+
+  const containerSection = resolveContainerSectionTarget(dropTarget)
+  if (containerSection) {
+    return containerSection
+  }
+
+  if (dropTarget && graph.isSwimlane(dropTarget)) {
+    return dropTarget
+  }
+
+  return defaultParent
+}
+
 const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, shapes: ShapeConfig[]) => {
   const graphContainer = graph.container as HTMLElement & {
     __mxToolbarDropContext?: ToolbarDropContext
@@ -71,19 +111,15 @@ const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, sh
       }
 
       const graphInstance = graph
-      const parentCell = parent.value ?? graphInstance.getDefaultParent()
+      const defaultParent = parent.value ?? graphInstance.getDefaultParent()
       const point = graphInstance.getPointForEvent(evt as any)
 
       const templateCell = new MaxGraphCell(null, new Geometry(0, 0, shape.width, shape.height), shape.style)
       templateCell.setVertex(true)
 
       const isDroppingSwimlane = shape.style?.shape === 'swimlane' || graphInstance.isSwimlane(templateCell as unknown as Cell)
-      let effectiveParent = parentCell
-
       const dropTarget = graphInstance.getCellAt(point.x, point.y)
-      if (!isDroppingSwimlane && dropTarget && graphInstance.isSwimlane(dropTarget)) {
-        effectiveParent = dropTarget
-      }
+      const effectiveParent = resolveEffectiveParent(graphInstance, defaultParent, dropTarget, isDroppingSwimlane)
 
       if (shape.dropHandler) {
         shape.dropHandler(graphInstance, effectiveParent, { x: point.x, y: point.y })
@@ -149,19 +185,26 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
 
       // Erstelle einen Drop-Handler für Drag & Drop
       const dropHandler = (graph: Graph, evt: MouseEvent, target: Cell | null, x?: number, y?: number) => {
-        const parentCell = parent.value ?? graph.getDefaultParent()
+        const defaultParent = parent.value ?? graph.getDefaultParent()
+        const point = graph.getPointForEvent(evt)
+        const resolvedX = x ?? point.x
+        const resolvedY = y ?? point.y
+
+        const dropTarget = target ?? graph.getCellAt(resolvedX, resolvedY)
+        const isDroppingSwimlane = shape.style?.shape === 'swimlane' || graph.isSwimlane(cell as unknown as Cell)
+        const effectiveParent = resolveEffectiveParent(graph, defaultParent, dropTarget, isDroppingSwimlane)
 
         if (shape.dropHandler) {
-          shape.dropHandler(graph, parentCell, { x, y })
+          shape.dropHandler(graph, effectiveParent, { x: resolvedX, y: resolvedY })
           return
         }
 
         const cloned = cellArrayUtils.cloneCell(cell)!
         if (cloned.geometry) {
-          if (x != null) cloned.geometry.x = x
-          if (y != null) cloned.geometry.y = y
+          cloned.geometry.x = resolvedX
+          cloned.geometry.y = resolvedY
         }
-        graph.addCell(cloned, parentCell)
+        graph.addCell(cloned, effectiveParent)
         graph.setSelectionCell(cloned)
       }
 

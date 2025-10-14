@@ -324,17 +324,52 @@ const addElementToCanvas = () => {
   }
 }
 
-const createElementFromDefinition = (definition: DiagramElement | ChildElement, parent: any): any => {
+const createElementFromDefinition = (
+  definition: DiagramElement | ChildElement,
+  parent: any,
+  options: {
+    container?: {
+      layout: 'stack' | 'grid' | 'none'
+      parentWidth: number
+    }
+  } = {}
+): any => {
   const canvas = drawingCanvasRef.value
   if (!canvas || !canvas.graph) return null
 
   // Position und Größe ermitteln
   const isChildElement = 'position' in definition
-  const x = isChildElement ? definition.position.x : definition.x
-  const y = isChildElement ? definition.position.y : definition.y
-  const width = isChildElement ? definition.position.width : definition.width
-  const height = isChildElement ? definition.position.height : definition.height
-  const relative = isChildElement ? definition.position.relative : false
+  const childPosition = isChildElement ? definition.position : null
+
+  let x: number
+  let y: number
+  let width: number
+  let height: number
+  let relative: boolean
+
+  if (childPosition) {
+    x = childPosition.x
+    y = childPosition.y
+    width = childPosition.width
+    height = childPosition.height
+    relative = childPosition.relative
+  } else {
+    const diagramDef = definition as DiagramElement
+    x = diagramDef.x
+    y = diagramDef.y
+    width = diagramDef.width
+    height = diagramDef.height
+    relative = false
+  }
+
+  const containerLayout = options.container?.layout
+  const containerParentWidth = options.container?.parentWidth
+  const isContainerStackChild = Boolean(options.container && isChildElement && containerLayout === 'stack')
+
+  const initialX = isContainerStackChild ? 0 : x
+  const initialY = isContainerStackChild && childPosition ? childPosition.y : y
+  const initialWidth = isContainerStackChild && containerParentWidth !== undefined ? containerParentWidth : width
+  const initialRelative = isContainerStackChild ? false : relative
 
   // Shape-Name ermitteln
   const shapeName = definition.type === 'canvas2d' ? definition.id : definition.type === 'swimlane' ? 'swimlane' : definition.predefinedShape || 'rectangle'
@@ -404,12 +439,12 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
     parent: parent,
     id: undefined,
     value: definition.label,
-    x,
-    y,
-    width,
+    x: initialX,
+    y: initialY,
+    width: initialWidth,
     height,
     style: cellStyle,
-    relative: relative,
+    relative: initialRelative,
     geometryClass: definition.type === 'canvas2d' ? getCustomGeometry(definition) : undefined
   })
 
@@ -424,13 +459,38 @@ const createElementFromDefinition = (definition: DiagramElement | ChildElement, 
     mainElement.setConnectable(definition.connectable ?? true)
   }
 
+  if (isChildElement && options.container) {
+    const childDefinition = definition as ChildElement
+    mainElement.setAttribute('containerSection', 'true')
+    if (options.container.layout) {
+      mainElement.setAttribute('containerSectionLayout', options.container.layout)
+    }
+    if (childDefinition.id) {
+      mainElement.setAttribute('containerSectionId', childDefinition.id)
+    }
+    if (childDefinition.label) {
+      mainElement.setAttribute('containerSectionLabel', childDefinition.label)
+    }
+  }
+
   // Child-Elemente rekursiv hinzufügen
   if ('children' in definition && definition.children) {
+    const layoutStyle = !isChildElement && definition.type === 'swimlane' ? (definition.style?.childLayout as 'stack' | 'grid' | 'none' | undefined) : undefined
+    const containerModeActive = !isChildElement && definition.type === 'swimlane' && definition.style?.containerMode
+    const containerLayoutForChildren = containerModeActive ? layoutStyle ?? 'stack' : undefined
+    const parentGeometry = mainElement.getGeometry()
+    const containerParentWidthForChildren = parentGeometry?.width ?? initialWidth
+
     definition.children.forEach((child: ChildElement) => {
-      const childElement = createElementFromDefinition(child, mainElement)
-      if (childElement && child.position.relative) {
-        childElement.geometry!.relative = true
-      }
+      createElementFromDefinition(child, mainElement, {
+        container:
+          containerLayoutForChildren && containerLayoutForChildren !== 'none'
+            ? {
+                layout: containerLayoutForChildren,
+                parentWidth: containerParentWidthForChildren
+              }
+            : undefined
+      })
     })
   }
 

@@ -229,7 +229,9 @@ const addSection = () => {
       fontSize: 12,
       fontColor: '#000000',
       align: 'left',
-      verticalAlign: 'top'
+      verticalAlign: 'top',
+      dropEnabled: true,
+      stackLayout: true
     },
     connectable: false,
     children: []
@@ -306,8 +308,15 @@ const autoLayoutChildren = () => {
     if (childLayout.value === 'stack') {
       child.position.y = currentY
       child.position.x = 0
-      child.position.width = 1
-      child.position.relative = true
+      child.position.width = props.element.width ?? child.position.width
+      child.position.relative = false
+
+      child.style = {
+        ...child.style,
+        dropEnabled: true,
+        stackLayout: true,
+        horizontal: false
+      }
 
       currentY += child.position.height + spacing
     }
