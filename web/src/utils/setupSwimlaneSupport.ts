@@ -54,6 +54,33 @@ export function setupSwimlaneSupport(graph: Graph): void {
   // Override moveCells um Auto-Stack bei Verschiebungen zu triggern
   const originalMoveCells = g.moveCells.bind(g)
   g.moveCells = function (cells, dx, dy, clone, target, evt) {
+    // Verhindere zirkuläre Referenzen: Prüfe ob eine Cell in sich selbst verschoben wird
+    if (target && cells && cells.length > 0) {
+      for (const cell of cells) {
+        // Einfache ID-Prüfung: Verhindere wenn target-ID === cell-ID
+        if (target.getId() === cell.getId()) {
+          console.warn('[moveCells] Prevented: Cannot move cell into itself (ID match)', {
+            cellId: cell.getId(),
+            cellLabel: cell.getValue()
+          })
+          return cells // Verhindere die Bewegung, gib original cells zurück
+        }
+        
+        // Prüfe auch ob target ein Nachfahre (descendant) der zu bewegenden Cell ist
+        let currentParent: Cell | null = target
+        while (currentParent) {
+          if (currentParent.getId() === cell.getId()) {
+            console.warn('[moveCells] Prevented: Cannot move cell into its own descendant', {
+              cellId: cell.getId(),
+              targetId: target.getId()
+            })
+            return cells // Verhindere die Bewegung
+          }
+          currentParent = currentParent.getParent?.() ?? null
+        }
+      }
+    }
+    
     const result = originalMoveCells(cells, dx, dy, clone, target, evt)
 
     // Auto-Stack wenn Ziel-Parent eine Swimlane ist
@@ -374,6 +401,31 @@ export function autoResizeSwimlane(graph: Graph, swimlane: Cell): void {
 export function addCellsToContainer(graph: Graph, cells: Cell[], target: Cell): Cell[] {
   if (!cells || cells.length === 0) return []
   if (!target) return []
+
+  // Verhindere zirkuläre Referenzen über ID-Vergleich
+  for (const cell of cells) {
+    // Einfache ID-Prüfung: Verhindere wenn target-ID === cell-ID
+    if (target.getId() === cell.getId()) {
+      console.warn('[addCellsToContainer] Prevented: Cannot add cell to itself (ID match)', {
+        cellId: cell.getId(),
+        cellLabel: cell.getValue()
+      })
+      return []
+    }
+    
+    // Prüfe ob target ein Nachfahre (descendant) der hinzuzufügenden Cell ist
+    let currentParent: Cell | null = target
+    while (currentParent) {
+      if (currentParent.getId() === cell.getId()) {
+        console.warn('[addCellsToContainer] Prevented: Cannot add cell to its own descendant', {
+          cellId: cell.getId(),
+          targetId: target.getId()
+        })
+        return []
+      }
+      currentParent = currentParent.getParent?.() ?? null
+    }
+  }
 
   const processedCells: Cell[] = []
 
