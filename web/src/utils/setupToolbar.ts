@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import type { Graph, Cell } from '@maxgraph/core'
 import { MaxToolbar, Geometry, cellArrayUtils } from '@maxgraph/core'
 import { Cell as MaxGraphCell } from '@maxgraph/core'
+import { addCellsToContainer, triggerAutoStack } from './swimlaneDropHandler'
 
 /**
  * Shape-Konfiguration für die Toolbar
@@ -32,15 +33,21 @@ const isTruthyAttribute = (value: string | null | undefined) => {
   return normalized !== '' && normalized !== '0' && normalized !== 'false'
 }
 
-const resolveContainerSectionTarget = (cell: Cell | null): Cell | null => {
+const resolveContainerSectionTarget = (cell: Cell | null, graph?: Graph): Cell | null => {
   let current = cell
 
   while (current) {
+    if (graph?.isSwimlane(current)) {
+      return current
+    }
+
     const attribute = (current as any).getAttribute?.('containerSection', null)
     if (isTruthyAttribute(attribute)) {
       return current
     }
-    current = current.getParent?.() ?? null
+
+    const nextParent = (current as any).getParent?.() ?? null
+    current = nextParent
   }
 
   return null
@@ -51,7 +58,7 @@ const resolveEffectiveParent = (graph: Graph, defaultParent: Cell, dropTarget: C
     return defaultParent
   }
 
-  const containerSection = resolveContainerSectionTarget(dropTarget)
+  const containerSection = resolveContainerSectionTarget(dropTarget, graph)
   if (containerSection) {
     return containerSection
   }
@@ -123,6 +130,7 @@ const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, sh
 
       if (shape.dropHandler) {
         shape.dropHandler(graphInstance, effectiveParent, { x: point.x, y: point.y })
+        triggerAutoStack(graphInstance, effectiveParent)
         return
       }
 
@@ -135,8 +143,8 @@ const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, sh
         cloned.geometry = newGeometry
       }
 
-      graphInstance.addCell(cloned, effectiveParent)
-      graphInstance.setSelectionCell(cloned)
+      // Nutze zentrale addCellsToContainer-Funktion
+      addCellsToContainer(graphInstance, [cloned], effectiveParent)
     }
 
     graphContainer.addEventListener('drop', context.dropHandler)
@@ -196,6 +204,7 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
 
         if (shape.dropHandler) {
           shape.dropHandler(graph, effectiveParent, { x: resolvedX, y: resolvedY })
+          triggerAutoStack(graph, effectiveParent)
           return
         }
 
@@ -206,6 +215,7 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
         }
         graph.addCell(cloned, effectiveParent)
         graph.setSelectionCell(cloned)
+        triggerAutoStack(graph, effectiveParent)
       }
 
       // Füge das Tool zur Toolbar hinzu

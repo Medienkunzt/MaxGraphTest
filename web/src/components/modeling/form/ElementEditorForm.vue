@@ -110,28 +110,6 @@
               <v-checkbox v-model="element.style.horizontal" label="Horizontal" density="compact" hint="Orientierung der Swimlane" @update:model-value="updateAll" />
             </v-col>
           </v-row>
-
-          <v-checkbox v-model="element.style.foldable" label="Einklappbar" density="compact" hint="Swimlane kann eingeklappt werden" class="mb-3" @update:model-value="updateAll" />
-
-          <v-text-field v-model="element.style.labelBackgroundColor" label="Label Hintergrundfarbe" variant="outlined" density="compact" type="color" class="mb-3" @input="updateAll" />
-
-          <!-- Swimlane-spezifische Einstellungen basierend auf den Beispielen -->
-          <v-select v-if="isSwimlaneType" v-model="element.style.layoutType" :items="layoutTypes" label="Layout-Verwaltung" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
-
-          <v-checkbox v-if="isSwimlaneType" v-model="element.style.resizeParent" label="Parent-Größe anpassen" density="compact" hint="Größenänderungen an Parent-Container weitergeben (SwimlaneManager)" class="mb-3" @update:model-value="updateAll" />
-
-          <v-checkbox v-if="isSwimlaneType" v-model="element.style.stackLayout" label="Stack-Layout aktivieren" density="compact" hint="Automatisches Stapeln von Child-Elementen" @update:model-value="updateAll" />
-
-          <!-- Zusätzliche Swimlane-Einstellungen -->
-          <v-divider class="my-4" />
-
-          <h4 class="text-subtitle-2 mb-3">Verbindungsregeln</h4>
-
-          <v-checkbox v-model="element.style.allowDanglingEdges" label="Freischwebende Verbindungen erlauben" density="compact" hint="Verbindungen ohne Ziel-Element zulassen" class="mb-2" @update:model-value="updateAll" />
-
-          <v-checkbox v-model="element.style.dropEnabled" label="Drop-Operationen aktivieren" density="compact" hint="Elemente können in diese Swimlane verschoben werden" class="mb-2" @update:model-value="updateAll" />
-
-          <v-checkbox v-model="element.style.splitEnabled" label="Edge-Splitting aktivieren" density="compact" hint="Verbindungen können durch Ablegen geteilt werden" @update:model-value="updateAll" />
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -188,7 +166,7 @@
               </v-card-text>
             </v-card>
 
-            <v-alert v-if="element.children.length === 0" type="info" variant="tonal" class="mt-2"> Keine Child Elemente definiert </v-alert>
+            <v-alert v-if="!element.children || element.children.length === 0" type="info" variant="tonal" class="mt-2"> Keine Child Elemente definiert </v-alert>
           </div>
         </v-expansion-panel-text>
       </v-expansion-panel>
@@ -211,6 +189,16 @@ const props = defineProps<Props>()
 // Local reference to the element for reactivity
 const element = computed(() => props.selectedElement)
 
+const ensureChildrenArray = () => {
+  if (!element.value) {
+    return
+  }
+
+  if (!Array.isArray(element.value.children)) {
+    element.value.children = []
+  }
+}
+
 // Emits
 const emit = defineEmits<{
   update: []
@@ -232,11 +220,6 @@ const predefinedShapes = [
   { label: 'Hexagon', value: 'hexagon' },
   { label: 'Cloud', value: 'cloud' },
   { label: 'Actor', value: 'actor' }
-]
-
-const layoutTypes = [
-  { title: 'Automatisches Layout', value: 'auto' },
-  { title: 'Manuelles Layout', value: 'manual' }
 ]
 
 // Computed Properties
@@ -268,39 +251,11 @@ const initializeSwimlaneDefaults = () => {
     if (element.value.style.horizontal === undefined) {
       element.value.style.horizontal = false
     }
-    if (element.value.style.foldable === undefined) {
-      element.value.style.foldable = true
-    }
     if (element.value.style.labelBackgroundColor === undefined) {
-      element.value.style.labelBackgroundColor = 'white'
-    }
-    if (element.value.style.stackLayout === undefined) {
-      element.value.style.stackLayout = false
-    }
-    if (element.value.style.resizeParent === undefined) {
-      element.value.style.resizeParent = false
-    }
-    if (element.value.style.containerMode === undefined) {
-      element.value.style.containerMode = false
-    }
-    if (element.value.style.childLayout === undefined) {
-      element.value.style.childLayout = 'stack'
+      element.value.style.labelBackgroundColor = 'transparent'
     }
     if (element.value.style.childSpacing === undefined) {
       element.value.style.childSpacing = 10
-    }
-    if (element.value.style.autoResizeChildren === undefined) {
-      element.value.style.autoResizeChildren = true
-    }
-    // Verbindungsregeln für Swimlanes
-    if (element.value.style.allowDanglingEdges === undefined) {
-      element.value.style.allowDanglingEdges = false
-    }
-    if (element.value.style.dropEnabled === undefined) {
-      element.value.style.dropEnabled = true
-    }
-    if (element.value.style.splitEnabled === undefined) {
-      element.value.style.splitEnabled = false
     }
     updateAll()
   }
@@ -319,6 +274,7 @@ const removeAnchorPoint = (index: number) => {
 }
 
 const addChildElement = () => {
+  ensureChildrenArray()
   const newChild: ChildElement = {
     id: `child_${Date.now()}`,
     label: 'Neues Child',
@@ -341,7 +297,7 @@ const addChildElement = () => {
     connectable: false,
     children: []
   }
-  element.value.children.push(newChild)
+  element.value.children!.push(newChild)
   updateAll()
 }
 
@@ -358,6 +314,16 @@ watch(
   (newType) => {
     if (newType === 'swimlane') {
       initializeSwimlaneDefaults()
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => element.value,
+  (newElement) => {
+    if (newElement) {
+      ensureChildrenArray()
     }
   },
   { immediate: true }

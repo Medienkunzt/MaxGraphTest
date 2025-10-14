@@ -10,7 +10,6 @@ export interface GlobalSettings {
 
   // Verbindungsregeln
   allowDanglingEdges?: boolean
-  dropEnabled?: boolean
   splitEnabled?: boolean
 
   // Grid-Einstellungen

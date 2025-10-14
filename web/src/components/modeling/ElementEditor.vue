@@ -329,8 +329,8 @@ const createElementFromDefinition = (
   parent: any,
   options: {
     container?: {
-      layout: 'stack' | 'grid' | 'none'
       parentWidth: number
+      spacing?: number
     }
   } = {}
 ): any => {
@@ -362,9 +362,8 @@ const createElementFromDefinition = (
     relative = false
   }
 
-  const containerLayout = options.container?.layout
   const containerParentWidth = options.container?.parentWidth
-  const isContainerStackChild = Boolean(options.container && isChildElement && containerLayout === 'stack')
+  const isContainerStackChild = Boolean(options.container && isChildElement)
 
   const initialX = isContainerStackChild ? 0 : x
   const initialY = isContainerStackChild && childPosition ? childPosition.y : y
@@ -388,19 +387,12 @@ const createElementFromDefinition = (
     cellStyle = {
       shape: 'swimlane',
       verticalAlign: 'middle',
-      labelBackgroundColor: swimlaneStyle.labelBackgroundColor ?? 'white',
+      labelBackgroundColor: swimlaneStyle.labelBackgroundColor ?? 'transparent',
       fontSize: swimlaneStyle.fontSize ?? 11,
       startSize: swimlaneStyle.startSize ?? 22,
       horizontal: swimlaneStyle.horizontal ?? false,
       fontColor: swimlaneStyle.fontColor ?? 'black',
       strokeColor: swimlaneStyle.strokeColor ?? 'black',
-      foldable: swimlaneStyle.foldable !== false,
-      stackLayout: swimlaneStyle.stackLayout ?? false,
-      dropEnabled: swimlaneStyle.dropEnabled ?? true,
-      allowDanglingEdges: swimlaneStyle.allowDanglingEdges ?? false,
-      splitEnabled: swimlaneStyle.splitEnabled ?? false,
-      resizeParent: swimlaneStyle.resizeParent ?? false,
-      ...(swimlaneStyle.layoutType ? { layoutType: swimlaneStyle.layoutType } : {}),
       editable: true,
       resizable: true,
       selectable: true
@@ -462,8 +454,8 @@ const createElementFromDefinition = (
   if (isChildElement && options.container) {
     const childDefinition = definition as ChildElement
     mainElement.setAttribute('containerSection', 'true')
-    if (options.container.layout) {
-      mainElement.setAttribute('containerSectionLayout', options.container.layout)
+    if (options.container.spacing !== undefined) {
+      mainElement.setAttribute('containerSectionSpacing', String(options.container.spacing))
     }
     if (childDefinition.id) {
       mainElement.setAttribute('containerSectionId', childDefinition.id)
@@ -475,21 +467,20 @@ const createElementFromDefinition = (
 
   // Child-Elemente rekursiv hinzufügen
   if ('children' in definition && definition.children) {
-    const layoutStyle = !isChildElement && definition.type === 'swimlane' ? (definition.style?.childLayout as 'stack' | 'grid' | 'none' | undefined) : undefined
-    const containerModeActive = !isChildElement && definition.type === 'swimlane' && definition.style?.containerMode
-    const containerLayoutForChildren = containerModeActive ? layoutStyle ?? 'stack' : undefined
     const parentGeometry = mainElement.getGeometry()
     const containerParentWidthForChildren = parentGeometry?.width ?? initialWidth
 
     definition.children.forEach((child: ChildElement) => {
+      const containerOptions =
+        !isChildElement && definition.type === 'swimlane'
+          ? {
+              parentWidth: containerParentWidthForChildren,
+              spacing: definition.style?.childSpacing ?? 0
+            }
+          : undefined
+
       createElementFromDefinition(child, mainElement, {
-        container:
-          containerLayoutForChildren && containerLayoutForChildren !== 'none'
-            ? {
-                layout: containerLayoutForChildren,
-                parentWidth: containerParentWidthForChildren
-              }
-            : undefined
+        container: containerOptions
       })
     })
   }

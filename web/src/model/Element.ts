@@ -10,19 +10,8 @@ export interface ElementStyle {
   // Swimlane-spezifische Eigenschaften (basierend auf MaxGraph Beispielen)
   startSize?: number
   horizontal?: boolean
-  foldable?: boolean
   labelBackgroundColor?: string
-  layoutType?: string
-  resizeParent?: boolean
-  stackLayout?: boolean
-  containerMode?: boolean
-  childLayout?: 'stack' | 'grid' | 'none'
   childSpacing?: number
-  autoResizeChildren?: boolean
-  // Verbindungsregeln
-  allowDanglingEdges?: boolean
-  dropEnabled?: boolean
-  splitEnabled?: boolean
 }
 
 export interface AnchorPoint {

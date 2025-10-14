@@ -2,29 +2,19 @@
   <v-card variant="outlined" class="mb-4">
     <v-card-title class="py-2 d-flex align-center">
       <v-icon icon="mdi-table-split-cell" class="mr-2" />
-      <span>Swimlane Container-Modus</span>
-      <v-spacer />
-      <v-switch v-model="containerMode" label="Container" color="primary" density="compact" hide-details @update:model-value="toggleContainerMode" />
+      <span>Swimlane-Abschnitte</span>
     </v-card-title>
 
     <v-divider />
 
-    <v-card-text v-if="containerMode">
+    <v-card-text>
       <v-alert type="info" variant="tonal" density="compact" class="mb-4">
-        <div class="text-caption">Container-Modus ermöglicht das Hinzufügen von automatisch angeordneten Abschnitten (z.B. für Klassendiagramme: Header, Attribute, Methoden).</div>
+        <div class="text-caption">Definiere Abschnitte, die innerhalb der Swimlane automatisch gestapelt werden (z.&nbsp;B. Kopf, Attribute, Methoden).</div>
       </v-alert>
 
       <v-row dense>
-        <v-col cols="12">
-          <v-select v-model="childLayout" label="Layout-Typ" :items="layoutTypes" density="compact" variant="outlined" />
-        </v-col>
-
-        <v-col v-if="childLayout !== 'none'" cols="6">
+        <v-col cols="6">
           <v-text-field v-model.number="childSpacing" label="Abstand zwischen Abschnitten" type="number" density="compact" variant="outlined" suffix="px" />
-        </v-col>
-
-        <v-col v-if="childLayout !== 'none'" cols="6">
-          <v-switch v-model="autoResizeChildren" label="Auto-Größe" color="primary" density="compact" hide-details />
         </v-col>
       </v-row>
 
@@ -56,7 +46,7 @@
         </v-list-item>
       </v-list>
 
-      <v-alert v-if="children.length === 0" type="info" variant="tonal" density="compact" class="mt-2"> Keine Abschnitte definiert. Klicken Sie auf "Abschnitt", um einen hinzuzufügen. </v-alert>
+      <v-alert v-if="children.length === 0" type="info" variant="tonal" density="compact" class="mt-2"> Keine Abschnitte definiert. Klicke auf "Abschnitt", um einen hinzuzufügen. </v-alert>
     </v-card-text>
 
     <!-- Section Editor Dialog -->
@@ -127,37 +117,10 @@ const sectionDialog = ref(false)
 const editingSection = ref<ChildElement | null>(null)
 const editingSectionIndex = ref(-1)
 
-const containerMode = computed({
-  get: () => props.element.type === 'swimlane' && props.element.style.containerMode === true,
-  set: (value: boolean) => {
-    props.element.style.containerMode = value
-    if (value && !props.element.children) {
-      props.element.children = []
-    }
-    emit('update')
-  }
-})
-
-const childLayout = computed<'stack' | 'grid' | 'none'>({
-  get: () => (props.element.style.childLayout as 'stack' | 'grid' | 'none') ?? 'stack',
-  set: (value) => {
-    props.element.style.childLayout = value
-    emit('update')
-  }
-})
-
 const childSpacing = computed<number>({
   get: () => props.element.style.childSpacing ?? 10,
   set: (value) => {
     props.element.style.childSpacing = value
-    emit('update')
-  }
-})
-
-const autoResizeChildren = computed({
-  get: () => props.element.style.autoResizeChildren ?? true,
-  set: (value: boolean) => {
-    props.element.style.autoResizeChildren = value
     emit('update')
   }
 })
@@ -172,12 +135,6 @@ const ensureChildrenArray = () => {
 }
 
 // Options
-const layoutTypes = [
-  { title: 'Gestapelt (Stack)', value: 'stack' },
-  { title: 'Grid', value: 'grid' },
-  { title: 'Manuell', value: 'none' }
-]
-
 const alignOptions = [
   { title: 'Links', value: 'left' },
   { title: 'Mitte', value: 'center' },
@@ -185,32 +142,7 @@ const alignOptions = [
 ]
 
 // Methods
-const initializeContainerMode = () => {
-  props.element.style.containerMode = true
-  ensureChildrenArray()
-  if (!props.element.style.childLayout) {
-    props.element.style.childLayout = 'stack'
-  }
-  if (props.element.style.childSpacing === undefined) {
-    props.element.style.childSpacing = 10
-  }
-  if (props.element.style.autoResizeChildren === undefined) {
-    props.element.style.autoResizeChildren = true
-  }
-  emit('update')
-}
-
-const toggleContainerMode = (value: boolean | null) => {
-  const enabled = value ?? false
-  if (enabled) {
-    initializeContainerMode()
-  }
-  containerMode.value = enabled
-}
-
 const addSection = () => {
-  const currentY = calculateNextY()
-
   const newSection: ChildElement = {
     id: `section_${Date.now()}`,
     label: `Abschnitt ${children.value.length + 1}`,
@@ -218,10 +150,10 @@ const addSection = () => {
     predefinedShape: 'label',
     position: {
       x: 0,
-      y: currentY,
-      width: 1,
+      y: 0,
+      width: props.element.width ?? 1,
       height: 30,
-      relative: true
+      relative: false
     },
     style: {
       fillColor: 'transparent',
@@ -229,9 +161,7 @@ const addSection = () => {
       fontSize: 12,
       fontColor: '#000000',
       align: 'left',
-      verticalAlign: 'top',
-      dropEnabled: true,
-      stackLayout: true
+      verticalAlign: 'top'
     },
     connectable: false,
     children: []
@@ -240,22 +170,6 @@ const addSection = () => {
   ensureChildrenArray().push(newSection)
   autoLayoutChildren()
   emit('update')
-}
-
-const calculateNextY = (): number => {
-  const startSize = props.element.style.startSize || 26
-  const spacing = childSpacing.value
-
-  if (children.value.length === 0) {
-    return startSize
-  }
-
-  let totalY = startSize
-  children.value.forEach((child) => {
-    totalY += child.position.height + spacing
-  })
-
-  return totalY
 }
 
 const editSection = (child: ChildElement, index: number) => {
@@ -298,36 +212,28 @@ const moveSection = (index: number, direction: number) => {
 }
 
 const autoLayoutChildren = () => {
-  if (!props.element.children || childLayout.value === 'none') return
+  if (!props.element.children) return
 
   const startSize = props.element.style.startSize || 26
   const spacing = childSpacing.value
   let currentY = startSize
 
   props.element.children.forEach((child) => {
-    if (childLayout.value === 'stack') {
-      child.position.y = currentY
-      child.position.x = 0
-      child.position.width = props.element.width ?? child.position.width
-      child.position.relative = false
+    child.position.y = currentY
+    child.position.x = 0
+    child.position.width = props.element.width ?? child.position.width
+    child.position.relative = false
 
-      child.style = {
-        ...child.style,
-        dropEnabled: true,
-        stackLayout: true,
-        horizontal: false
-      }
-
-      currentY += child.position.height + spacing
+    child.style = {
+      ...child.style,
+      horizontal: false
     }
+
+    currentY += child.position.height + spacing
   })
 
-  // Auto-resize if enabled
-  if (autoResizeChildren.value) {
-    const totalHeight = currentY
-    if (totalHeight > props.element.height) {
-      props.element.height = totalHeight
-    }
+  if (currentY > props.element.height) {
+    props.element.height = currentY
   }
 }
 

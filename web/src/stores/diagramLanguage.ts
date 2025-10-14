@@ -328,17 +328,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             verticalAlign: 'top',
             startSize: 32,
             horizontal: true,
-            foldable: true,
-            labelBackgroundColor: '#bbdefb',
-            stackLayout: false,
-            resizeParent: false,
-            dropEnabled: true,
-            allowDanglingEdges: true,
-            splitEnabled: false,
-            containerMode: false,
-            childLayout: 'stack',
-            childSpacing: 10,
-            autoResizeChildren: true
+            labelBackgroundColor: 'transparent',
+            childSpacing: 10
           },
           anchorPoints: [
             { x: 0.5, y: 0 },
