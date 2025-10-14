@@ -12,15 +12,7 @@
         <div class="text-caption">Definiere Abschnitte, die innerhalb der Swimlane automatisch gestapelt werden (z.&nbsp;B. Kopf, Attribute, Methoden).</div>
       </v-alert>
 
-      <v-row dense>
-        <v-col cols="6">
-          <v-text-field v-model.number="childSpacing" label="Abstand zwischen Abschnitten" type="number" density="compact" variant="outlined" suffix="px" />
-        </v-col>
-      </v-row>
-
       <!-- Sections Verwaltung -->
-      <v-divider class="my-4" />
-
       <div class="d-flex align-center mb-3">
         <span class="text-subtitle-2">Container-Abschnitte</span>
         <v-spacer />
@@ -117,14 +109,6 @@ const sectionDialog = ref(false)
 const editingSection = ref<ChildElement | null>(null)
 const editingSectionIndex = ref(-1)
 
-const childSpacing = computed<number>({
-  get: () => props.element.style.childSpacing ?? 10,
-  set: (value) => {
-    props.element.style.childSpacing = value
-    emit('update')
-  }
-})
-
 const children = computed(() => props.element.children ?? [])
 
 const ensureChildrenArray = () => {
@@ -215,7 +199,7 @@ const autoLayoutChildren = () => {
   if (!props.element.children) return
 
   const startSize = props.element.style.startSize || 26
-  const spacing = childSpacing.value
+  const spacing = props.element.style.childSpacing || 10
   let currentY = startSize
 
   props.element.children.forEach((child) => {

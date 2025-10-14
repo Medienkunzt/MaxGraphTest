@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, Geometry, ConnectionConstraint, Point, EventObject } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, Geometry, ConnectionConstraint, Point } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -54,7 +54,7 @@ import { useGridSettings } from '@/composables/useGridSettings'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
 import { setupPanningHandler } from '@/utils/setupPanningHandler'
-import { addCellsToContainer } from '@/utils/swimlaneDropHandler'
+import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import type { DiagramElement } from '@/model/Element'
@@ -261,9 +261,8 @@ const initGraph = () => {
 
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = EdgeStyle.OrthConnector
 
-  // Swimlane-Unterstützung implementieren (basierend auf Swimlanes.js)
-  // Entferne globale Styles - jedes Element hat seine eigenen Einstellungen
-  setupSwimlaneSupport()
+  // Swimlane-Unterstützung aktivieren
+  setupSwimlaneSupport(graph.value)
 
   parent.value = graph.value.getDefaultParent()
 
@@ -316,6 +315,11 @@ const buildLanguageShapes = computed(() => {
     if (element.type === 'swimlane') {
       baseStyle.startSize = style.startSize ?? 32
       baseStyle.horizontal = style.horizontal ?? false
+      baseStyle.childSpacing = style.childSpacing ?? 10
+      baseStyle.childSpacingX = style.childSpacingX ?? 10
+      baseStyle.autoFitWidth = style.autoFitWidth ?? true
+      baseStyle.autoStackY = style.autoStackY ?? true
+      baseStyle.autoResize = style.autoResize ?? true
     }
 
     return {
@@ -380,245 +384,6 @@ watch(
 
 const emitUpdatedModel = () => {
   emit('update:model', graph.value!.getDataModel())
-}
-
-const setupSwimlaneSupport = () => {
-  if (!graph.value) return
-
-  const g = graph.value
-  const model = g.getDataModel()
-
-  // Erweiterte Graph-Typdefinition für Swimlane-spezifische Methoden
-  type CustomGraph = Graph & {
-    isPool(cell: Cell | null): boolean
-    isSwimlane(cell: Cell | null): boolean
-    getSwimlaneAt(x: number, y: number, parent?: Cell | null): Cell | null
-    getDropTarget(cells: Cell[] | null, evt?: Event | null, target?: Cell | null, clone?: boolean): Cell | null
-    getPointForEvent(evt: MouseEvent): Point
-  }
-
-  // Füge Hilfsfunktion hinzu um Pools zu identifizieren
-  ;(g as CustomGraph).isPool = function (cell: Cell | null) {
-    const parent = cell?.getParent()
-    return parent?.getParent() == model.getRoot()
-  }
-
-  // SwimlaneManager synchronisiert die Größen aller Swimlanes auf gleicher Ebene
-  // Deaktiviert, damit Swimlanes unabhängig voneinander dimensioniert werden können
-  // Wenn gewünscht, kann dies über ein Style-Attribut gesteuert werden
-  // new SwimlaneManager(g)
-
-  // Hilfsfunktion um zu prüfen, ob für eine Swimlane das automatische Stack-Layout aktiv ist
-  const isContainerSectionCell = (cell: Cell | null): cell is Cell => {
-    if (!cell) {
-      return false
-    }
-
-    const flag = cell.getAttribute?.('containerSection', null)
-    if (flag == null) {
-      return false
-    }
-
-    const normalized = flag.toString().trim().toLowerCase()
-    return normalized !== '' && normalized !== '0' && normalized !== 'false'
-  }
-
-  const stackContainerChildren = (container: Cell) => {
-    let spacing = 0
-    let startOffset = 0
-
-    if (isContainerSectionCell(container)) {
-      const spacingAttr = container.getAttribute?.('containerSectionSpacing', null)
-      if (spacingAttr != null) {
-        const parsed = Number(spacingAttr)
-        spacing = Number.isFinite(parsed) ? parsed : 0
-      }
-    } else {
-      const style = g.getCellStyle(container) as Record<string, any>
-      spacing = Number(style?.childSpacing ?? 0)
-      startOffset = Number(style?.startSize ?? 0)
-    }
-
-    const geometry = container.getGeometry()
-    if (!geometry) {
-      return
-    }
-
-    const width = geometry.width
-
-    let nextY = startOffset
-
-    g.batchUpdate(() => {
-      const childCount = container.getChildCount()
-      for (let i = 0; i < childCount; i++) {
-        const child = container.getChildAt(i)
-        if (!child || child.isEdge()) {
-          continue
-        }
-
-        const childGeo = child.getGeometry()
-        if (!childGeo) {
-          continue
-        }
-
-        childGeo.x = 0
-        childGeo.y = nextY
-        childGeo.width = width
-        childGeo.relative = false
-
-        g.getDataModel().setGeometry(child, childGeo)
-
-        const height = childGeo.height
-        nextY += height + spacing
-      }
-
-      if (!isContainerSectionCell(container) && nextY !== geometry.height) {
-        const newGeo = geometry.clone()
-        newGeo.height = Math.max(nextY, geometry.height)
-        g.getDataModel().setGeometry(container, newGeo)
-      }
-
-      if (isContainerSectionCell(container)) {
-        const parent = container.getParent?.()
-        if (parent && g.isSwimlane(parent)) {
-          stackContainerChildren(parent)
-        }
-      }
-    })
-  }
-
-  ;(g as any).autoStackChildren = stackContainerChildren
-
-  const resolveContainerTarget = (candidate: Cell | null | undefined): Cell | null => {
-    let current: Cell | null | undefined = candidate
-
-    while (current) {
-      if (isContainerSectionCell(current) || g.isSwimlane(current)) {
-        return current
-      }
-
-      const nextParent = (current as Cell).getParent?.() ?? null
-      current = nextParent
-    }
-
-    return null
-  }
-
-  // Drop-Funktionalität aktivieren
-  g.setDropEnabled(true)
-  g.setSplitEnabled(false)
-
-  const defaultGetDropTarget = g.getDropTarget.bind(g) as CustomGraph['getDropTarget']
-
-  g.getDropTarget = function (this: CustomGraph, cells, evt, target, clone) {
-    let dropTarget = defaultGetDropTarget(cells ?? [], evt, target, clone)
-
-    // Bei Swimlanes: resolveContainerTarget verwenden
-    const resolved = resolveContainerTarget(dropTarget ?? target)
-    if (resolved && (this.isSwimlane(resolved) || isContainerSectionCell(resolved))) {
-      return resolved
-    }
-
-    return dropTarget
-  }
-
-  // Override moveCells um die zentrale Drop-Logik zu verwenden
-  const originalMoveCells = g.moveCells.bind(g)
-  g.moveCells = function (cells, dx, dy, clone, target, evt) {
-    // Wenn ein Swimlane/Container-Target existiert, nutze zentrale addCellsToContainer-Funktion
-    if (target && (this.isSwimlane(target) || isContainerSectionCell(target))) {
-      const regularCells = cells.filter((c) => !this.isSwimlane(c) && !(this as CustomGraph).isPool(c) && !c.isEdge())
-
-      if (regularCells.length > 0) {
-        return addCellsToContainer(this, regularCells, target)
-      }
-    }
-
-    // Sonst: normale moveCells-Logik
-    return originalMoveCells(cells, dx, dy, clone, target, evt)
-  }
-
-  // Swimlane Drop-Validierung
-  g.isValidDropTarget = function (this: CustomGraph, target, cells, evt) {
-    if (this.isSplitEnabled() && this.isSplitTarget(target, cells, evt)) {
-      return true
-    }
-
-    cells ??= []
-    const hasSwimlaneCell = cells.some((c) => this.isSwimlane(c))
-    const hasPoolCell = cells.some((c) => (this as CustomGraph).isPool(c))
-    const hasRegularCell = cells.some((c) => !this.isSwimlane(c) && !(this as CustomGraph).isPool(c))
-
-    const containerTarget = resolveContainerTarget(target)
-    const effectiveTarget = containerTarget ?? target
-
-    if (hasPoolCell) {
-      return !effectiveTarget || effectiveTarget === this.getDefaultParent()
-    }
-
-    if (hasSwimlaneCell) {
-      return !effectiveTarget || this.isSwimlane(effectiveTarget)
-    }
-
-    if (hasRegularCell && effectiveTarget) {
-      if (this.isSwimlane(effectiveTarget) || isContainerSectionCell(effectiveTarget)) {
-        return true
-      }
-      return true
-    }
-
-    return hasRegularCell
-  }
-
-  // Auto-Stack bei ADD_CELLS
-  g.addListener(InternalEvent.ADD_CELLS, function (_sender: any, evt: EventObject) {
-    const addedCells = (evt.getProperty('cells') as Cell[] | undefined) ?? []
-    if (!addedCells.length) return
-
-    const parentCell = (evt.getProperty('parent') as Cell | null) ?? addedCells[0].getParent?.() ?? null
-    if (parentCell && (g.isSwimlane(parentCell) || isContainerSectionCell(parentCell))) {
-      stackContainerChildren(parentCell)
-    }
-  })
-
-  // Verhindere das Entfernen von Cells aus Parent beim Verschieben innerhalb des Graph
-  const selectionHandler = g.getPlugin<SelectionHandler>('SelectionHandler')
-  if (selectionHandler) {
-    // Erlaube das Verschieben von Cells zwischen Parents (z.B. aus Swimlane heraus)
-    selectionHandler.setRemoveCellsFromParent(true)
-  }
-
-  // Erlaube explizit das Verschieben von Swimlanes
-  const defaultIsCellMovable = g.isCellMovable.bind(g)
-  g.isCellMovable = function (cell) {
-    if (cell && this.isSwimlane(cell)) {
-      return true
-    }
-    return defaultIsCellMovable(cell)
-  }
-
-  // Stelle sicher, dass Swimlanes einklappbar bleiben
-  const defaultIsCellFoldable = g.isCellFoldable.bind(g)
-  g.isCellFoldable = function (cell, collapse) {
-    if (cell && this.isSwimlane(cell)) {
-      const style = this.getCellStyle(cell)
-      return style?.foldable !== false
-    }
-    return defaultIsCellFoldable(cell, collapse)
-  }
-
-  // Keeps widths on collapse/expand
-  const foldingHandler = function (_sender: any, evt: any) {
-    const cells = evt.getProperty('cells')
-    for (let i = 0; i < cells.length; i++) {
-      const geo = cells[i].getGeometry()
-      if (geo.alternateBounds != null) {
-        geo.width = geo.alternateBounds.width
-      }
-    }
-  }
-
-  g.addListener(InternalEvent.FOLD_CELLS, foldingHandler)
 }
 
 defineExpose({

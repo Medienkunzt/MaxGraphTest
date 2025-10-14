@@ -395,7 +395,13 @@ const createElementFromDefinition = (
       strokeColor: swimlaneStyle.strokeColor ?? 'black',
       editable: true,
       resizable: true,
-      selectable: true
+      selectable: true,
+      // Auto-Layout Optionen
+      childSpacing: swimlaneStyle.childSpacing ?? 10,
+      childSpacingX: swimlaneStyle.childSpacingX ?? 10,
+      autoFitWidth: swimlaneStyle.autoFitWidth ?? true,
+      autoStackY: swimlaneStyle.autoStackY ?? true,
+      autoResize: swimlaneStyle.autoResize ?? true
     }
 
     if (swimlaneStyle.fillColor) {

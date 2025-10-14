@@ -11,7 +11,12 @@ export interface ElementStyle {
   startSize?: number
   horizontal?: boolean
   labelBackgroundColor?: string
-  childSpacing?: number
+  childSpacing?: number // Vertikaler Abstand zwischen Children (Y-Achse)
+  childSpacingX?: number // Horizontaler Abstand (X-Achse / links)
+  // Auto-Layout Optionen für Container/Swimlanes
+  autoFitWidth?: boolean // Children automatisch auf volle Container-Breite strecken
+  autoStackY?: boolean // Children automatisch vertikal stapeln (Y-Position)
+  autoResize?: boolean // Swimlane automatisch an Inhalt anpassen
 }
 
 export interface AnchorPoint {

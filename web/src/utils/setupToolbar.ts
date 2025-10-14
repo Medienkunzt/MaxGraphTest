@@ -2,7 +2,7 @@ import type { Ref } from 'vue'
 import type { Graph, Cell } from '@maxgraph/core'
 import { MaxToolbar, Geometry, cellArrayUtils } from '@maxgraph/core'
 import { Cell as MaxGraphCell } from '@maxgraph/core'
-import { addCellsToContainer, triggerAutoStack } from './swimlaneDropHandler'
+import { addCellsToContainer } from './setupSwimlaneSupport'
 
 /**
  * Shape-Konfiguration für die Toolbar
@@ -130,7 +130,6 @@ const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, sh
 
       if (shape.dropHandler) {
         shape.dropHandler(graphInstance, effectiveParent, { x: point.x, y: point.y })
-        triggerAutoStack(graphInstance, effectiveParent)
         return
       }
 
@@ -143,7 +142,7 @@ const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, sh
         cloned.geometry = newGeometry
       }
 
-      // Nutze zentrale addCellsToContainer-Funktion
+      // Nutze zentrale Funktion für Container-Drops
       addCellsToContainer(graphInstance, [cloned], effectiveParent)
     }
 
@@ -204,7 +203,6 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
 
         if (shape.dropHandler) {
           shape.dropHandler(graph, effectiveParent, { x: resolvedX, y: resolvedY })
-          triggerAutoStack(graph, effectiveParent)
           return
         }
 
@@ -213,9 +211,9 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
           cloned.geometry.x = resolvedX
           cloned.geometry.y = resolvedY
         }
-        graph.addCell(cloned, effectiveParent)
-        graph.setSelectionCell(cloned)
-        triggerAutoStack(graph, effectiveParent)
+
+        // Nutze zentrale Funktion für Container-Drops
+        addCellsToContainer(graph, [cloned], effectiveParent)
       }
 
       // Füge das Tool zur Toolbar hinzu
