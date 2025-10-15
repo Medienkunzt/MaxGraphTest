@@ -161,114 +161,33 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       name: 'UML Klassendiagramm',
       tags: ['UML', 'Objektorientiert', 'Software-Architektur'],
       elements: [
+        // Klasse (mit 3 Abschnitten: Name, Attribute, Methoden)
         {
-          id: 'class-element',
+          id: 'uml-class',
           name: 'Klasse',
-          label: 'Klasse',
-          type: 'canvas2d',
+          label: 'Klassenname',
+          type: 'swimlane',
           x: 50,
           y: 50,
-          width: 120,
-          height: 80,
-          canvas: 'RECT 0 0 1 1\nMOVE 0 0.3\nLINE 1 0.3',
+          width: 180,
+          height: 150,
           style: {
-            strokeColor: '#000000',
-            fillColor: '#ffffff',
+            strokeColor: '#0d47a1',
+            fillColor: '#e3f2fd',
             strokeWidth: 2,
-            fontSize: 12,
-            fontColor: '#000000',
+            fontSize: 13,
+            fontColor: '#0d47a1',
             fontFamily: 'Arial',
             align: 'center',
-            verticalAlign: 'middle'
-          },
-          anchorPoints: [
-            { x: 0, y: 0.5 },
-            { x: 1, y: 0.5 },
-            { x: 0.5, y: 0 },
-            { x: 0.5, y: 1 }
-          ],
-          children: [
-            {
-              id: 'attributes',
-              name: 'Attributes',
-              label: 'Attributes',
-              type: 'predefined',
-              predefinedShape: 'label',
-              position: {
-                x: 0,
-                y: 1,
-                width: 100,
-                height: 20,
-                relative: true
-              },
-              style: {
-                strokeColor: 'transparent',
-                fillColor: 'transparent',
-                strokeWidth: 1,
-                align: 'left',
-                verticalAlign: 'top',
-                fontSize: 10,
-                fontColor: '#000000',
-                fontFamily: 'Arial'
-              },
-              connectable: false,
-              children: []
-            }
-          ],
-          connectable: true,
-          resizable: true,
-          movable: true
-        },
-        {
-          id: 'actor-element',
-          name: 'Akteur',
-          label: 'Akteur',
-          type: 'predefined',
-          x: 50,
-          y: 50,
-          width: 60,
-          height: 80,
-          predefinedShape: 'actor',
-          style: {
-            strokeColor: '#000000',
-            fillColor: '#e1f5fe',
-            strokeWidth: 2,
-            fontSize: 10,
-            fontColor: '#000000',
-            fontFamily: 'Arial',
-            align: 'center',
-            verticalAlign: 'bottom'
-          },
-          anchorPoints: [
-            { x: 0, y: 0.5 },
-            { x: 1, y: 0.5 },
-            { x: 0.5, y: 0 },
-            { x: 0.5, y: 1 }
-          ],
-          children: [],
-          connectable: true,
-          resizable: false,
-          movable: true
-        },
-        {
-          id: 'interface-element',
-          name: 'Interface',
-          label: 'Interface',
-          type: 'canvas2d',
-          x: 50,
-          y: 50,
-          width: 120,
-          height: 60,
-          canvas: 'RECT 0 0 1 1\nMOVE 0.1 0.1\nLINE 0.9 0.1\nMOVE 0.1 0.2\nLINE 0.9 0.2',
-          style: {
-            strokeColor: '#666666',
-            fillColor: '#f5f5f5',
-            strokeWidth: 1,
-            fontSize: 11,
-            fontColor: '#666666',
-            fontFamily: 'Arial',
-            align: 'center',
-            verticalAlign: 'middle'
+            verticalAlign: 'top',
+            startSize: 28,
+            horizontal: true,
+            labelBackgroundColor: '#ffffff',
+            childSpacing: 0,
+            childSpacingX: 0,
+            autoFitWidth: false,
+            autoStackY: true,
+            autoResize: false
           },
           anchorPoints: [
             { x: 0, y: 0.5 },
@@ -281,25 +200,33 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           resizable: true,
           movable: true
         },
+        // Abstrakte Klasse
         {
-          id: 'abstract-class-element',
+          id: 'uml-abstract-class',
           name: 'Abstrakte Klasse',
-          label: 'Abstrakte Klasse',
-          type: 'canvas2d',
+          label: '<<abstract>>\nAbstrakteKlasse',
+          type: 'swimlane',
           x: 50,
           y: 50,
-          width: 140,
-          height: 80,
-          canvas: 'RECT 0 0 1 1\nMOVE 0 0.25\nLINE 1 0.25\nMOVE 0 0.5\nLINE 1 0.5',
+          width: 180,
+          height: 150,
           style: {
-            strokeColor: '#000000',
-            fillColor: '#fffacd',
+            strokeColor: '#bf360c',
+            fillColor: '#fff3e0',
             strokeWidth: 2,
             fontSize: 12,
-            fontColor: '#000000',
+            fontColor: '#bf360c',
             fontFamily: 'Arial',
             align: 'center',
-            verticalAlign: 'middle'
+            verticalAlign: 'top',
+            startSize: 38,
+            horizontal: true,
+            labelBackgroundColor: '#ffffff',
+            childSpacing: 0,
+            childSpacingX: 0,
+            autoFitWidth: false,
+            autoStackY: true,
+            autoResize: false
           },
           anchorPoints: [
             { x: 0, y: 0.5 },
@@ -312,64 +239,172 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           resizable: true,
           movable: true
         },
+        // Interface
         {
-          id: 'class-container-swimlane',
-          name: 'Klassen-Container',
-          label: 'Klasse',
+          id: 'uml-interface',
+          name: 'Interface',
+          label: '<<interface>>\nInterfaceName',
+          type: 'swimlane',
+          x: 50,
+          y: 50,
+          width: 180,
+          height: 120,
+          style: {
+            strokeColor: '#00695c',
+            fillColor: '#e0f2f1',
+            strokeWidth: 1,
+            fontSize: 12,
+            fontColor: '#004d40',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'top',
+            startSize: 38,
+            horizontal: true,
+            labelBackgroundColor: '#ffffff',
+            childSpacing: 0,
+            childSpacingX: 0,
+            autoFitWidth: false,
+            autoStackY: true,
+            autoResize: false
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true
+        },
+        // Enumeration
+        {
+          id: 'uml-enum',
+          name: 'Enumeration',
+          label: '<<enumeration>>\nEnumName',
+          type: 'swimlane',
+          x: 50,
+          y: 50,
+          width: 180,
+          height: 100,
+          style: {
+            strokeColor: '#4a148c',
+            fillColor: '#f3e5f5',
+            strokeWidth: 1,
+            fontSize: 12,
+            fontColor: '#4a148c',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'top',
+            startSize: 38,
+            horizontal: true,
+            labelBackgroundColor: '#ffffff',
+            childSpacing: 0,
+            childSpacingX: 0,
+            autoFitWidth: false,
+            autoStackY: true,
+            autoResize: false
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true
+        },
+        // Paket
+        {
+          id: 'uml-package',
+          name: 'Paket',
+          label: 'paket',
           type: 'swimlane',
           x: 100,
           y: 100,
-          width: 200,
-          height: 160,
+          width: 300,
+          height: 220,
           style: {
-            strokeColor: '#1e88e5',
-            fillColor: '#e3f2fd',
+            strokeColor: '#546e7a',
+            fillColor: '#eceff1',
             strokeWidth: 2,
-            fontSize: 12,
-            fontColor: '#0d47a1',
+            fontSize: 13,
+            fontColor: '#263238',
             fontFamily: 'Arial',
             align: 'left',
             verticalAlign: 'top',
-            startSize: 32,
+            startSize: 40,
             horizontal: true,
             labelBackgroundColor: 'transparent',
-            childSpacing: 10
+            childSpacing: 15,
+            childSpacingX: 15,
+            autoFitWidth: true,
+            autoStackY: false,
+            autoResize: true
+          },
+          anchorPoints: [],
+          children: [],
+          connectable: false,
+          resizable: true,
+          movable: true
+        },
+        // Notiz
+        {
+          id: 'uml-note',
+          name: 'Notiz',
+          label: 'Notiz',
+          type: 'canvas2d',
+          x: 40,
+          y: 40,
+          width: 160,
+          height: 100,
+          canvas: 'MOVE 0 0\nLINE 0.85 0\nLINE 1 0.15\nLINE 1 1\nLINE 0 1\nCLOSE\nMOVE 0.85 0\nLINE 0.85 0.15\nLINE 1 0.15',
+          style: {
+            strokeColor: '#757575',
+            fillColor: '#fffde7',
+            strokeWidth: 1,
+            fontSize: 11,
+            fontColor: '#424242',
+            fontFamily: 'Arial',
+            align: 'left',
+            verticalAlign: 'top'
           },
           anchorPoints: [
-            { x: 0.5, y: 0 },
-            { x: 0.5, y: 1 },
             { x: 0, y: 0.5 },
-            { x: 1, y: 0.5 }
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
           ],
           children: [],
           connectable: false,
           resizable: true,
           movable: true
         },
+        // Text-Label für Attribute/Methoden
         {
-          id: 'class-text-label',
-          name: 'Klassen-Label',
-          label: 'Neues Label',
+          id: 'uml-text-label',
+          name: 'Text-Label',
+          label: '+ attribut: Typ',
           type: 'predefined',
           x: 0,
           y: 0,
-          width: 120,
-          height: 24,
+          width: 160,
+          height: 20,
           predefinedShape: 'label',
           style: {
             strokeColor: 'transparent',
             fillColor: 'transparent',
             strokeWidth: 0,
-            fontSize: 12,
-            fontColor: '#1b1b1b',
-            fontFamily: 'Arial',
+            fontSize: 11,
+            fontColor: '#000000',
+            fontFamily: 'Courier New',
             align: 'left',
             verticalAlign: 'middle'
           },
-          anchorPoints: [
-            { x: 0, y: 0.5 },
-            { x: 1, y: 0.5 }
-          ],
+          anchorPoints: [],
           children: [],
           connectable: false,
           resizable: true,
@@ -377,10 +412,11 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         }
       ],
       connections: [
+        // Vererbung (Generalisierung)
         {
-          id: 'inheritance-connection',
+          id: 'uml-inheritance',
           name: 'Vererbung',
-          label: 'erbt von',
+          label: '',
           type: 'inheritance',
           style: {
             lineStyle: 'solid',
@@ -396,19 +432,20 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           validation: {
             allowSelfConnection: false,
             allowMultipleConnections: false,
-            sourceElementTypes: 'class,abstract-class',
-            targetElementTypes: 'class,abstract-class'
+            sourceElementTypes: 'uml-class,uml-abstract-class',
+            targetElementTypes: 'uml-class,uml-abstract-class'
           }
         },
+        // Realisierung (Interface-Implementierung)
         {
-          id: 'implementation-connection',
-          name: 'Implementierung',
-          label: 'implementiert',
+          id: 'uml-realization',
+          name: 'Realisierung',
+          label: '',
           type: 'realization',
           style: {
             lineStyle: 'dashed',
             strokeColor: '#000000',
-            strokeWidth: 2,
+            strokeWidth: 1,
             startArrow: 'none',
             endArrow: 'classic'
           },
@@ -419,12 +456,13 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           validation: {
             allowSelfConnection: false,
             allowMultipleConnections: true,
-            sourceElementTypes: 'class',
-            targetElementTypes: 'interface'
+            sourceElementTypes: 'uml-class,uml-abstract-class',
+            targetElementTypes: 'uml-interface'
           }
         },
+        // Assoziation
         {
-          id: 'association-connection',
+          id: 'uml-association',
           name: 'Assoziation',
           label: '',
           type: 'association',
@@ -442,14 +480,39 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           validation: {
             allowSelfConnection: true,
             allowMultipleConnections: true,
-            sourceElementTypes: '*',
-            targetElementTypes: '*'
+            sourceElementTypes: 'uml-class,uml-abstract-class,uml-interface',
+            targetElementTypes: 'uml-class,uml-abstract-class,uml-interface'
           }
         },
+        // Gerichtete Assoziation
         {
-          id: 'aggregation-connection',
+          id: 'uml-directed-association',
+          name: 'Gerichtete Assoziation',
+          label: '',
+          type: 'directed-association',
+          style: {
+            lineStyle: 'solid',
+            strokeColor: '#000000',
+            strokeWidth: 1,
+            startArrow: 'none',
+            endArrow: 'open'
+          },
+          labelStyle: {
+            position: 'middle',
+            fontSize: 10
+          },
+          validation: {
+            allowSelfConnection: false,
+            allowMultipleConnections: true,
+            sourceElementTypes: 'uml-class,uml-abstract-class,uml-interface',
+            targetElementTypes: 'uml-class,uml-abstract-class,uml-interface'
+          }
+        },
+        // Aggregation
+        {
+          id: 'uml-aggregation',
           name: 'Aggregation',
-          label: 'besteht aus',
+          label: '',
           type: 'aggregation',
           style: {
             lineStyle: 'solid',
@@ -465,14 +528,15 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           validation: {
             allowSelfConnection: false,
             allowMultipleConnections: true,
-            sourceElementTypes: 'class',
-            targetElementTypes: 'class'
+            sourceElementTypes: 'uml-class,uml-abstract-class',
+            targetElementTypes: 'uml-class,uml-abstract-class'
           }
         },
+        // Komposition
         {
-          id: 'composition-connection',
+          id: 'uml-composition',
           name: 'Komposition',
-          label: 'enthält',
+          label: '',
           type: 'composition',
           style: {
             lineStyle: 'solid',
@@ -488,61 +552,142 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           validation: {
             allowSelfConnection: false,
             allowMultipleConnections: true,
-            sourceElementTypes: 'class',
-            targetElementTypes: 'class'
+            sourceElementTypes: 'uml-class,uml-abstract-class',
+            targetElementTypes: 'uml-class,uml-abstract-class'
+          }
+        },
+        // Abhängigkeit
+        {
+          id: 'uml-dependency',
+          name: 'Abhängigkeit',
+          label: '<<use>>',
+          type: 'dependency',
+          style: {
+            lineStyle: 'dashed',
+            strokeColor: '#666666',
+            strokeWidth: 1,
+            startArrow: 'none',
+            endArrow: 'open'
+          },
+          labelStyle: {
+            position: 'middle',
+            fontSize: 9
+          },
+          validation: {
+            allowSelfConnection: false,
+            allowMultipleConnections: true,
+            sourceElementTypes: '*',
+            targetElementTypes: '*'
+          }
+        },
+        // Notiz-Verbindung
+        {
+          id: 'uml-note-link',
+          name: 'Notiz-Verbindung',
+          label: '',
+          type: 'note',
+          style: {
+            lineStyle: 'dashed',
+            strokeColor: '#9e9e9e',
+            strokeWidth: 1,
+            startArrow: 'none',
+            endArrow: 'none'
+          },
+          labelStyle: {
+            position: 'middle',
+            fontSize: 9
+          },
+          validation: {
+            allowSelfConnection: false,
+            allowMultipleConnections: true,
+            sourceElementTypes: 'uml-note',
+            targetElementTypes: '*'
           }
         }
       ],
       syntax: [
+        // Klassennamen-Konvention
         {
-          id: 'class-naming',
+          id: 'uml-class-naming',
           name: 'Klassenbenennung',
           label: 'Klassenbenennung',
           type: 'naming',
           severity: 'warning',
-          description: 'Klassen sollten in PascalCase benannt werden',
+          description: 'Klassen sollten in PascalCase benannt werden (z.B. BeispielKlasse)',
           config: {
-            appliesTo: ['class', 'abstract-class'],
+            appliesTo: ['uml-class', 'uml-abstract-class', 'uml-interface'],
             pattern: '[A-Z][a-zA-Z0-9]*',
             caseSensitive: true
           }
         },
+        // Attribut-Format
         {
-          id: 'method-visibility',
-          name: 'Methodensichtbarkeit',
-          label: 'Methodensichtbarkeit',
+          id: 'uml-attribute-format',
+          name: 'Attributformat',
+          label: 'Attributformat',
           type: 'attribute',
           severity: 'info',
-          description: 'Sichtbarkeitsmodifikatoren für Methoden',
+          description: 'Attribute sollten Sichtbarkeitsmodifikatoren enthalten (+, -, #, ~)',
           config: {
-            attributeName: 'visibility',
-            requiredFor: ['class', 'abstract-class'],
-            pattern: '[+\\-#~].*'
+            attributeName: 'attributes',
+            requiredFor: ['uml-class', 'uml-abstract-class'],
+            pattern: '[+\\-#~]\\s*[a-zA-Z][a-zA-Z0-9]*\\s*:\\s*[a-zA-Z][a-zA-Z0-9]*'
           }
         },
+        // Methoden-Format
         {
-          id: 'stereotype-usage',
-          name: 'Stereotype-Verwendung',
-          label: 'Stereotype-Verwendung',
+          id: 'uml-method-format',
+          name: 'Methodenformat',
+          label: 'Methodenformat',
           type: 'attribute',
           severity: 'info',
-          description: 'Verwendung von UML-Stereotypen',
+          description: 'Methoden sollten Sichtbarkeit und Rückgabetyp definieren',
           config: {
-            attributeName: 'stereotype',
-            pattern: '<<[a-zA-Z]+>>'
+            attributeName: 'methods',
+            requiredFor: ['uml-class', 'uml-abstract-class', 'uml-interface'],
+            pattern: '[+\\-#~]\\s*[a-zA-Z][a-zA-Z0-9]*\\s*\\(.*\\)\\s*:\\s*[a-zA-Z][a-zA-Z0-9]*'
           }
         },
+        // Vererbungstiefe
         {
-          id: 'inheritance-structure',
-          name: 'Vererbungsstruktur',
-          label: 'Vererbungsstruktur',
+          id: 'uml-inheritance-depth',
+          name: 'Vererbungstiefe',
+          label: 'Vererbungstiefe',
           type: 'structure',
-          severity: 'error',
-          description: 'Vererbungshierarchie sollte nicht zu tief sein',
+          severity: 'warning',
+          description: 'Vererbungshierarchie sollte nicht mehr als 4 Ebenen tief sein',
           config: {
-            elementType: ['class'],
-            maxOccurrences: 5,
+            elementType: ['uml-class', 'uml-abstract-class'],
+            maxOccurrences: 4,
             requiresContainer: false
+          }
+        },
+        // Interface-Implementierung
+        {
+          id: 'uml-interface-implementation',
+          name: 'Interface-Implementierung',
+          label: 'Interface-Implementierung',
+          type: 'structure',
+          severity: 'info',
+          description: 'Interfaces sollten mindestens eine Methode definieren',
+          config: {
+            elementType: ['uml-interface'],
+            maxOccurrences: 999,
+            requiresContainer: false
+          }
+        },
+        // Enum-Werte
+        {
+          id: 'uml-enum-values',
+          name: 'Enum-Werte',
+          label: 'Enum-Werte',
+          type: 'attribute',
+          severity: 'error',
+          description: 'Enumerationen müssen mindestens einen Wert enthalten',
+          config: {
+            attributeName: 'values',
+            requiredFor: ['uml-enum'],
+            pattern: '[A-Z_][A-Z0-9_]*'
           }
         }
       ]
