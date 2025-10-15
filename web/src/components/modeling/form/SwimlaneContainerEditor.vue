@@ -94,7 +94,7 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-mutating-props, vue/no-side-effects-in-computed-properties */
 import { ref, computed } from 'vue'
-import type { DiagramElement, ChildElement } from '@/model/Element'
+import type { DiagramElement, ChildElement, ElementStyle } from '@/model/Element'
 
 interface Props {
   element: DiagramElement
@@ -109,7 +109,33 @@ const sectionDialog = ref(false)
 const editingSection = ref<ChildElement | null>(null)
 const editingSectionIndex = ref(-1)
 
-const children = computed(() => props.element.children ?? [])
+const ensureSectionDefaults = (section: ChildElement) => {
+  if (!section.name) {
+    section.name = section.label
+  }
+  if (!Array.isArray(section.children)) {
+    section.children = []
+  }
+  if (section.connectable === undefined) {
+    section.connectable = false
+  }
+
+  const style = section.style as ElementStyle & Partial<ElementStyle>
+  if (!style.strokeColor) style.strokeColor = 'transparent'
+  if (!style.fillColor) style.fillColor = 'transparent'
+  if (style.strokeWidth === undefined) style.strokeWidth = 1
+  if (!style.fontColor) style.fontColor = '#000000'
+  if (!style.fontFamily) style.fontFamily = 'Helvetica'
+  if (style.fontSize === undefined) style.fontSize = 12
+  if (!style.align) style.align = 'left'
+  if (!style.verticalAlign) style.verticalAlign = 'top'
+}
+
+const children = computed(() => {
+  const list = props.element.children ?? []
+  list.forEach(ensureSectionDefaults)
+  return list
+})
 
 const ensureChildrenArray = () => {
   if (!props.element.children) {
@@ -130,6 +156,7 @@ const addSection = () => {
   const newSection: ChildElement = {
     id: `section_${Date.now()}`,
     label: `Abschnitt ${children.value.length + 1}`,
+    name: `Abschnitt ${children.value.length + 1}`,
     type: 'predefined',
     predefinedShape: 'label',
     position: {
@@ -140,15 +167,17 @@ const addSection = () => {
       relative: false
     },
     style: {
+      strokeColor: 'transparent',
       fillColor: 'transparent',
-      strokeColor: 'none',
+      strokeWidth: 1,
       fontSize: 12,
       fontColor: '#000000',
+      fontFamily: 'Helvetica',
       align: 'left',
       verticalAlign: 'top'
     },
-    connectable: false,
-    children: []
+    children: [],
+    connectable: false
   }
 
   ensureChildrenArray().push(newSection)

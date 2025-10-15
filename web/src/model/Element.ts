@@ -24,10 +24,29 @@ export interface AnchorPoint {
   y: number
 }
 
-export interface ChildElement {
+interface BaseElement<TChild> {
   id: string
   label: string
+  name: string
   type: 'canvas2d' | 'predefined' | 'swimlane'
+  canvas?: string
+  predefinedShape?: string
+  style: ElementStyle
+  children: TChild[]
+  connectable: boolean
+}
+
+export interface DiagramElement extends BaseElement<ChildElement> {
+  x: number
+  y: number
+  width: number
+  height: number
+  anchorPoints: AnchorPoint[]
+  resizable: boolean
+  movable: boolean
+}
+
+export interface ChildElement extends BaseElement<ChildElement> {
   position: {
     x: number
     y: number
@@ -35,28 +54,4 @@ export interface ChildElement {
     height: number
     relative: boolean
   }
-  style: Partial<ElementStyle>
-  canvas?: string
-  predefinedShape?: string
-  children?: ChildElement[]
-  connectable?: boolean
-}
-
-export interface DiagramElement {
-  id: string
-  label: string
-  name: string
-  x: number
-  y: number
-  width: number
-  height: number
-  type: 'canvas2d' | 'predefined' | 'swimlane'
-  canvas?: string
-  predefinedShape?: string
-  style: ElementStyle
-  anchorPoints: AnchorPoint[]
-  children: ChildElement[]
-  connectable: boolean
-  resizable: boolean
-  movable: boolean
 }

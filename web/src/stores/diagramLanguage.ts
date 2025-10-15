@@ -190,6 +190,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           children: [
             {
               id: 'attributes',
+              name: 'Attributes',
               label: 'Attributes',
               type: 'predefined',
               predefinedShape: 'label',
@@ -203,9 +204,12 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
               style: {
                 strokeColor: 'transparent',
                 fillColor: 'transparent',
+                strokeWidth: 1,
                 align: 'left',
                 verticalAlign: 'top',
-                fontSize: 10
+                fontSize: 10,
+                fontColor: '#000000',
+                fontFamily: 'Arial'
               },
               connectable: false,
               children: []

@@ -257,7 +257,7 @@ const updateCanvasPreview = () => {
 
             const childCell = new Cell(child.label, childGeometry, childStyle)
             childCell.setVertex(true)
-            childCell.setConnectable(child.connectable || false)
+            childCell.setConnectable(child.connectable ?? false)
 
             graph.addCell(childCell, createdCell as Cell)
           })
@@ -433,6 +433,8 @@ const createElementFromDefinition = (
   }
 
   // Haupt-Element erstellen
+  const customGeometry = definition.type === 'canvas2d' ? getCustomGeometry(definition) : undefined
+
   const mainElement = canvas.graph.insertVertex({
     parent: parent,
     id: undefined,
@@ -443,11 +445,23 @@ const createElementFromDefinition = (
     height,
     style: cellStyle,
     relative: initialRelative,
-    geometryClass: definition.type === 'canvas2d' ? getCustomGeometry(definition) : undefined
+    geometryClass: customGeometry
   })
 
   // Setze getStyle für alle Elemente (wie im Swimlanes.js Beispiel)
   mainElement.getStyle = getStyle
+
+  // Anchor Points als Connection Constraints hinzufügen (nur für DiagramElement, nicht für ChildElement)
+  if (!isChildElement) {
+    const diagramDef = definition as DiagramElement
+    if (diagramDef.anchorPoints && diagramDef.anchorPoints.length > 0) {
+      const geometry = mainElement.getGeometry()
+      if (geometry) {
+        const constraints = diagramDef.anchorPoints.map((point: any) => new ConnectionConstraint(new Point(point.x, point.y), false))
+        ;(geometry as any).constraints = constraints
+      }
+    }
+  }
 
   // Swimlane-spezifische Konfiguration
   if (isSwimlane) {
@@ -600,24 +614,17 @@ const registerCustomShape = (shapeId: string, canvasCommands: string) => {
 }
 
 const getCustomGeometry = (definition: DiagramElement | ChildElement) => {
-  let anchorPoints: Array<{ x: number; y: number }>
-
-  if ('anchorPoints' in definition) {
-    anchorPoints = definition.anchorPoints
-  } else {
-    // Standard-Anchor-Points für Child-Elemente
-    anchorPoints = [
-      { x: 0, y: 0.5 },
-      { x: 0.5, y: 0 },
-      { x: 1, y: 0.5 },
-      { x: 0.5, y: 1 }
-    ]
+  // Nur für DiagramElement (nicht für ChildElement)
+  // Nur Anchor Points verwenden, wenn explizit welche definiert sind
+  if ('anchorPoints' in definition && definition.anchorPoints && definition.anchorPoints.length > 0) {
+    const anchorPointsCopy = JSON.parse(JSON.stringify(definition.anchorPoints))
+    return class extends Geometry {
+      constraints = anchorPointsCopy.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
+    }
   }
 
-  const anchorPointsCopy = JSON.parse(JSON.stringify(anchorPoints))
-  return class extends Geometry {
-    constraints = anchorPointsCopy.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
-  }
+  // Keine Constraints = Verbindungen vom gesamten Element möglich
+  return undefined
 }
 
 // Sprachen-ID aus Route laden
