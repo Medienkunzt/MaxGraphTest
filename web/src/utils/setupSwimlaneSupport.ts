@@ -93,7 +93,6 @@ export function setupSwimlaneSupport(graph: Graph): void {
         // Auto-Resize nur wenn aktiviert
         const style = this.getCellStyle(parentCell) as Record<string, any>
         const autoResize = style?.autoResize === true || style?.autoResize === 1 || style?.autoResize === '1' || style?.autoResize === 'true'
-        console.log('[moveCells] autoResize check:', { autoResize, styleAutoResize: style?.autoResize, parentLabel: parentCell.getValue() })
         if (autoResize) {
           g.autoResizeSwimlane(parentCell)
         }
@@ -115,7 +114,6 @@ export function setupSwimlaneSupport(graph: Graph): void {
       // Auto-Resize nur wenn aktiviert
       const style = g.getCellStyle(parentCell) as Record<string, any>
       const autoResize = style?.autoResize === true || style?.autoResize === 1 || style?.autoResize === '1' || style?.autoResize === 'true'
-      console.log('[ADD_CELLS] autoResize check:', { autoResize, styleAutoResize: style?.autoResize, parentLabel: parentCell.getValue() })
       if (autoResize) {
         g.autoResizeSwimlane(parentCell)
       }
@@ -239,15 +237,6 @@ export function stackContainerChildren(graph: Graph, container: Cell): void {
   const autoFitWidth = autoFitWidthRaw === undefined || autoFitWidthRaw === null || autoFitWidthRaw === true || autoFitWidthRaw === 1 || autoFitWidthRaw === '1' || autoFitWidthRaw === 'true'
   const autoStackY = autoStackYRaw === undefined || autoStackYRaw === null || autoStackYRaw === true || autoStackYRaw === 1 || autoStackYRaw === '1' || autoStackYRaw === 'true'
 
-  console.log('[stackContainerChildren]', {
-    containerLabel: container.getValue(),
-    autoFitWidth,
-    autoStackY,
-    spacing,
-    spacingX,
-    startOffset
-  })
-
   const geometry = container.getGeometry()
   if (!geometry) return
 
@@ -257,7 +246,6 @@ export function stackContainerChildren(graph: Graph, container: Cell): void {
 
   graph.batchUpdate(() => {
     const childCount = container.getChildCount()
-    console.log(`  Processing ${childCount} children`)
 
     for (let i = 0; i < childCount; i++) {
       const child = container.getChildAt(i)
@@ -265,10 +253,6 @@ export function stackContainerChildren(graph: Graph, container: Cell): void {
 
       const childGeo = child.getGeometry()
       if (!childGeo) continue
-
-      const originalX = childGeo.x
-      const originalY = childGeo.y
-      const originalWidth = childGeo.width
 
       // autoFitWidth: Breite auf volle Container-Breite strecken (mit Abzug von 2x spacingX)
       if (autoFitWidth) {
@@ -288,13 +272,6 @@ export function stackContainerChildren(graph: Graph, container: Cell): void {
       // Wenn false: Y-Position bleibt unverändert
 
       childGeo.relative = false
-
-      console.log(`  [Child ${i}] "${child.getValue()}"`, {
-        before: { x: originalX, y: originalY, width: originalWidth },
-        after: { x: childGeo.x, y: childGeo.y, width: childGeo.width },
-        autoFitWidth,
-        autoStackY
-      })
 
       graph.getDataModel().setGeometry(child, childGeo)
     }
@@ -331,21 +308,11 @@ export function autoResizeSwimlane(graph: Graph, swimlane: Cell): void {
   const defaultWidth = 200
   const defaultHeight = 200
 
-  console.log('[autoResizeSwimlane]', {
-    label: swimlane.getValue(),
-    childCount,
-    isHorizontal,
-    startSize,
-    spacing,
-    spacingX
-  })
-
   graph.batchUpdate(() => {
     if (childCount === 0) {
       // Keine Children: Zurück auf Standard
       geometry.width = defaultWidth
       geometry.height = defaultHeight
-      console.log('  No children - reset to default:', { width: defaultWidth, height: defaultHeight })
     } else {
       // Children vorhanden: Berechne notwendige Größe
       let maxX = 0
@@ -369,8 +336,6 @@ export function autoResizeSwimlane(graph: Graph, swimlane: Cell): void {
         minY = Math.min(minY, childGeo.y)
       }
 
-      console.log('  Content bounds:', { minX, minY, maxX, maxY })
-
       if (isHorizontal) {
         // Horizontale Swimlane: startSize ist die Höhe des Headers
         geometry.width = maxX + spacingX
@@ -380,8 +345,6 @@ export function autoResizeSwimlane(graph: Graph, swimlane: Cell): void {
         geometry.width = Math.max(maxX + spacingX, startSize)
         geometry.height = maxY + spacing
       }
-
-      console.log('  New size:', { width: geometry.width, height: geometry.height })
     }
 
     graph.getDataModel().setGeometry(swimlane, geometry)
