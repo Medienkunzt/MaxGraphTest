@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, Geometry, ConnectionConstraint, Point } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -55,6 +55,7 @@ import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
 import { setupPanningHandler } from '@/utils/setupPanningHandler'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
+import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import type { DiagramElement } from '@/model/Element'
@@ -300,26 +301,32 @@ const buildLanguageShapes = computed(() => {
     const height = element.height ?? 80
     const style = element.style ?? {}
 
+    // Basis-Style: Übernehme ALLE Style-Eigenschaften aus der Element-Definition
     const baseStyle: Record<string, any> = {
       shape: element.type === 'swimlane' ? 'swimlane' : element.predefinedShape ?? 'rectangle',
-      strokeColor: style.strokeColor ?? '#424242',
+      ...style, // Alle Style-Eigenschaften aus Definition übernehmen
+      // Nur Defaults für fehlende Werte (identisch zu ElementEditor.vue)
+      strokeColor: style.strokeColor ?? 'black',
       fillColor: style.fillColor ?? '#f5f5f5',
-      strokeWidth: style.strokeWidth ?? 2,
-      fontSize: style.fontSize ?? 12,
-      fontColor: style.fontColor ?? '#1b1b1b',
+      strokeWidth: style.strokeWidth ?? 1,
+      fontSize: style.fontSize ?? 11,
+      fontColor: style.fontColor ?? 'black',
       fontFamily: style.fontFamily ?? 'Arial',
       align: style.align ?? 'center',
       verticalAlign: style.verticalAlign ?? 'middle'
     }
 
     if (element.type === 'swimlane') {
-      baseStyle.startSize = style.startSize ?? 32
-      baseStyle.horizontal = style.horizontal ?? false
-      baseStyle.childSpacing = style.childSpacing ?? 10
-      baseStyle.childSpacingX = style.childSpacingX ?? 10
-      baseStyle.autoFitWidth = style.autoFitWidth ?? true
-      baseStyle.autoStackY = style.autoStackY ?? true
-      baseStyle.autoResize = style.autoResize ?? true
+      // Swimlane-spezifische Eigenschaften (nur Defaults, wenn nicht gesetzt)
+      // Defaults identisch zu ElementEditor.vue
+      if (baseStyle.startSize === undefined) baseStyle.startSize = 22
+      if (baseStyle.horizontal === undefined) baseStyle.horizontal = false
+      if (baseStyle.labelBackgroundColor === undefined) baseStyle.labelBackgroundColor = 'transparent'
+      if (baseStyle.childSpacing === undefined) baseStyle.childSpacing = 10
+      if (baseStyle.childSpacingX === undefined) baseStyle.childSpacingX = 10
+      if (baseStyle.autoFitWidth === undefined) baseStyle.autoFitWidth = true
+      if (baseStyle.autoStackY === undefined) baseStyle.autoStackY = true
+      if (baseStyle.autoResize === undefined) baseStyle.autoResize = true
     }
 
     return {
@@ -335,23 +342,12 @@ const buildLanguageShapes = computed(() => {
         const x = (position.x ?? 0) - width / 2
         const y = (position.y ?? 0) - height / 2
 
-        // Clone the style to avoid shared references
-        const styleClone = { ...baseStyle }
+        // Nutze die zentrale Element-Erstellungsmethode
+        const cellToInsert = createCellFromElement(element, x, y)
 
-        // Build geometry with connection constraints from anchor points
-        const geometry = new Geometry(x, y, width, height)
+        // Füge zum Graph hinzu mit Child-Elementen
+        addCellToGraph(graphInstance, cellToInsert, element, parentTarget)
 
-        if (element.anchorPoints && element.anchorPoints.length > 0) {
-          const constraints = element.anchorPoints.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
-          ;(geometry as any).constraints = constraints
-        }
-
-        const cellToInsert = new Cell(element.label ?? element.name, geometry, styleClone)
-        cellToInsert.setVertex(true)
-        cellToInsert.setConnectable(element.connectable ?? true)
-        cellToInsert.setAttribute('diagramElementId', element.id)
-
-        graphInstance.addCell(cellToInsert, parentTarget)
         graphInstance.setSelectionCell(cellToInsert)
       }
     }

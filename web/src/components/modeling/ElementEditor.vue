@@ -43,7 +43,8 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
-import { Cell, Geometry, ConnectionConstraint, Point, Shape, AbstractCanvas2D } from '@maxgraph/core'
+import { Shape, AbstractCanvas2D } from '@maxgraph/core'
+import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
 import { ShapeRegistry } from '@maxgraph/core'
 import type { GraphDataModel } from '@maxgraph/core'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
@@ -85,7 +86,7 @@ const selectElement = (elementId: string) => {
   selectedElementId.value = elementId
   // Kleine Verzögerung für UI-Update
   nextTick(() => {
-    setTimeout(() => updateCanvasPreview(), 50)
+    setTimeout(() => renderElementPreview(), 50)
   })
 }
 
@@ -164,349 +165,68 @@ const elementColorMap = {
   swimlane: 'deep-purple'
 }
 
-const updateCanvasPreview = () => {
-  // Prüfe ob alle notwendigen Objekte verfügbar sind
-  if (!selectedElement.value) {
+/**
+ * Rendert die Element-Vorschau im Canvas
+ * Zentrale Funktion - wird sowohl beim initialen Laden als auch bei Updates verwendet
+ */
+const renderElementPreview = () => {
+  const element = elementDefinition.value || selectedElement.value
+
+  if (!element) {
+    console.warn('⚠️ Kein Element zum Rendern vorhanden')
     return
   }
 
-  // Verwende drawingCanvasRef statt canvasRef
   if (!drawingCanvasRef.value?.graph) {
-    console.warn('Drawing canvas or graph not available yet')
+    console.warn('⚠️ Canvas oder Graph noch nicht verfügbar')
+    return
+  }
+
+  const graph = drawingCanvasRef.value.graph
+  const parent = graph.getDefaultParent()
+
+  if (!parent) {
+    console.warn('⚠️ Kein default parent verfügbar')
     return
   }
 
   try {
-    const graph = drawingCanvasRef.value.graph
-    const parent = graph.getDefaultParent()
-
-    if (!parent) {
-      console.warn('No default parent available in graph')
-      return
-    }
-
     // Canvas leeren
     const childCells = graph.getChildCells(parent)
     if (childCells && childCells.length > 0) {
       graph.removeCells(childCells)
     }
 
-    graph.getDataModel().beginUpdate()
-
-    try {
-      // Erstelle Element mit korrekten MaxGraph-Strukturen
-      const element = selectedElement.value!
-      let createdCell: Cell | null = null
-
-      if (element.type === 'swimlane') {
-        createElementFromDefinition(element, parent)
-      } else {
-        // Style für MaxGraph zusammenstellen
-        const style: any = {
-          strokeColor: element.style.strokeColor,
-          fillColor: element.style.fillColor,
-          strokeWidth: element.style.strokeWidth,
-          fontSize: element.style.fontSize,
-          fontColor: element.style.fontColor,
-          fontFamily: element.style.fontFamily || 'Arial',
-          align: element.style.align || 'center',
-          verticalAlign: element.style.verticalAlign || 'middle',
-          editable: true,
-          resizable: element.resizable,
-          movable: element.movable,
-          connectable: element.connectable
-        }
-
-        // Shape bestimmen
-        if (element.type === 'predefined' && element.predefinedShape) {
-          style.shape = element.predefinedShape
-        } else if (element.type === 'canvas2d') {
-          // Verwende die registrierte Custom Shape
-          style.shape = element.id
-        }
-
-        // Erstelle Geometry mit Connection Constraints
-        const geometry = new Geometry(50, 50, element.width, element.height)
-
-        // Anchor Points als Connection Constraints hinzufügen
-        if (element.anchorPoints && element.anchorPoints.length > 0) {
-          const constraints = element.anchorPoints.map((point: any) => new ConnectionConstraint(new Point(point.x, point.y), false))
-
-          // Füge Constraints zur Geometry hinzu (MaxGraph-spezifisch)
-          ;(geometry as any).constraints = constraints
-        }
-
-        // Erstelle Cell
-        createdCell = new Cell(element.label, geometry, style)
-        createdCell.setVertex(true)
-        createdCell.setConnectable(element.connectable)
-
-        // Füge Element zum Graph hinzu
-        graph.addCell(createdCell, parent)
-
-        // Child-Elemente hinzufügen
-        if (element.children && element.children.length > 0) {
-          element.children.forEach((child: any) => {
-            const childGeometry = new Geometry(child.position.x, child.position.y, child.position.width, child.position.height)
-            childGeometry.relative = child.position.relative
-
-            const childStyle: any = {
-              ...child.style,
-              shape: child.predefinedShape || 'label'
-            }
-
-            const childCell = new Cell(child.label, childGeometry, childStyle)
-            childCell.setVertex(true)
-            childCell.setConnectable(child.connectable ?? false)
-
-            graph.addCell(childCell, createdCell as Cell)
-          })
-        }
-      }
-
-      // KEINE manuellen refresh/validate Aufrufe - wird automatisch durch endUpdate() gemacht
-      // (wie in Swimlanes.js Beispiel)
-
-      // Nach kurzer Verzögerung fit to window
-      nextTick(() => {
-        try {
-          if (graph && graph.fit && element.type !== 'swimlane') {
-            // graph.fit()
-            // Element selektieren um Anchor Points zu zeigen
-            if (element.anchorPoints.length > 0 && createdCell) {
-              graph.setSelectionCell(createdCell)
-            }
-          }
-        } catch (fitError) {
-          console.warn('Error during fit operation:', fitError)
-        }
-      })
-    } finally {
-      graph.getDataModel().endUpdate()
-    }
+    // Element mit zentraler Methode erstellen und hinzufügen
+    graph.batchUpdate(() => {
+      const createdCell = createCellFromElement(element, 50, 50)
+      addCellToGraph(graph, createdCell, element, parent)
+      graph.setSelectionCell(createdCell)
+    })
   } catch (error) {
-    console.error('Error in updateCanvasPreview:', error)
+    console.error('❌ Fehler beim Rendern der Element-Vorschau:', error)
   }
 }
 
-// Event Handlers für erweiterte Canvas-Integration
+/**
+ * Behandelt Element-Updates und rendert die Vorschau neu
+ */
 const handleElementUpdate = () => {
-  // Canvas aktualisieren
   if (drawingCanvasRef.value?.graph) {
-    // Direkte Löschung über das Graph-Objekt
-    const graph = drawingCanvasRef.value.graph
-    const cells = graph.getChildCells()
-    if (cells.length > 0) {
-      graph.removeCells(cells)
-    }
-
     registerCustomShapes()
-    addElementToCanvas()
+    renderElementPreview()
   } else {
-    // Versuche es später nochmal, wenn das Canvas noch nicht bereit ist
+    // Canvas noch nicht bereit, versuche es erneut
     setTimeout(() => {
       handleElementUpdate()
     }, 500)
   }
 }
 
-const addElementToCanvas = () => {
-  const canvas = drawingCanvasRef.value
-  if (canvas && canvas.graph && elementDefinition.value) {
-    const parent = canvas.graph.getDefaultParent()
-    // Verwende batchUpdate wie im Swimlanes.js Beispiel
-    canvas.graph.batchUpdate(() => {
-      if (elementDefinition.value) {
-        createElementFromDefinition(elementDefinition.value, parent)
-      }
-      // KEINE manuellen refresh/validate Aufrufe
-    })
-  }
-}
-
-const createElementFromDefinition = (
-  definition: DiagramElement | ChildElement,
-  parent: any,
-  options: {
-    container?: {
-      parentWidth: number
-      spacing?: number
-    }
-  } = {}
-): any => {
-  const canvas = drawingCanvasRef.value
-  if (!canvas || !canvas.graph) return null
-
-  // Position und Größe ermitteln
-  const isChildElement = 'position' in definition
-  const childPosition = isChildElement ? definition.position : null
-
-  let x: number
-  let y: number
-  let width: number
-  let height: number
-  let relative: boolean
-
-  if (childPosition) {
-    x = childPosition.x
-    y = childPosition.y
-    width = childPosition.width
-    height = childPosition.height
-    relative = childPosition.relative
-  } else {
-    const diagramDef = definition as DiagramElement
-    x = diagramDef.x
-    y = diagramDef.y
-    width = diagramDef.width
-    height = diagramDef.height
-    relative = false
-  }
-
-  const containerParentWidth = options.container?.parentWidth
-  const isContainerStackChild = Boolean(options.container && isChildElement)
-
-  const initialX = isContainerStackChild ? 0 : x
-  const initialY = isContainerStackChild && childPosition ? childPosition.y : y
-  const initialWidth = isContainerStackChild && containerParentWidth !== undefined ? containerParentWidth : width
-  const initialRelative = isContainerStackChild ? false : relative
-
-  // Shape-Name ermitteln
-  const shapeName = definition.type === 'canvas2d' ? definition.id : definition.type === 'swimlane' ? 'swimlane' : definition.predefinedShape || 'rectangle'
-
-  // Spezielle Swimlane-Behandlung
-  const isSwimlane = definition.type === 'swimlane'
-
-  // Style-Objekt erstellen
-  let cellStyle: any
-
-  if (isSwimlane) {
-    const swimlaneStyle = definition.style ?? {}
-
-    // Swimlane-Style basierend auf Swimlanes.js Beispiel
-    // WICHTIG: Nicht definition.style komplett spreaden, sondern gezielt übernehmen
-    cellStyle = {
-      shape: 'swimlane',
-      verticalAlign: 'middle',
-      labelBackgroundColor: swimlaneStyle.labelBackgroundColor ?? 'transparent',
-      fontSize: swimlaneStyle.fontSize ?? 11,
-      startSize: swimlaneStyle.startSize ?? 22,
-      horizontal: swimlaneStyle.horizontal ?? false,
-      fontColor: swimlaneStyle.fontColor ?? 'black',
-      strokeColor: swimlaneStyle.strokeColor ?? 'black',
-      editable: true,
-      resizable: true,
-      selectable: true,
-      // Auto-Layout Optionen
-      childSpacing: swimlaneStyle.childSpacing ?? 10,
-      childSpacingX: swimlaneStyle.childSpacingX ?? 10,
-      autoFitWidth: swimlaneStyle.autoFitWidth ?? true,
-      autoStackY: swimlaneStyle.autoStackY ?? true,
-      autoResize: swimlaneStyle.autoResize ?? true
-    }
-
-    if (swimlaneStyle.fillColor) {
-      cellStyle.fillColor = swimlaneStyle.fillColor
-    }
-  } else {
-    // Normaler Style für andere Shapes
-    cellStyle = {
-      ...definition.style,
-      shape: shapeName,
-      editable: true,
-      resizable: true,
-      selectable: true,
-      connectable: definition.connectable ?? true
-    }
-  }
-
-  // getStyle Funktion für Collapse/Expand (aus Swimlanes.js)
-  const getStyle = function (this: any) {
-    if (!this.isCollapsed()) {
-      return this.style
-    }
-    // Erstelle eine Kopie des Originalstils für das collapsed Verhalten
-    const style = { ...this.style }
-    style.horizontal = true
-    style.align = 'left'
-    style.spacingLeft = 14
-    return style
-  }
-
-  // Haupt-Element erstellen
-  const customGeometry = definition.type === 'canvas2d' ? getCustomGeometry(definition) : undefined
-
-  const mainElement = canvas.graph.insertVertex({
-    parent: parent,
-    id: undefined,
-    value: definition.label,
-    x: initialX,
-    y: initialY,
-    width: initialWidth,
-    height,
-    style: cellStyle,
-    relative: initialRelative,
-    geometryClass: customGeometry
-  })
-
-  // Setze getStyle für alle Elemente (wie im Swimlanes.js Beispiel)
-  mainElement.getStyle = getStyle
-
-  // Anchor Points als Connection Constraints hinzufügen (nur für DiagramElement, nicht für ChildElement)
-  if (!isChildElement) {
-    const diagramDef = definition as DiagramElement
-    if (diagramDef.anchorPoints && diagramDef.anchorPoints.length > 0) {
-      const geometry = mainElement.getGeometry()
-      if (geometry) {
-        const constraints = diagramDef.anchorPoints.map((point: any) => new ConnectionConstraint(new Point(point.x, point.y), false))
-        ;(geometry as any).constraints = constraints
-      }
-    }
-  }
-
-  // Swimlane-spezifische Konfiguration
-  if (isSwimlane) {
-    // Swimlane nicht verbindbar machen (wie im Beispiel)
-    mainElement.setConnectable(false)
-  } else {
-    mainElement.setConnectable(definition.connectable ?? true)
-  }
-
-  if (isChildElement && options.container) {
-    const childDefinition = definition as ChildElement
-    mainElement.setAttribute('containerSection', 'true')
-    if (options.container.spacing !== undefined) {
-      mainElement.setAttribute('containerSectionSpacing', String(options.container.spacing))
-    }
-    if (childDefinition.id) {
-      mainElement.setAttribute('containerSectionId', childDefinition.id)
-    }
-    if (childDefinition.label) {
-      mainElement.setAttribute('containerSectionLabel', childDefinition.label)
-    }
-  }
-
-  // Child-Elemente rekursiv hinzufügen
-  if ('children' in definition && definition.children) {
-    const parentGeometry = mainElement.getGeometry()
-    const containerParentWidthForChildren = parentGeometry?.width ?? initialWidth
-
-    definition.children.forEach((child: ChildElement) => {
-      const containerOptions =
-        !isChildElement && definition.type === 'swimlane'
-          ? {
-              parentWidth: containerParentWidthForChildren,
-              spacing: definition.style?.childSpacing ?? 0
-            }
-          : undefined
-
-      createElementFromDefinition(child, mainElement, {
-        container: containerOptions
-      })
-    })
-  }
-
-  return mainElement
-}
+// ALTE createElementFromDefinition Funktion wurde entfernt (ca. 180 Zeilen)!
+// Die gesamte Element-Erstellung läuft jetzt über die zentrale Methode
+// in elementFactory.ts (createCellFromElement + addCellToGraph).
+// Dies stellt sicher, dass Toolbar und Preview identisch funktionieren.
 
 const registerCustomShapes = (definition?: DiagramElement | ChildElement | null) => {
   const target = definition ?? elementDefinition.value
@@ -613,19 +333,8 @@ const registerCustomShape = (shapeId: string, canvasCommands: string) => {
   ShapeRegistry.add(shapeId, DynamicCustomShape)
 }
 
-const getCustomGeometry = (definition: DiagramElement | ChildElement) => {
-  // Nur für DiagramElement (nicht für ChildElement)
-  // Nur Anchor Points verwenden, wenn explizit welche definiert sind
-  if ('anchorPoints' in definition && definition.anchorPoints && definition.anchorPoints.length > 0) {
-    const anchorPointsCopy = JSON.parse(JSON.stringify(definition.anchorPoints))
-    return class extends Geometry {
-      constraints = anchorPointsCopy.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
-    }
-  }
-
-  // Keine Constraints = Verbindungen vom gesamten Element möglich
-  return undefined
-}
+// getCustomGeometry wurde entfernt - nicht mehr benötigt.
+// Anchor Points werden jetzt in elementFactory.ts als ConnectionConstraints gesetzt.
 
 // Sprachen-ID aus Route laden
 const loadLanguageFromRoute = () => {
@@ -653,7 +362,7 @@ const debouncedUpdate = () => {
     clearTimeout(updateTimeout)
   }
   updateTimeout = setTimeout(() => {
-    updateCanvasPreview()
+    renderElementPreview()
   }, 150)
 }
 
