@@ -195,17 +195,6 @@ export function setupSwimlaneSupport(graph: Graph): void {
       }
     })
   })
-
-  // Einklappfunktion für Swimlanes
-  g.addListener(InternalEvent.FOLD_CELLS, function (_sender: any, evt: any) {
-    const cells = evt.getProperty('cells')
-    for (let i = 0; i < cells.length; i++) {
-      const geo = cells[i].getGeometry()
-      if (geo?.alternateBounds) {
-        geo.width = geo.alternateBounds.width
-      }
-    }
-  })
 }
 
 // ============================================================================

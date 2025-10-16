@@ -187,6 +187,17 @@
         </v-expansion-panel-text>
       </v-expansion-panel>
 
+      <!-- Collapse / Zusammenklappen -->
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <v-icon class="mr-2">mdi-folder-open-outline</v-icon>
+          Collapse / Zusammenklappen
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <CollapseSettings :element="localElement" @update="emitUpdate" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
       <!-- Rekursive Child Elemente -->
       <v-expansion-panel v-if="depth < maxDepth">
         <v-expansion-panel-title>
@@ -221,6 +232,7 @@
 <script setup lang="ts">
 import { computed, toRef, watch } from 'vue'
 import type { DiagramElement, ChildElement, ElementStyle } from '@/model/Element'
+import CollapseSettings from './CollapseSettings.vue'
 
 defineOptions({ name: 'ElementPropertiesEditor' })
 

@@ -17,11 +17,20 @@ export interface ElementStyle {
   autoFitWidth?: boolean // Children automatisch auf volle Container-Breite strecken
   autoStackY?: boolean // Children automatisch vertikal stapeln (Y-Position)
   autoResize?: boolean // Swimlane automatisch an Inhalt anpassen
+  // Collapse/Folding
+  foldable?: boolean // Ob Element zusammenklappbar ist
 }
 
 export interface AnchorPoint {
   x: number
   y: number
+}
+
+export interface CollapseBounds {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 interface BaseElement<TChild> {
@@ -34,6 +43,10 @@ interface BaseElement<TChild> {
   style: ElementStyle
   children: TChild[]
   connectable: boolean
+  // Collapse-Konfiguration
+  collapsible?: boolean // Ob das Element zusammenklappbar ist
+  collapsedBounds?: CollapseBounds // Größe im zusammengeklappten Zustand (alternateBounds)
+  defaultCollapsed?: boolean // Initial zusammengeklappt
 }
 
 export interface DiagramElement extends BaseElement<ChildElement> {

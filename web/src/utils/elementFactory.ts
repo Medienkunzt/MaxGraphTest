@@ -1,4 +1,4 @@
-import { Cell, Geometry, ConnectionConstraint, Point } from '@maxgraph/core'
+import { Cell, Geometry, ConnectionConstraint, Point, Rectangle } from '@maxgraph/core'
 import type { Graph } from '@maxgraph/core'
 import type { DiagramElement } from '@/model/Element'
 
@@ -45,6 +45,11 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
     if (baseStyle.autoResize === undefined) baseStyle.autoResize = true
   }
 
+  // Collapse/Folding aktivieren
+  if (element.collapsible) {
+    baseStyle.foldable = true
+  }
+
   // Canvas2D: Shape-ID verwenden
   if (element.type === 'canvas2d') {
     baseStyle.shape = element.id
@@ -59,11 +64,36 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
     ;(geometry as any).constraints = constraints
   }
 
+  // 3a. Collapse-Bounds als alternateBounds setzen (für zusammengeklappten Zustand)
+  if (element.collapsible && element.collapsedBounds) {
+    const cb = element.collapsedBounds
+    geometry.alternateBounds = new Rectangle(cb.x, cb.y, cb.width, cb.height)
+  }
+
   // 4. Cell erstellen
   const cell = new Cell(element.label ?? element.name, geometry, baseStyle)
   cell.setVertex(true)
   cell.setConnectable(element.connectable ?? true)
   cell.setAttribute('diagramElementId', element.id)
+
+  // 4a. getStyle-Funktion setzen (wichtig für Collapse-Funktionalität)
+  // Diese Funktion wird von MaxGraph aufgerufen um den aktuellen Style zu erhalten
+  if (element.collapsible) {
+    cell.getStyle = function (this: Cell) {
+      // Wenn nicht collapsed, gib den normalen Style zurück
+      if (!this.isCollapsed()) {
+        return this.style
+      }
+      // Wenn collapsed, könnte man hier einen alternativen Style zurückgeben
+      // Für jetzt: einfach den normalen Style verwenden
+      return this.style
+    }
+  }
+
+  // 5. Initial collapsed State setzen
+  if (element.defaultCollapsed) {
+    cell.collapsed = true
+  }
 
   return cell
 }

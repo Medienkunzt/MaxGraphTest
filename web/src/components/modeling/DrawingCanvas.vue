@@ -23,6 +23,9 @@
           <v-btn title="Duplizieren (Strg+D)" @click="duplicateSelected">
             <v-icon>mdi-content-duplicate</v-icon>
           </v-btn>
+          <v-btn title="Collapse Selection" @click="triggerManualCollapse">
+            <v-icon>mdi-arrow-collapse-vertical</v-icon>
+          </v-btn>
         </v-btn-group>
       </div>
 
@@ -45,7 +48,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ImageBox, Client, Rectangle } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -79,6 +82,22 @@ class MyCustomConnectionHandler extends ConnectionHandler {
 class MyCustomGraph extends Graph {
   constructor(container: HTMLElement, model?: GraphDataModel, plugins?: GraphPluginConstructor[]) {
     super(container, model, plugins)
+
+    const originalIsCellFoldable = this.isCellFoldable.bind(this)
+    this.isCellFoldable = (cell: Cell, collapse: boolean): boolean => {
+      const style = this.getCurrentCellStyle(cell) as Record<string, any> | null
+      const foldableFlag = style?.foldable
+
+      if (foldableFlag === false || foldableFlag === '0') {
+        return false
+      }
+
+      if (foldableFlag === true || foldableFlag === 1 || foldableFlag === '1') {
+        return true
+      }
+
+      return originalIsCellFoldable(cell, collapse)
+    }
   }
 
   override getAllConnectionConstraints = (terminal: CellState | null, _source: boolean) => {
@@ -260,6 +279,21 @@ const initGraph = () => {
     graph.value.setGridEnabled(true)
   }
 
+  // Collapse/Expand Icons konfigurieren (wie in configure.js aus den Beispielen)
+  // ImageBasePath setzen
+  Client.setImageBasePath('/images')
+
+  // Collapse/Expand Images setzen
+  graph.value.options.collapsedImage = new ImageBox(`${Client.imageBasePath}/collapsed.gif`, 9, 9)
+  graph.value.options.expandedImage = new ImageBox(`${Client.imageBasePath}/expanded.gif`, 9, 9)
+
+  // Folding explizit aktivieren
+  graph.value.options.foldingEnabled = true
+
+  // collapseToPreferredSize aktivieren - nutzt alternateBounds beim Collapse
+  // Im Folding-Beispiel wird es auf false gesetzt, aber für alternateBounds brauchen wir true (Standard)
+  graph.value.options.collapseToPreferredSize = true
+
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = EdgeStyle.OrthConnector
 
   // Swimlane-Unterstützung aktivieren
@@ -385,6 +419,26 @@ const emitUpdatedModel = () => {
 defineExpose({
   graph
 })
+
+const triggerManualCollapse = () => {
+  if (!graph.value) return
+  const selected = graph.value.getSelectionCells()
+  if (!selected?.length) {
+    console.warn('Keine Auswahl zum Zusammenklappen vorhanden.')
+    return
+  }
+
+  const collapsible = graph.value.getFoldableCells(selected, true)
+  if (!collapsible?.length) {
+    console.warn('Auswahl enthält keine faltbaren Zellen.')
+    return
+  }
+
+  const allCollapsed = collapsible.every((cell) => cell.isCollapsed())
+  const targetState = !allCollapsed
+
+  graph.value.foldCells(targetState, false, collapsible, false)
+}
 </script>
 
 <style scoped>
