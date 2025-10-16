@@ -62,10 +62,10 @@
         <v-expansion-panel-text>
           <v-row>
             <v-col cols="6">
-              <v-text-field v-model="localElement.style.strokeColor" label="Rahmenfarbe" variant="outlined" density="compact" type="color" @input="emitUpdate" />
+              <ColorPickerField v-model="localElement.style.strokeColor" label="Rahmenfarbe" @update:model-value="emitUpdate" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="localElement.style.fillColor" label="Füllfarbe" variant="outlined" density="compact" type="color" @input="emitUpdate" />
+              <ColorPickerField v-model="localElement.style.fillColor" label="Füllfarbe" @update:model-value="emitUpdate" />
             </v-col>
           </v-row>
 
@@ -73,7 +73,7 @@
 
           <v-slider v-model="localElement.style.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="emitUpdate" />
 
-          <v-text-field v-model="localElement.style.fontColor" label="Schriftfarbe" variant="outlined" density="compact" type="color" class="mb-3" @input="emitUpdate" />
+          <ColorPickerField v-model="localElement.style.fontColor" label="Schriftfarbe" class="mb-3" @update:model-value="emitUpdate" />
 
           <v-text-field v-model="localElement.style.fontFamily" label="Schriftart" variant="outlined" density="compact" class="mb-3" @input="emitUpdate" />
 
@@ -233,6 +233,7 @@
 import { computed, toRef, watch } from 'vue'
 import type { DiagramElement, ChildElement, ElementStyle } from '@/model/Element'
 import CollapseSettings from './CollapseSettings.vue'
+import ColorPickerField from './ColorPickerField.vue'
 
 defineOptions({ name: 'ElementPropertiesEditor' })
 

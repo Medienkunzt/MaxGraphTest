@@ -32,10 +32,10 @@
 
       <v-row dense class="mt-1">
         <v-col cols="6">
-          <v-text-field v-model="collapsedStyle.strokeColor" label="Rahmenfarbe" variant="outlined" density="compact" type="color" @input="emitUpdate" />
+          <ColorPickerField v-model="collapsedStyle.strokeColor" label="Rahmenfarbe" @update:model-value="emitUpdate" />
         </v-col>
         <v-col cols="6">
-          <v-text-field v-model="collapsedStyle.fillColor" label="Füllfarbe" variant="outlined" density="compact" type="color" @input="emitUpdate" />
+          <ColorPickerField v-model="collapsedStyle.fillColor" label="Füllfarbe" @update:model-value="emitUpdate" />
         </v-col>
       </v-row>
 
@@ -45,7 +45,7 @@
 
       <v-row dense>
         <v-col cols="6">
-          <v-text-field v-model="collapsedStyle.fontColor" label="Schriftfarbe" variant="outlined" density="compact" type="color" @input="emitUpdate" />
+          <ColorPickerField v-model="collapsedStyle.fontColor" label="Schriftfarbe" @update:model-value="emitUpdate" />
         </v-col>
         <v-col cols="6">
           <v-text-field v-model="collapsedStyle.fontFamily" label="Schriftart" variant="outlined" density="compact" @input="emitUpdate" />
@@ -68,6 +68,7 @@
 /* eslint-disable vue/no-mutating-props */
 import { computed, watch } from 'vue'
 import type { DiagramElement, ChildElement, ElementStyle } from '@/model/Element'
+import ColorPickerField from './ColorPickerField.vue'
 
 interface Props {
   element: DiagramElement | ChildElement

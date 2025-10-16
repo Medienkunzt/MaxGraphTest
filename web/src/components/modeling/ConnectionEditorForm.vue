@@ -15,7 +15,7 @@
         <v-expansion-panel-text>
           <v-select v-model="connection.style.lineStyle" :items="lineStyles" label="Linienstil" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
 
-          <v-text-field v-model="connection.style.strokeColor" label="Linienfarbe" variant="outlined" density="compact" type="color" class="mb-3" @input="updateAll" />
+          <ColorPickerField v-model="connection.style.strokeColor" label="Linienfarbe" class="mb-3" @update:model-value="updateAll" />
 
           <v-slider v-model="connection.style.strokeWidth" label="Linienstärke" min="1" max="10" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
         </v-expansion-panel-text>
@@ -64,6 +64,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
+import ColorPickerField from './form/ColorPickerField.vue'
 
 // Props
 interface Props {

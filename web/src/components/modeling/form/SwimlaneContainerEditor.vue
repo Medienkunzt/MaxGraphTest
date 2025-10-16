@@ -66,13 +66,13 @@
 
           <v-row dense>
             <v-col cols="6">
-              <v-text-field v-model="editingSection.style.fillColor" label="Hintergrund" type="color" density="compact" variant="outlined" />
+              <ColorPickerField v-model="editingSection.style.fillColor" label="Hintergrund" />
             </v-col>
             <v-col cols="6">
               <v-text-field v-model.number="editingSection.style.fontSize" label="Schriftgröße" type="number" density="compact" variant="outlined" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model="editingSection.style.fontColor" label="Schriftfarbe" type="color" density="compact" variant="outlined" />
+              <ColorPickerField v-model="editingSection.style.fontColor" label="Schriftfarbe" />
             </v-col>
             <v-col cols="6">
               <v-select v-model="editingSection.style.align" label="Ausrichtung" :items="alignOptions" density="compact" variant="outlined" />
@@ -95,6 +95,7 @@
 /* eslint-disable vue/no-mutating-props, vue/no-side-effects-in-computed-properties */
 import { ref, computed } from 'vue'
 import type { DiagramElement, ChildElement, ElementStyle } from '@/model/Element'
+import ColorPickerField from './ColorPickerField.vue'
 
 interface Props {
   element: DiagramElement
