@@ -1,7 +1,7 @@
 <template>
   <div>
     <v-alert type="info" variant="tonal" density="compact" class="mb-4">
-      <div class="text-caption">Aktiviere das Zusammenklappen und lege Breite sowie Höhe für den zugeklappten Zustand fest.</div>
+      <div class="text-caption">Aktiviere das Zusammenklappen und definiere Darstellung, Größe und Stil der zusammengeklappten Variante.</div>
     </v-alert>
 
     <!-- Collapsible Aktivieren -->
@@ -11,14 +11,53 @@
     <template v-if="localElement.collapsible">
       <v-divider class="my-3" />
 
-      <div class="text-subtitle-2 mb-2">Größe im zusammengeklappten Zustand</div>
+      <div class="text-subtitle-2 mb-3">Größe & Text</div>
 
       <v-row dense>
         <v-col cols="6">
-          <v-text-field v-model.number="collapsedBounds.width" label="Breite (zugeklappt)" variant="outlined" density="compact" type="number" hint="Breite im zugeklappten Zustand" persistent-hint @input="onSizeChange" />
+          <v-text-field v-model.number="collapsedConfig.width" label="Breite (zugeklappt)" variant="outlined" density="compact" type="number" @input="emitUpdate" />
         </v-col>
         <v-col cols="6">
-          <v-text-field v-model.number="collapsedBounds.height" label="Höhe (zugeklappt)" variant="outlined" density="compact" type="number" hint="Höhe im zugeklappten Zustand" persistent-hint @input="onSizeChange" />
+          <v-text-field v-model.number="collapsedConfig.height" label="Höhe (zugeklappt)" variant="outlined" density="compact" type="number" @input="emitUpdate" />
+        </v-col>
+      </v-row>
+
+      <v-text-field v-model="collapsedConfig.label" label="Alternativer Text" variant="outlined" density="compact" hint="Optionaler Text der im zugeklappten Zustand angezeigt wird" persistent-hint clearable class="mt-2" @input="emitUpdate" />
+
+      <v-divider class="my-4" />
+
+      <div class="text-subtitle-2 mb-3">Shape & Style (zugeklappt)</div>
+
+      <v-select v-model="collapsedStyle.shape" :items="shapeOptions" item-title="label" item-value="value" label="Shape" variant="outlined" density="compact" clearable @update:model-value="onShapeChange" />
+
+      <v-row dense class="mt-1">
+        <v-col cols="6">
+          <v-text-field v-model="collapsedStyle.strokeColor" label="Rahmenfarbe" variant="outlined" density="compact" type="color" @input="emitUpdate" />
+        </v-col>
+        <v-col cols="6">
+          <v-text-field v-model="collapsedStyle.fillColor" label="Füllfarbe" variant="outlined" density="compact" type="color" @input="emitUpdate" />
+        </v-col>
+      </v-row>
+
+      <v-slider v-model="collapsedStyle.strokeWidth" label="Rahmenstärke" min="1" max="10" step="1" thumb-label class="my-3" @update:model-value="emitUpdate" />
+
+      <v-slider v-model="collapsedStyle.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="emitUpdate" />
+
+      <v-row dense>
+        <v-col cols="6">
+          <v-text-field v-model="collapsedStyle.fontColor" label="Schriftfarbe" variant="outlined" density="compact" type="color" @input="emitUpdate" />
+        </v-col>
+        <v-col cols="6">
+          <v-text-field v-model="collapsedStyle.fontFamily" label="Schriftart" variant="outlined" density="compact" @input="emitUpdate" />
+        </v-col>
+      </v-row>
+
+      <v-row dense>
+        <v-col cols="6">
+          <v-select v-model="collapsedStyle.align" :items="horizontalAlignOptions" label="Horizontale Ausrichtung" variant="outlined" density="compact" @update:model-value="emitUpdate" />
+        </v-col>
+        <v-col cols="6">
+          <v-select v-model="collapsedStyle.verticalAlign" :items="verticalAlignOptions" label="Vertikale Ausrichtung" variant="outlined" density="compact" @update:model-value="emitUpdate" />
         </v-col>
       </v-row>
     </template>
@@ -27,8 +66,8 @@
 
 <script setup lang="ts">
 /* eslint-disable vue/no-mutating-props */
-import { computed } from 'vue'
-import type { DiagramElement, ChildElement } from '@/model/Element'
+import { computed, watch } from 'vue'
+import type { DiagramElement, ChildElement, ElementStyle } from '@/model/Element'
 
 interface Props {
   element: DiagramElement | ChildElement
@@ -41,42 +80,67 @@ const emit = defineEmits<{
 
 const localElement = computed(() => props.element)
 
-// Initialisiere collapsedBounds wenn nötig
-function ensureCollapsedBounds() {
-  if (!localElement.value.collapsedBounds) {
-    // Defaults: 60% Breite, 40% Höhe des Elements
-    const width = 'width' in localElement.value ? localElement.value.width : localElement.value.position?.width || 100
-    const height = 'height' in localElement.value ? localElement.value.height : localElement.value.position?.height || 60
+const shapeOptions = [
+  { label: 'Rechteck', value: 'rectangle' },
+  { label: 'Ellipse', value: 'ellipse' },
+  { label: 'Raute', value: 'rhombus' },
+  { label: 'Dreieck', value: 'triangle' }
+]
 
-    localElement.value.collapsedBounds = {
-      x: 0,
-      y: 0,
-      width: Math.floor(width * 0.6),
-      height: Math.floor(height * 0.4)
+const horizontalAlignOptions = ['left', 'center', 'right']
+const verticalAlignOptions = ['top', 'middle', 'bottom']
+
+function cloneStyle(style: ElementStyle): ElementStyle {
+  return { ...style }
+}
+
+function ensureCollapsedConfig() {
+  if (!localElement.value.collapsed) {
+    const baseWidth = 'width' in localElement.value ? localElement.value.width : localElement.value.position?.width || 120
+    const baseHeight = 'height' in localElement.value ? localElement.value.height : localElement.value.position?.height || 80
+
+    localElement.value.collapsed = {
+      width: Math.floor(baseWidth * 0.6),
+      height: Math.floor(baseHeight * 0.6),
+      label: '',
+      style: cloneStyle(localElement.value.style)
     }
-  } else {
-    localElement.value.collapsedBounds.x = 0
-    localElement.value.collapsedBounds.y = 0
+    emitUpdate()
+  } else if (!localElement.value.collapsed.style) {
+    localElement.value.collapsed.style = cloneStyle(localElement.value.style)
+    emitUpdate()
   }
 }
 
-// Collapsed Bounds Getter
-const collapsedBounds = computed(() => {
-  ensureCollapsedBounds()
-  return localElement.value.collapsedBounds!
+const collapsedConfig = computed(() => {
+  ensureCollapsedConfig()
+  return localElement.value.collapsed!
 })
+
+const collapsedStyle = computed(() => {
+  ensureCollapsedConfig()
+  return localElement.value.collapsed!.style!
+})
+
+function onShapeChange(value: string | null) {
+  if (value) {
+    collapsedStyle.value.shape = value
+  } else {
+    delete collapsedStyle.value.shape
+  }
+  emitUpdate()
+}
 
 function onCollapsibleChange() {
   // Wenn collapsible deaktiviert wird, entferne auch die Bounds
   if (!localElement.value.collapsible) {
-    delete localElement.value.collapsedBounds
-    delete localElement.value.defaultCollapsed
+    delete localElement.value.collapsed
     if (localElement.value.style) {
       delete localElement.value.style.foldable
     }
   } else {
     // Wenn aktiviert, stelle sicher dass Bounds existieren
-    ensureCollapsedBounds()
+    ensureCollapsedConfig()
     // Aktiviere foldable Style
     if (localElement.value.style) {
       localElement.value.style.foldable = true
@@ -85,12 +149,13 @@ function onCollapsibleChange() {
   emitUpdate()
 }
 
-function onSizeChange() {
-  ensureCollapsedBounds()
-  emitUpdate()
-}
-
 function emitUpdate() {
   emit('update')
 }
+
+watch(
+  () => localElement.value.collapsed,
+  () => emitUpdate(),
+  { deep: true }
+)
 </script>

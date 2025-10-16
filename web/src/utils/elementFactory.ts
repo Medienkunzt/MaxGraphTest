@@ -64,35 +64,43 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
     ;(geometry as any).constraints = constraints
   }
 
-  // 3a. Collapse-Bounds als alternateBounds setzen (für zusammengeklappten Zustand)
-  if (element.collapsible && element.collapsedBounds) {
-    const cb = element.collapsedBounds
-    geometry.alternateBounds = new Rectangle(cb.x, cb.y, cb.width, cb.height)
+  // 3a. Collapse-Konfiguration auswerten (Größe + Darstellung)
+  const collapsedConfig = element.collapsible ? element.collapsed : undefined
+  if (element.collapsible && collapsedConfig && (collapsedConfig.width || collapsedConfig.height)) {
+    const collapsedWidth = collapsedConfig.width ?? width
+    const collapsedHeight = collapsedConfig.height ?? height
+    geometry.alternateBounds = new Rectangle(0, 0, collapsedWidth, collapsedHeight)
   }
 
   // 4. Cell erstellen
-  const cell = new Cell(element.label ?? element.name, geometry, baseStyle)
+  const normalStyle = { ...baseStyle }
+  const cell = new Cell(element.label ?? element.name, geometry, normalStyle)
   cell.setVertex(true)
   cell.setConnectable(element.connectable ?? true)
   cell.setAttribute('diagramElementId', element.id)
+
+  const collapseMetadata: Record<string, any> = {}
+  const collapsedStyle = collapsedConfig?.style ? { ...normalStyle, ...collapsedConfig.style } : undefined
+
+  if (collapsedConfig?.label) {
+    collapseMetadata.label = collapsedConfig.label
+  }
+  if (collapsedStyle) {
+    collapseMetadata.style = collapsedStyle
+  }
+  if (Object.keys(collapseMetadata).length > 0) {
+    ;(cell as any).collapsedConfig = collapseMetadata
+  }
 
   // 4a. getStyle-Funktion setzen (wichtig für Collapse-Funktionalität)
   // Diese Funktion wird von MaxGraph aufgerufen um den aktuellen Style zu erhalten
   if (element.collapsible) {
     cell.getStyle = function (this: Cell) {
-      // Wenn nicht collapsed, gib den normalen Style zurück
-      if (!this.isCollapsed()) {
-        return this.style
+      if (this.isCollapsed() && collapseMetadata.style) {
+        return collapseMetadata.style
       }
-      // Wenn collapsed, könnte man hier einen alternativen Style zurückgeben
-      // Für jetzt: einfach den normalen Style verwenden
-      return this.style
+      return normalStyle
     }
-  }
-
-  // 5. Initial collapsed State setzen
-  if (element.defaultCollapsed) {
-    cell.collapsed = true
   }
 
   return cell

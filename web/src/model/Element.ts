@@ -1,4 +1,5 @@
 export interface ElementStyle {
+  shape?: string
   strokeColor: string
   fillColor: string
   strokeWidth: number
@@ -26,11 +27,11 @@ export interface AnchorPoint {
   y: number
 }
 
-export interface CollapseBounds {
-  x: number
-  y: number
-  width: number
-  height: number
+export interface CollapsedAppearance {
+  width?: number
+  height?: number
+  label?: string
+  style?: ElementStyle
 }
 
 interface BaseElement<TChild> {
@@ -45,8 +46,7 @@ interface BaseElement<TChild> {
   connectable: boolean
   // Collapse-Konfiguration
   collapsible?: boolean // Ob das Element zusammenklappbar ist
-  collapsedBounds?: CollapseBounds // Größe im zusammengeklappten Zustand (alternateBounds)
-  defaultCollapsed?: boolean // Initial zusammengeklappt
+  collapsed?: CollapsedAppearance // Darstellung im zusammengeklappten Zustand
 }
 
 export interface DiagramElement extends BaseElement<ChildElement> {

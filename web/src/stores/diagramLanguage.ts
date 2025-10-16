@@ -198,7 +198,24 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           children: [],
           connectable: true,
           resizable: true,
-          movable: true
+          movable: true,
+          collapsible: true,
+          collapsed: {
+            width: 160,
+            height: 60,
+            label: 'Klasse',
+            style: {
+              shape: 'rectangle',
+              strokeColor: '#0d47a1',
+              fillColor: '#bbdefb',
+              strokeWidth: 2,
+              fontSize: 12,
+              fontColor: '#0d47a1',
+              fontFamily: 'Arial',
+              align: 'center',
+              verticalAlign: 'middle'
+            }
+          }
         },
         // Abstrakte Klasse
         {
@@ -237,7 +254,24 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           children: [],
           connectable: true,
           resizable: true,
-          movable: true
+          movable: true,
+          collapsible: true,
+          collapsed: {
+            width: 160,
+            height: 60,
+            label: 'Abstrakt',
+            style: {
+              shape: 'rectangle',
+              strokeColor: '#bf360c',
+              fillColor: '#ffe0b2',
+              strokeWidth: 2,
+              fontSize: 12,
+              fontColor: '#bf360c',
+              fontFamily: 'Arial',
+              align: 'center',
+              verticalAlign: 'middle'
+            }
+          }
         },
         // Interface
         {
@@ -276,7 +310,24 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           children: [],
           connectable: true,
           resizable: true,
-          movable: true
+          movable: true,
+          collapsible: true,
+          collapsed: {
+            width: 160,
+            height: 50,
+            label: 'Interface',
+            style: {
+              shape: 'rectangle',
+              strokeColor: '#00695c',
+              fillColor: '#b2dfdb',
+              strokeWidth: 1,
+              fontSize: 12,
+              fontColor: '#004d40',
+              fontFamily: 'Arial',
+              align: 'center',
+              verticalAlign: 'middle'
+            }
+          }
         },
         // Enumeration
         {
@@ -315,7 +366,24 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           children: [],
           connectable: true,
           resizable: true,
-          movable: true
+          movable: true,
+          collapsible: true,
+          collapsed: {
+            width: 160,
+            height: 50,
+            label: 'Enum',
+            style: {
+              shape: 'rectangle',
+              strokeColor: '#4a148c',
+              fillColor: '#e1bee7',
+              strokeWidth: 1,
+              fontSize: 12,
+              fontColor: '#4a148c',
+              fontFamily: 'Arial',
+              align: 'center',
+              verticalAlign: 'middle'
+            }
+          }
         },
         // Paket
         {
@@ -349,7 +417,24 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           children: [],
           connectable: false,
           resizable: true,
-          movable: true
+          movable: true,
+          collapsible: true,
+          collapsed: {
+            width: 200,
+            height: 80,
+            label: 'Paket',
+            style: {
+              shape: 'rectangle',
+              strokeColor: '#546e7a',
+              fillColor: '#cfd8dc',
+              strokeWidth: 2,
+              fontSize: 12,
+              fontColor: '#263238',
+              fontFamily: 'Arial',
+              align: 'left',
+              verticalAlign: 'middle'
+            }
+          }
         },
         // Notiz
         {

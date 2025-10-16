@@ -59,6 +59,7 @@ import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
 import { setupPanningHandler } from '@/utils/setupPanningHandler'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
 import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
+import { collapseHandler } from '@/utils/collapseHandler'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import type { DiagramElement } from '@/model/Element'
@@ -422,22 +423,7 @@ defineExpose({
 
 const triggerManualCollapse = () => {
   if (!graph.value) return
-  const selected = graph.value.getSelectionCells()
-  if (!selected?.length) {
-    console.warn('Keine Auswahl zum Zusammenklappen vorhanden.')
-    return
-  }
-
-  const collapsible = graph.value.getFoldableCells(selected, true)
-  if (!collapsible?.length) {
-    console.warn('Auswahl enthält keine faltbaren Zellen.')
-    return
-  }
-
-  const allCollapsed = collapsible.every((cell) => cell.isCollapsed())
-  const targetState = !allCollapsed
-
-  graph.value.foldCells(targetState, false, collapsible, false)
+  collapseHandler.toggleCollapse(graph.value)
 }
 </script>
 
