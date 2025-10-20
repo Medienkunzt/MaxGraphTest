@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, ImageBox, Client, KeyHandler } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ImageBox, Client, KeyHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -53,10 +53,8 @@ import { useZoomOperations } from '@/composables/useZoomOperations'
 import { useGridSettings } from '@/composables/useGridSettings'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
-import { setupPanningHandler } from '@/utils/setupPanningHandler'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
 import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
-import { collapseHandler } from '@/utils/collapseHandler'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import type { DiagramElement } from '@/model/Element'
@@ -163,13 +161,7 @@ const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
 const keyHandler = ref<KeyHandler>()
-const plugins = ref<GraphPluginConstructor[]>([
-  MyCustomCellEditorHandler,
-  MyCustomConnectionHandler,
-  SelectionCellsHandler,
-  SelectionHandler,
-  RubberBandHandler
-])
+const plugins = ref<GraphPluginConstructor[]>([MyCustomCellEditorHandler, MyCustomConnectionHandler, PanningHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
 const toolbarShapes = ref(
   createDefaultShapes({
     rectangle: img_rectangle,
@@ -264,11 +256,8 @@ const initGraph = () => {
   graph.value.setAllowNegativeCoordinates(false)
   graph.value.setHtmlLabels(true)
 
-  // Enable panning (drag to navigate)
+  // Aktiviere Panning mit Standard-Implementierung (Rechtsklick oder mittlere Maustaste)
   graph.value.setPanning(true)
-
-  // Configure panning handler to detect panning state
-  setupPanningHandler(graph, isPanning)
 
   // Configure selection handler like in Grid.js
   const selectionHandler = graph.value.getPlugin<SelectionHandler>('SelectionHandler')
@@ -457,11 +446,6 @@ const emitUpdatedModel = () => {
 defineExpose({
   graph
 })
-
-const triggerManualCollapse = () => {
-  if (!graph.value) return
-  collapseHandler.toggleCollapse(graph.value)
-}
 </script>
 
 <style scoped>
