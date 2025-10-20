@@ -20,6 +20,9 @@
             <v-col cols="12">
               <v-select v-model="localSnapToGrid" label="Raster-Snap" :items="snapOptions" density="compact" variant="outlined" @update:model-value="handleSnapToGridChange" />
             </v-col>
+            <v-col cols="12">
+              <v-select v-model="localUseGridForPanning" label="Raster für Panning" :items="snapOptions" density="compact" variant="outlined" hint="Grid-basiertes Panning" @update:model-value="handleUseGridForPanningChange" />
+            </v-col>
           </v-row>
         </v-card-text>
       </v-card>
@@ -31,12 +34,13 @@
 import { ref, watch } from 'vue'
 import { useGraphContext } from '@/composables/useGraphContext'
 
-const { isPanning, gridSize, snapToGrid, tolerance } = useGraphContext()
+const { isPanning, gridSize, snapToGrid, tolerance, useGridForPanning } = useGraphContext()
 
 // Lokale Kopien für v-model Bindings
 const localGridSize = ref(gridSize.value)
 const localTolerance = ref(tolerance.value)
 const localSnapToGrid = ref(snapToGrid.value)
+const localUseGridForPanning = ref(useGridForPanning.value)
 const menuOpen = ref(false)
 
 const snapOptions = ref([
@@ -45,7 +49,7 @@ const snapOptions = ref([
 ])
 
 // Emits für Parent-Komponente
-const emit = defineEmits(['update:gridSize', 'update:tolerance', 'update:snapToGrid'])
+const emit = defineEmits(['update:gridSize', 'update:tolerance', 'update:snapToGrid', 'update:useGridForPanning'])
 
 // Watchers um externe Änderungen zu übernehmen
 watch(gridSize, (newVal) => {
@@ -60,6 +64,10 @@ watch(snapToGrid, (newVal) => {
   localSnapToGrid.value = newVal
 })
 
+watch(useGridForPanning, (newVal) => {
+  localUseGridForPanning.value = newVal
+})
+
 // Event Handlers
 const handleGridSizeChange = () => {
   emit('update:gridSize', Number(localGridSize.value))
@@ -71,6 +79,10 @@ const handleToleranceChange = () => {
 
 const handleSnapToGridChange = () => {
   emit('update:snapToGrid', localSnapToGrid.value)
+}
+
+const handleUseGridForPanningChange = () => {
+  emit('update:useGridForPanning', localUseGridForPanning.value)
 }
 </script>
 

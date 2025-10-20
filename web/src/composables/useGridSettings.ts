@@ -10,17 +10,22 @@ import type { Graph } from '@maxgraph/core'
  * - Maus-Toleranz einstellen
  * - Grid ein/ausschalten (Toggle)
  * - Grid neu zeichnen erzwingen
+ * - UseGrid für Panning aktivieren/deaktivieren
  *
  * @param graph - Ref auf die Graph-Instanz
  * @param gridSize - Ref auf die Grid-Größe
  * @param snapToGrid - Ref auf den Snap-to-Grid Status
  * @param tolerance - Ref auf die Maus-Toleranz
+ * @param useGridForPanning - Ref auf den UseGrid Status für Panning
  */
-export function useGridSettings(graph: Ref<Graph | undefined>, gridSize: Ref<number>, snapToGrid: Ref<boolean>, tolerance: Ref<number>) {
+export function useGridSettings(graph: Ref<Graph | undefined>, gridSize: Ref<number>, snapToGrid: Ref<boolean>, tolerance: Ref<number>, useGridForPanning: Ref<boolean>) {
   /**
    * Aktualisiert die Grid-Größe und zeichnet das Raster neu
    */
-  const updateGridSize = () => {
+  const updateGridSize = (newSize?: number) => {
+    if (newSize !== undefined) {
+      gridSize.value = newSize
+    }
     if (!graph.value) return
 
     graph.value.gridSize = gridSize.value
@@ -44,7 +49,11 @@ export function useGridSettings(graph: Ref<Graph | undefined>, gridSize: Ref<num
    * Aktiviert oder deaktiviert Snap-to-Grid
    * Aktualisiert das Grid entsprechend
    */
-  const updateSnapToGrid = () => {
+  const updateSnapToGrid = (newValue?: boolean) => {
+    if (newValue !== undefined) {
+      snapToGrid.value = newValue
+    }
+
     if (!graph.value) return
 
     graph.value.setGridEnabled(snapToGrid.value)
@@ -71,11 +80,33 @@ export function useGridSettings(graph: Ref<Graph | undefined>, gridSize: Ref<num
   /**
    * Aktualisiert die Maus-Toleranz für Event-Erkennung
    */
-  const updateTolerance = () => {
+  const updateTolerance = (newValue?: number) => {
+    if (newValue !== undefined) {
+      tolerance.value = newValue
+    }
+
     if (!graph.value) return
 
     // MaxGraph verwendet eventTolerance
     graph.value.setEventTolerance(tolerance.value)
+  }
+
+  /**
+   * Aktiviert oder deaktiviert UseGrid für Panning
+   * Aktualisiert den PanningHandler entsprechend
+   */
+  const updateUseGridForPanning = (newValue?: boolean) => {
+    if (newValue !== undefined) {
+      useGridForPanning.value = newValue
+    }
+
+    if (!graph.value) return
+
+    // Aktualisiere PanningHandler
+    const panningHandler = graph.value.getPlugin('PanningHandler') as any
+    if (panningHandler) {
+      panningHandler.useGrid = useGridForPanning.value
+    }
   }
 
   /**
@@ -117,6 +148,7 @@ export function useGridSettings(graph: Ref<Graph | undefined>, gridSize: Ref<num
     updateGridSize,
     updateSnapToGrid,
     updateTolerance,
+    updateUseGridForPanning,
     toggleGrid,
     forceGridRepaint
   }

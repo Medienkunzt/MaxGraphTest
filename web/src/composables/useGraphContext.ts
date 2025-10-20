@@ -15,6 +15,7 @@ export interface GraphContext {
   gridSize: Ref<number>
   snapToGrid: Ref<boolean>
   tolerance: Ref<number>
+  useGridForPanning: Ref<boolean>
 }
 
 /**

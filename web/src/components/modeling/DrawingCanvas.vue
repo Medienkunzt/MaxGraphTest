@@ -37,7 +37,7 @@
         <GraphControls @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
 
         <!-- Graph Settings Component -->
-        <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" />
+        <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" @update:use-grid-for-panning="updateUseGridForPanning" />
       </div>
     </v-card-text>
   </v-card>
@@ -154,6 +154,7 @@ const gridSize = ref(10)
 const snapToGrid = ref(true)
 const tolerance = ref(10)
 const isPanning = ref(false)
+const useGridForPanning = ref(true)
 
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
@@ -178,13 +179,14 @@ provideGraphContext({
   isPanning,
   gridSize,
   snapToGrid,
-  tolerance
+  tolerance,
+  useGridForPanning
 })
 
 // Initialisiere Composables
 const { deleteSelected, duplicateSelected, selectAll, clearSelection } = useGraphOperations(graph, parent)
 const { zoomIn, zoomOut, fitToWindow } = useZoomOperations(graph)
-const { updateGridSize, updateSnapToGrid, updateTolerance, toggleGrid, forceGridRepaint } = useGridSettings(graph, gridSize, snapToGrid, tolerance)
+const { updateGridSize, updateSnapToGrid, updateTolerance, updateUseGridForPanning, toggleGrid, forceGridRepaint } = useGridSettings(graph, gridSize, snapToGrid, tolerance, useGridForPanning)
 
 onMounted(() => {
   initGraph()
@@ -205,35 +207,6 @@ onMounted(() => {
     graph.value?.refresh()
     graph.value?.view.validate()
     emitUpdatedModel()
-  })
-
-  // Forciere das Raster sofort nach dem Mount
-  nextTick(() => {
-    setTimeout(() => {
-      if (graph.value) {
-        // Triggere einen minimalen Zoom um das Raster zu initialisieren
-        const currentScale = graph.value.view.scale
-        graph.value.view.scale = currentScale * 1.001
-        graph.value.view.scale = currentScale
-        graph.value.view.validate()
-        graph.value.view.validateBackground()
-
-        // Zusätzlicher direkter Repaint-Aufruf
-        if ((graph.value as any).repaintGrid) {
-          ;(graph.value as any).repaintGrid()
-        }
-      }
-    }, 100)
-
-    // Zweiter Versuch nach längerer Zeit
-    setTimeout(() => {
-      if (graph.value) {
-        graph.value.view.validateBackground()
-        if ((graph.value as any).repaintGrid) {
-          ;(graph.value as any).repaintGrid()
-        }
-      }
-    }, 500)
   })
 })
 
@@ -258,6 +231,28 @@ const initGraph = () => {
 
   // Aktiviere Panning mit Standard-Implementierung (Rechtsklick oder mittlere Maustaste)
   graph.value.setPanning(true)
+
+  // Configure PanningHandler
+  const panningHandler = graph.value.getPlugin<PanningHandler>('PanningHandler')
+  if (panningHandler) {
+    panningHandler.useLeftButtonForPanning = false
+    panningHandler.useGrid = useGridForPanning.value
+
+    // Event Listeners direkt am PanningHandler registrieren
+    panningHandler.addListener(InternalEvent.PAN_START, () => {
+      isPanning.value = true
+    })
+
+    panningHandler.addListener(InternalEvent.PAN_END, () => {
+      isPanning.value = false
+
+      // Graph nach Panning aktualisieren und validieren
+      if (graph.value) {
+        graph.value.refresh()
+        graph.value.view.validate()
+      }
+    })
+  }
 
   // Configure selection handler like in Grid.js
   const selectionHandler = graph.value.getPlugin<SelectionHandler>('SelectionHandler')

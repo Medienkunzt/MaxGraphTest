@@ -1,6 +1,6 @@
-import { nextTick, type Ref } from 'vue'
-import type { Graph } from '@maxgraph/core'
-import { InternalEvent, Point } from '@maxgraph/core'
+import { type Ref } from 'vue'
+import type { Graph, PanningHandler } from '@maxgraph/core'
+import { Point, InternalEvent } from '@maxgraph/core'
 
 /**
  * Setup-Funktion für das dynamische Grid-System
@@ -19,33 +19,84 @@ import { InternalEvent, Point } from '@maxgraph/core'
  */
 export function setupDynamicGrid(graph: Ref<Graph | undefined>, canvasGrid: Ref<HTMLCanvasElement | undefined>, graphContainer: Ref<HTMLElement | undefined>, gridSize: Ref<number>, snapToGrid: Ref<boolean>) {
   const canvas = canvasGrid.value
-  if (!canvas || !graphContainer.value) {
-    console.warn('Canvas or container not available for grid setup')
+  if (!canvas || !graph.value?.container) {
+    console.warn('Canvas or graph container not available for grid setup')
     return
   }
+  // Panning-Handler: Grid-Canvas wird während Panning per CSS transformiert
+  let panAccDx = 0
+  let panAccDy = 0
+  const panningHandler = graph.value.getPlugin<PanningHandler>('PanningHandler')
+  if (panningHandler) {
+    panningHandler.addListener(InternalEvent.PAN_START, () => {
+      if (canvas) {
+        canvas.style.willChange = 'transform'
+        canvas.style.transform = 'translate(0px, 0px)'
+      }
+      panAccDx = 0
+      panAccDy = 0
+    })
+    panningHandler.addListener(InternalEvent.PAN, (_sender: any, evt: any) => {
+      requestAnimationFrame(() => {
+        const view = graph.value?.view as any
+        const edx = typeof evt?.getProperty === 'function' ? evt.getProperty('dx') ?? 0 : 0
+        const edy = typeof evt?.getProperty === 'function' ? evt.getProperty('dy') ?? 0 : 0
+        if (edx !== 0 || edy !== 0) {
+          panAccDx += edx
+          panAccDy += edy
+        } else {
+          panAccDx = view?.panDx || 0
+          panAccDy = view?.panDy || 0
+        }
+        if (canvas) {
+          canvas.style.transform = `translate(${panAccDx}px, ${panAccDy}px)`
+        }
+      })
+    })
+    panningHandler.addListener(InternalEvent.PAN_END, () => {
+      if (canvas) {
+        canvas.style.transform = 'translate(0px, 0px)'
+        canvas.style.willChange = ''
+      }
+      panAccDx = 0
+      panAccDy = 0
+      if ((graph.value as any).repaintGrid) {
+        ;(graph.value as any).repaintGrid()
+      }
+    })
+  }
 
-  // Canvas Größe initial setzen - warte bis Container bereit ist
-  const container = graphContainer.value
+  // Hänge das Canvas direkt an den MaxGraph-Container (wie im Beispiel)
+  if (canvas.parentElement !== graph.value.container) {
+    try {
+      graph.value.container.appendChild(canvas)
+    } catch (e) {
+      if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV) {
+        console.warn('Konnte Canvas nicht an graph.container anhängen:', e)
+      }
+    }
+  }
 
-  // Initialisiere Canvas-Größe
+  // Canvas Größe initial setzen
+  const container = graph.value.container
   const initCanvasSize = () => {
     const containerWidth = container.clientWidth || 800
     const containerHeight = container.clientHeight || 600
-
     canvas.width = containerWidth
     canvas.height = containerHeight
     canvas.style.width = containerWidth + 'px'
     canvas.style.height = containerHeight + 'px'
   }
-
   initCanvasSize()
 
   const ctx = canvas.getContext('2d')!
-  let s = 1 // Scale
-  let gs = graph.value!.gridSize // Grid Size
-  let tr = new Point(0, 0) // Translation
-  let w = canvas.width
-  let h = canvas.height
+  let s = 0 // Scale - initialisiert mit 0 um ersten Repaint zu garantieren
+  let gs = 0 // Grid Size - initialisiert mit 0
+  let tr = new Point() // Translation
+  let w = 0 // Width - initialisiert mit 0
+  let h = 0 // Height - initialisiert mit 0
+  let pdx = 0 // Pan Offset X während Panning
+  let pdy = 0 // Pan Offset Y während Panning
 
   /**
    * Zeichnet das Grid auf dem Canvas neu
@@ -58,8 +109,13 @@ export function setupDynamicGrid(graph: Ref<Graph | undefined>, canvasGrid: Ref<
     }
 
     // Hole aktuelle Werte vom Graph
-    const currentScale = graph.value?.view.scale || 1
-    const currentTranslate = graph.value?.view.translate || new Point(0, 0)
+    const view: any = graph.value?.view as any
+    const currentScale = view?.scale || 1
+    const currentTranslate = view?.translate || new Point(0, 0)
+    // Während des Pannings werden temporäre Offsets (panDx/panDy) verwendet,
+    // translate wird dabei oft erst am Ende übernommen
+    const currentPanDx = view?.panDx || 0
+    const currentPanDy = view?.panDy || 0
     const currentGridSize = graph.value?.gridSize || gridSize.value
 
     const bounds = graph.value!.getGraphBounds()
@@ -67,15 +123,17 @@ export function setupDynamicGrid(graph: Ref<Graph | undefined>, canvasGrid: Ref<
     const width = Math.max(bounds.x + bounds.width, container.clientWidth || 800)
     const height = Math.max(bounds.y + bounds.height, container.clientHeight || 600)
     const sizeChanged = width !== w || height !== h
-
-    // Überprüfe ob sich etwas geändert hat ODER es das erste Mal ist
-    if (currentScale !== s || currentTranslate.x !== tr.x || currentTranslate.y !== tr.y || currentGridSize !== gs || sizeChanged || (s === 1 && tr.x === 0 && tr.y === 0)) {
+    // Prüfe ob sich Scale, Translate, GridSize ODER Canvas-Größe geändert hat
+    if (currentScale !== s || currentTranslate.x !== tr.x || currentTranslate.y !== tr.y || currentGridSize !== gs || currentPanDx !== pdx || currentPanDy !== pdy || sizeChanged) {
       tr = currentTranslate.clone()
       s = currentScale
       gs = currentGridSize
       w = width
       h = height
+      pdx = currentPanDx
+      pdy = currentPanDy
 
+      // Canvas leeren oder Größe anpassen
       if (!sizeChanged) {
         ctx.clearRect(0, 0, w, h)
       } else {
@@ -85,8 +143,9 @@ export function setupDynamicGrid(graph: Ref<Graph | undefined>, canvasGrid: Ref<
         canvas.style.height = h + 'px'
       }
 
-      const tx = tr.x * s
-      const ty = tr.y * s
+      // Berücksichtige temporäre Pan-Offsets bei der Pixelverschiebung
+      const tx = tr.x * s + currentPanDx
+      const ty = tr.y * s + currentPanDy
       let stepping = gs * s
 
       // Verhindere zu kleine Grid-Schritte
@@ -149,43 +208,6 @@ export function setupDynamicGrid(graph: Ref<Graph | undefined>, canvasGrid: Ref<
     original()
     repaintGrid()
   }
-
-  // Initialer Aufruf mit mehreren Versuchen
-  nextTick(() => {
-    // Sofortiger erster Versuch
-    initCanvasSize()
-    repaintGrid()
-
-    // Erstes Repaint
-    setTimeout(() => {
-      initCanvasSize()
-      repaintGrid()
-    }, 50)
-
-    // Zweites Repaint für Sicherheit
-    setTimeout(() => {
-      initCanvasSize()
-      repaintGrid()
-    }, 200)
-
-    // Drittes Repaint nach längerer Zeit
-    setTimeout(() => {
-      initCanvasSize()
-      repaintGrid()
-    }, 800)
-
-    // Event-Listener für Zoom und Translate
-    graph.value!.addListener(InternalEvent.SCALE, repaintGrid)
-    graph.value!.addListener(InternalEvent.TRANSLATE, repaintGrid)
-
-    // Zusätzlicher Listener für Resize
-    window.addEventListener('resize', () => {
-      setTimeout(() => {
-        initCanvasSize()
-        repaintGrid()
-      }, 100)
-    })
-  })
 
   // Globale Repaint-Funktion für externe Aufrufe
   // Wird von useGridSettings.ts verwendet
