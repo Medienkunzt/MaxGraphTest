@@ -87,6 +87,7 @@
     <v-row>
       <v-col cols="12">
         <v-checkbox v-model="localElement.connectable" label="Verbindbar"></v-checkbox>
+        <v-checkbox v-model="localElement.allowLabelEdit" label="Label bearbeitbar"></v-checkbox>
       </v-col>
     </v-row>
   </v-container>
@@ -94,24 +95,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-
-interface ChildElement {
-  id: string
-  label: string
-  type: 'canvas2d' | 'predefined'
-  position: {
-    x: number
-    y: number
-    width: number
-    height: number
-    relative: boolean
-  }
-  style: any
-  canvas?: string
-  predefinedShape?: string
-  children?: ChildElement[]
-  connectable?: boolean
-}
+import type { ChildElement } from '@/model/Element'
 
 const props = defineProps<{
   modelValue: ChildElement

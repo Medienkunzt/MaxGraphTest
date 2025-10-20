@@ -23,9 +23,6 @@
           <v-btn title="Duplizieren (Strg+D)" @click="duplicateSelected">
             <v-icon>mdi-content-duplicate</v-icon>
           </v-btn>
-          <v-btn title="Collapse Selection" @click="triggerManualCollapse">
-            <v-icon>mdi-arrow-collapse-vertical</v-icon>
-          </v-btn>
         </v-btn-group>
       </div>
 
@@ -48,7 +45,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ImageBox, Client, Rectangle } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, ImageBox, Client, KeyHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -70,6 +67,26 @@ import img_rhombus from '@/assets/images/rhombus.gif'
 import img_triangle from '@/assets/images/triangle.gif'
 import img_cloud from '@/assets/images/cloud.gif'
 import img_elementPlaceholder from '@/assets/images/rectangle.gif'
+
+class MyCustomCellEditorHandler extends CellEditorHandler {
+  // Custom CellEditorHandler - kann später erweitert werden
+  // Beispiel: Anpassung der Editor-Darstellung, Validierung, etc.
+
+  override startEditing(cell: Cell, trigger: MouseEvent | null) {
+    super.startEditing(cell, trigger)
+
+    // Optionale Anpassungen am Editor nach dem Start
+    if (this.textarea != null) {
+      // Hier können weitere Anpassungen vorgenommen werden, z.B.:
+      // this.textarea.style.color = '#000000'
+      // this.textarea.style.backgroundColor = '#ffffff'
+    }
+  }
+
+  override stopEditing(cancel: boolean) {
+    super.stopEditing(cancel)
+  }
+}
 
 class MyCustomConnectionHandler extends ConnectionHandler {
   // Enables connect preview for the default edge style
@@ -105,6 +122,15 @@ class MyCustomGraph extends Graph {
     void _source
     return (terminal?.cell?.geometry as any)?.constraints ?? null
   }
+
+  override isCellEditable = (cell: Cell) => {
+    const allow = (cell as any).allowLabelEdit
+
+    if (allow === false) {
+      return false
+    }
+    return super.isCellEditable(cell)
+  }
 }
 
 const props = withDefaults(
@@ -136,7 +162,14 @@ const canvasGrid = ref<HTMLCanvasElement>()
 const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
-const plugins = ref<GraphPluginConstructor[]>([MyCustomConnectionHandler, PanningHandler, CellEditorHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
+const keyHandler = ref<KeyHandler>()
+const plugins = ref<GraphPluginConstructor[]>([
+  MyCustomCellEditorHandler,
+  MyCustomConnectionHandler,
+  SelectionCellsHandler,
+  SelectionHandler,
+  RubberBandHandler
+])
 const toolbarShapes = ref(
   createDefaultShapes({
     rectangle: img_rectangle,
@@ -229,6 +262,7 @@ const initGraph = () => {
   graph.value.setCellsDeletable(props.allowEdit)
   graph.value.setCellsCloneable(props.allowEdit)
   graph.value.setAllowNegativeCoordinates(false)
+  graph.value.setHtmlLabels(true)
 
   // Enable panning (drag to navigate)
   graph.value.setPanning(true)
@@ -296,6 +330,9 @@ const initGraph = () => {
   graph.value.options.collapseToPreferredSize = true
 
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = EdgeStyle.OrthConnector
+
+  // Initialisiere KeyHandler (nicht als Plugin, sondern separat wie in den Beispielen)
+  keyHandler.value = new KeyHandler(graph.value)
 
   // Swimlane-Unterstützung aktivieren
   setupSwimlaneSupport(graph.value)

@@ -32,56 +32,21 @@
 import { ref, watch } from 'vue'
 import ElementEditor from '@/components/modeling/ElementEditor.vue'
 import ChildElementList from '@/components/modeling/ChildElementList.vue'
-import type { CellStyle } from '@maxgraph/core'
-
-// Element-Definition Interfaces
-interface ChildElement {
-  id: string
-  label: string
-  type: 'canvas2d' | 'predefined'
-  position: {
-    x: number
-    y: number
-    width: number
-    height: number
-    relative: boolean
-  }
-  style: Partial<CellStyle>
-  canvas?: string
-  predefinedShape?: string
-  children?: ChildElement[]
-  connectable?: boolean
-}
-
-interface ElementDefinition {
-  id: string
-  label: string
-  x: number
-  y: number
-  width: number
-  height: number
-  type: 'canvas2d' | 'predefined'
-  canvas?: string
-  predefinedShape?: string
-  style: Partial<CellStyle>
-  anchorPoints: Array<{ x: number; y: number }>
-  children: ChildElement[]
-  connectable: boolean
-}
+import type { DiagramElement, ChildElement } from '@/model/Element'
 
 // Props & Emits
 const props = defineProps<{
-  modelValue: ElementDefinition
+  modelValue: DiagramElement
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: ElementDefinition]
+  'update:modelValue': [value: DiagramElement]
   elementUpdated: []
 }>()
 
 // State
 const formIsValid = ref(false)
-const internalValue = ref<ElementDefinition>(props.modelValue)
+const internalValue = ref<DiagramElement>(props.modelValue)
 
 // Watchers
 watch(
@@ -93,7 +58,7 @@ watch(
 )
 
 // Methods
-const updateFormData = (newFormData: ElementDefinition) => {
+const updateFormData = (newFormData: DiagramElement) => {
   internalValue.value = newFormData
   emit('update:modelValue', internalValue.value)
 }
@@ -107,6 +72,7 @@ const updateChildren = (newChildren: ChildElement[]) => {
 const addChildElement = () => {
   const newChild: ChildElement = {
     id: `child-${Date.now()}`,
+    name: 'New Child',
     label: 'New Child',
     type: 'predefined',
     predefinedShape: 'label',
@@ -119,9 +85,16 @@ const addChildElement = () => {
     },
     style: {
       strokeColor: 'transparent',
-      fillColor: 'transparent'
+      fillColor: 'transparent',
+      strokeWidth: 1,
+      fontSize: 11,
+      fontColor: 'black',
+      fontFamily: 'Arial',
+      align: 'center',
+      verticalAlign: 'middle'
     },
     connectable: false,
+    allowLabelEdit: true,
     children: []
   }
   internalValue.value.children.push(newChild)

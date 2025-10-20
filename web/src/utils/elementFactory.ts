@@ -78,6 +78,7 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
   cell.setVertex(true)
   cell.setConnectable(element.connectable ?? true)
   cell.setAttribute('diagramElementId', element.id)
+  ;(cell as any).allowLabelEdit = element.allowLabelEdit !== false
 
   const collapseMetadata: Record<string, any> = {}
   const collapsedStyle = collapsedConfig?.style ? { ...normalStyle, ...collapsedConfig.style } : undefined
@@ -132,6 +133,7 @@ export function addCellToGraph(graph: Graph, cell: Cell, element: DiagramElement
       const childCell = new Cell(child.label, childGeometry, childStyle)
       childCell.setVertex(true)
       childCell.setConnectable(child.connectable ?? false)
+      ;(childCell as any).allowLabelEdit = child.allowLabelEdit !== false
 
       graph.addCell(childCell, cell)
     })

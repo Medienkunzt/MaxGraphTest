@@ -199,6 +199,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           connectable: true,
           resizable: true,
           movable: true,
+          allowLabelEdit: true,
           collapsible: true,
           collapsed: {
             width: 160,
@@ -255,6 +256,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           connectable: true,
           resizable: true,
           movable: true,
+          allowLabelEdit: true,
           collapsible: true,
           collapsed: {
             width: 160,
@@ -311,6 +313,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           connectable: true,
           resizable: true,
           movable: true,
+          allowLabelEdit: true,
           collapsible: true,
           collapsed: {
             width: 160,
@@ -367,6 +370,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           connectable: true,
           resizable: true,
           movable: true,
+          allowLabelEdit: true,
           collapsible: true,
           collapsed: {
             width: 160,
@@ -418,6 +422,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           connectable: false,
           resizable: true,
           movable: true,
+          allowLabelEdit: true,
           collapsible: true,
           collapsed: {
             width: 200,
@@ -466,7 +471,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           children: [],
           connectable: false,
           resizable: true,
-          movable: true
+          movable: true,
+          allowLabelEdit: true
         },
         // Text-Label für Attribute/Methoden
         {
@@ -493,7 +499,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           children: [],
           connectable: false,
           resizable: true,
-          movable: true
+          movable: true,
+          allowLabelEdit: true
         }
       ],
       connections: [

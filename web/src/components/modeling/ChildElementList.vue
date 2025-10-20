@@ -36,24 +36,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import ChildElementEditor from './ChildElementEditor.vue'
-
-interface ChildElement {
-  id: string
-  label: string
-  type: 'canvas2d' | 'predefined'
-  position: {
-    x: number
-    y: number
-    width: number
-    height: number
-    relative: boolean
-  }
-  style: any
-  canvas?: string
-  predefinedShape?: string
-  children?: ChildElement[]
-  connectable?: boolean
-}
+import type { ChildElement } from '@/model/Element'
 
 const props = defineProps<{
   modelValue: ChildElement[]
@@ -81,6 +64,7 @@ const removeChild = (index: number) => {
 const addNestedChild = (parentIndex: number) => {
   const newChild: ChildElement = {
     id: `nested-child-${Date.now()}`,
+    name: 'Nested Child',
     label: 'Nested Child',
     type: 'predefined',
     predefinedShape: 'label',
@@ -93,9 +77,16 @@ const addNestedChild = (parentIndex: number) => {
     },
     style: {
       strokeColor: 'transparent',
-      fillColor: 'transparent'
+      fillColor: 'transparent',
+      strokeWidth: 1,
+      fontSize: 11,
+      fontColor: 'black',
+      fontFamily: 'Arial',
+      align: 'center',
+      verticalAlign: 'middle'
     },
     connectable: false,
+    allowLabelEdit: true,
     children: []
   }
 

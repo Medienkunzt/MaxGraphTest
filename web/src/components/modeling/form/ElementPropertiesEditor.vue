@@ -88,6 +88,16 @@
         </v-expansion-panel-text>
       </v-expansion-panel>
 
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <v-icon class="mr-2">mdi-pencil</v-icon>
+          Bearbeitung
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <v-checkbox v-model="localElement.allowLabelEdit" label="Label im Canvas bearbeitbar" density="compact" hint="Doppelklick öffnet den Editor, wenn aktiviert" persistent-hint @update:model-value="emitUpdate" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
       <!-- Verbindungspunkte (nur für Haupt-Elemente) -->
       <v-expansion-panel v-if="!isChild && diagramElementData">
         <v-expansion-panel-title>
@@ -339,6 +349,10 @@ watch(
     if (newVal.connectable === undefined) {
       newVal.connectable = true
     }
+
+    if (newVal.allowLabelEdit === undefined) {
+      newVal.allowLabelEdit = true
+    }
   },
   { immediate: true, deep: true }
 )
@@ -414,7 +428,8 @@ function createDefaultChild(index: number): ChildElement {
       verticalAlign: 'middle'
     },
     children: [],
-    connectable: true
+    connectable: true,
+    allowLabelEdit: true
   }
 }
 

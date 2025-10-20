@@ -43,10 +43,11 @@ interface BaseElement<TChild> {
   predefinedShape?: string
   style: ElementStyle
   children: TChild[]
-  connectable: boolean
+  connectable?: boolean // Optional mit Default false für ChildElements
   // Collapse-Konfiguration
   collapsible?: boolean // Ob das Element zusammenklappbar ist
   collapsed?: CollapsedAppearance // Darstellung im zusammengeklappten Zustand
+  allowLabelEdit?: boolean // Ob das Label im Canvas bearbeitet werden darf (Standard: true)
 }
 
 export interface DiagramElement extends BaseElement<ChildElement> {
@@ -57,6 +58,7 @@ export interface DiagramElement extends BaseElement<ChildElement> {
   anchorPoints: AnchorPoint[]
   resizable: boolean
   movable: boolean
+  connectable: boolean // Überschreibt das optionale connectable von BaseElement
 }
 
 export interface ChildElement extends BaseElement<ChildElement> {
