@@ -46,6 +46,30 @@
           <v-slider v-model="connection.labelStyle.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
         </v-expansion-panel-text>
       </v-expansion-panel>
+
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <v-icon class="mr-2">mdi-cog</v-icon>
+          Erweiterte Optionen
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <v-select v-model="connection.edgeStyle" :items="edgeStyles" label="Edge Style" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
+
+          <v-select v-model="connection.elbow" :items="elbowOptions" label="Elbow Direction" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
+
+          <v-checkbox v-model="connection.curved" label="Kurvig (Curved)" density="compact" @update:model-value="updateAll" />
+
+          <v-checkbox v-model="connection.rounded" label="Abgerundet (Rounded)" density="compact" @update:model-value="updateAll" />
+
+          <v-checkbox v-model="connection.orthogonal" label="Orthogonal" density="compact" @update:model-value="updateAll" />
+
+          <v-slider v-if="connection.curved || connection.rounded" v-model="connection.arcSize" label="Arc Size" min="1" max="50" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
+
+          <v-select v-model="connection.align" :items="alignOptions" label="Text Align" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
+
+          <v-select v-model="connection.verticalAlign" :items="verticalAlignOptions" label="Vertical Align" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
     </v-expansion-panels>
 
     <!-- Validierungsregeln -->
@@ -110,6 +134,30 @@ const labelPositions = [
   { title: 'Mitte', value: 'middle' },
   { title: 'Start', value: 'start' },
   { title: 'Ende', value: 'end' }
+]
+
+const edgeStyles = [
+  { title: 'Orthogonal', value: 'orthogonalEdgeStyle' },
+  { title: 'Elbow', value: 'elbowEdgeStyle' },
+  { title: 'Entity Relation', value: 'entityRelationEdgeStyle' },
+  { title: 'Segment', value: 'segmentEdgeStyle' }
+]
+
+const elbowOptions = [
+  { title: 'Horizontal', value: 'horizontal' },
+  { title: 'Vertical', value: 'vertical' }
+]
+
+const alignOptions = [
+  { title: 'Links', value: 'left' },
+  { title: 'Zentriert', value: 'center' },
+  { title: 'Rechts', value: 'right' }
+]
+
+const verticalAlignOptions = [
+  { title: 'Oben', value: 'top' },
+  { title: 'Mitte', value: 'middle' },
+  { title: 'Unten', value: 'bottom' }
 ]
 
 // Methods

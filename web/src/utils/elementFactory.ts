@@ -1,6 +1,7 @@
 import { Cell, Geometry, ConnectionConstraint, Point, Rectangle } from '@maxgraph/core'
 import type { Graph } from '@maxgraph/core'
 import type { DiagramElement } from '@/model/Element'
+import type { DiagramConnection } from '@/model/Connection'
 
 /**
  * Erstellt eine MaxGraph Cell aus einer DiagramElement-Definition
@@ -137,5 +138,119 @@ export function addCellToGraph(graph: Graph, cell: Cell, element: DiagramElement
 
       graph.addCell(childCell, cell)
     })
+  }
+}
+
+/**
+ * Erstellt das Style-Objekt für eine Verbindung aus einer DiagramConnection-Definition
+ *
+ * Diese Methode wird vom CustomConnectionHandler und von der Vorschau verwendet,
+ * um sicherzustellen, dass Verbindungen identisch erstellt werden.
+ *
+ * @param connection - Die DiagramConnection-Definition
+ * @returns Das Style-Objekt für MaxGraph
+ */
+export function createStyleFromConnection(connection: DiagramConnection): Record<string, any> {
+  const style: Record<string, any> = {
+    strokeColor: connection.style.strokeColor,
+    strokeWidth: connection.style.strokeWidth,
+    dashed: connection.style.lineStyle === 'dashed',
+    dotted: connection.style.lineStyle === 'dotted',
+    startArrow: connection.style.startArrow,
+    endArrow: connection.style.endArrow,
+    fontSize: connection.labelStyle.fontSize
+  }
+
+  // Optionale Properties - nur valide Werte setzen
+  if (['left', 'center', 'right'].includes(connection.align ?? '')) {
+    style.align = connection.align
+  } else {
+    style.align = 'center'
+  }
+
+  if (['top', 'middle', 'bottom'].includes(connection.verticalAlign ?? '')) {
+    style.verticalAlign = connection.verticalAlign
+  } else {
+    style.verticalAlign = 'middle'
+  }
+
+  // Erweiterte Edge-Style Properties
+  if (connection.curved !== undefined) style.curved = connection.curved
+  if (connection.rounded !== undefined) style.rounded = connection.rounded
+  if (connection.arcSize !== undefined) style.arcSize = connection.arcSize
+  if (connection.edgeStyle !== undefined) style.edgeStyle = connection.edgeStyle
+  if (connection.elbow !== undefined) style.elbow = connection.elbow
+  if (connection.orthogonal !== undefined) style.orthogonal = connection.orthogonal
+
+  return style
+}
+
+/**
+ * Rendert eine Verbindungs-Vorschau im Graph (nur die Edge, mit Dummy-Knoten)
+ *
+ * Diese Methode wird verwendet, um eine einzelne Verbindung im Preview-Modus anzuzeigen
+ *
+ * @param graph - Die Graph-Instanz
+ * @param connection - Die DiagramConnection-Definition
+ */
+export function renderConnectionPreview(graph: Graph, connection: DiagramConnection): void {
+  // Canvas leeren
+  graph.removeCells(graph.getChildCells())
+  const parent = graph.getDefaultParent()
+
+  graph.getDataModel().beginUpdate()
+  try {
+    // Dummy-Start- und Endpunkte für die Edge
+    const x1 = 80,
+      y1 = 120,
+      x2 = 320,
+      y2 = 120
+
+    // Style aus Connection erstellen
+    const style = createStyleFromConnection(connection)
+    style.labelPosition = connection.labelStyle.position
+
+    // Punkte für Edge (optional)
+    let points: Point[] | undefined = undefined
+    if (connection.points && Array.isArray(connection.points) && connection.points.length > 0) {
+      points = connection.points.map((pt: { x: number; y: number }) => new Point(pt.x, pt.y))
+    }
+
+    // Dummy-Vertexe (unsichtbar)
+    const v1 = graph.insertVertex({
+      parent,
+      value: '',
+      x: x1,
+      y: y1,
+      width: 1,
+      height: 1,
+      style: { opacity: 0 }
+    })
+    const v2 = graph.insertVertex({
+      parent,
+      value: '',
+      x: x2,
+      y: y2,
+      width: 1,
+      height: 1,
+      style: { opacity: 0 }
+    })
+
+    // Edge erstellen
+    const edge = graph.insertEdge({
+      parent,
+      source: v1,
+      target: v2,
+      value: connection.label,
+      style
+    })
+
+    if (points && edge.geometry) {
+      edge.geometry.points = points
+    }
+
+    graph.setSelectionCell(edge)
+  } finally {
+    graph.getDataModel().endUpdate()
   }
 }

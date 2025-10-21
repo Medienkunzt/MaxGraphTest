@@ -24,6 +24,9 @@
             <v-icon>mdi-content-duplicate</v-icon>
           </v-btn>
         </v-btn-group>
+
+        <!-- Connection Toolbar -->
+        <ConnectionToolbar v-if="languageConnections.length > 0" v-model="selectedConnectionIndex" :connections="languageConnections" @select="onConnectionSelected" />
       </div>
 
       <!-- Graph Container -->
@@ -45,7 +48,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, ConnectionHandler, CellState, EdgeStyle, GraphDataModel, InternalMouseEvent, PanningHandler, ImageBox, Client, KeyHandler } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -54,10 +57,13 @@ import { useGridSettings } from '@/composables/useGridSettings'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
-import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
+import { createCellFromElement, addCellToGraph, renderConnectionPreview as createConnectionPreview } from '@/utils/elementFactory'
+import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
+import ConnectionToolbar from './ConnectionToolbar.vue'
 import type { DiagramElement } from '@/model/Element'
+import type { DiagramConnection } from '@/model/Connection'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
 import img_ellipse from '@/assets/images/ellipse.gif'
@@ -83,15 +89,6 @@ class MyCustomCellEditorHandler extends CellEditorHandler {
 
   override stopEditing(cancel: boolean) {
     super.stopEditing(cancel)
-  }
-}
-
-class MyCustomConnectionHandler extends ConnectionHandler {
-  // Enables connect preview for the default edge style
-  override createEdgeState(_me: InternalMouseEvent) {
-    void _me
-    const edge = this.graph.createEdge(null, '', null, null, null)
-    return new CellState(this.graph.view, edge, this.graph.getCellStyle(edge))
   }
 }
 
@@ -138,12 +135,16 @@ const props = withDefaults(
     showToolbar?: boolean
     contextMenu?: boolean
     languageElements?: DiagramElement[]
+    languageConnections?: DiagramConnection[]
+    previewConnection?: DiagramConnection
   }>(),
   {
     allowEdit: true,
     showToolbar: true,
     contextMenu: false,
-    languageElements: undefined
+    languageElements: undefined,
+    languageConnections: undefined,
+    previewConnection: undefined
   }
 )
 
@@ -162,7 +163,9 @@ const toolbarContainer = ref<HTMLElement>()
 const graph = ref<Graph>()
 const parent = ref<Cell>()
 const keyHandler = ref<KeyHandler>()
-const plugins = ref<GraphPluginConstructor[]>([MyCustomCellEditorHandler, MyCustomConnectionHandler, PanningHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
+const customConnectionHandler = ref<CustomConnectionHandler>()
+const selectedConnectionIndex = ref(0)
+const plugins = ref<GraphPluginConstructor[]>([MyCustomCellEditorHandler, CustomConnectionHandler as unknown as GraphPluginConstructor, PanningHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
 const toolbarShapes = ref(
   createDefaultShapes({
     rectangle: img_rectangle,
@@ -188,6 +191,16 @@ const { deleteSelected, duplicateSelected, selectAll, clearSelection } = useGrap
 const { zoomIn, zoomOut, fitToWindow } = useZoomOperations(graph)
 const { updateGridSize, updateSnapToGrid, updateTolerance, updateUseGridForPanning, toggleGrid, forceGridRepaint } = useGridSettings(graph, gridSize, snapToGrid, tolerance, useGridForPanning)
 
+// Computed für Verbindungen
+const languageConnections = computed(() => props.languageConnections ?? [])
+
+// Handler für Verbindungsauswahl
+const onConnectionSelected = (connection: DiagramConnection) => {
+  if (customConnectionHandler.value) {
+    customConnectionHandler.value.setSelectedConnection(connection)
+  }
+}
+
 onMounted(() => {
   initGraph()
 
@@ -208,13 +221,63 @@ onMounted(() => {
     graph.value?.view.validate()
     emitUpdatedModel()
   })
+
+  // Wenn eine einzelne Verbindung als Vorschau ausgewählt ist, zeige nur diese
+  if (props.previewConnection) {
+    renderConnectionPreviewOnly(props.previewConnection)
+  }
 })
+
+// Watch für previewConnection (nur für Preview-Modus)
+watch(
+  () => props.previewConnection,
+  (newConn) => {
+    if (newConn && graph.value) {
+      renderConnectionPreviewOnly(newConn)
+    }
+  },
+  { immediate: true, deep: true }
+)
+
+// Watch für languageConnections - aktualisiere ConnectionHandler
+watch(
+  () => props.languageConnections,
+  (newConnections) => {
+    if (newConnections && newConnections.length > 0 && customConnectionHandler.value) {
+      // Setze die erste Verbindung als Standard, falls noch keine ausgewählt ist
+      if (selectedConnectionIndex.value >= newConnections.length) {
+        selectedConnectionIndex.value = 0
+      }
+      customConnectionHandler.value.setSelectedConnection(newConnections[selectedConnectionIndex.value])
+    }
+  },
+  { deep: true }
+)
+
+// Vorschau nur für eine Verbindung (nutzt zentrale Factory-Funktion)
+function renderConnectionPreviewOnly(connection: DiagramConnection) {
+  const g = graph.value
+  if (!g) return
+
+  // Nutze die zentrale Factory-Funktion für konsistentes Rendering
+  createConnectionPreview(g, connection)
+}
 
 const initGraph = () => {
   if (props.model) {
     graph.value = new MyCustomGraph(graphContainer.value!, props.model, plugins.value)
   } else {
     graph.value = new MyCustomGraph(graphContainer.value!, undefined, plugins.value)
+  }
+
+  // Hole den CustomConnectionHandler aus den registrierten Plugins
+  const handler = graph.value?.getPlugin('ConnectionHandler')
+  customConnectionHandler.value = handler instanceof CustomConnectionHandler ? handler : undefined
+
+  // Setze die erste Verbindung als Standard, falls vorhanden
+  if (customConnectionHandler.value && props.languageConnections && props.languageConnections.length > 0) {
+    customConnectionHandler.value.setSelectedConnection(props.languageConnections[0])
+    selectedConnectionIndex.value = 0
   }
 
   // Enable editing

@@ -24,4 +24,14 @@ export interface DiagramConnection {
     fontSize: number
   }
   validation: ConnectionValidation
+  // Erweiterte Edge-Properties (optional)
+  curved?: boolean
+  rounded?: boolean
+  arcSize?: number
+  edgeStyle?: string
+  elbow?: string
+  orthogonal?: boolean
+  points?: { x: number; y: number }[]
+  align?: string
+  verticalAlign?: string
 }

@@ -17,20 +17,17 @@
         </div>
       </v-col>
 
-      <!-- Canvas Vorschau (rechts) -->
+      <!-- Canvas Vorschau (rechts, wie im ElementEditor) -->
       <v-col cols="4" class="pl-2 preview-column">
         <v-card class="preview-card">
           <v-card-title class="py-2">
             <span class="text-h6">Vorschau</span>
           </v-card-title>
-
           <v-divider />
-
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="canvasRef" :model="canvasModel" :config="canvasConfig" :allow-edit="false" :show-toolbar="false" :context-menu="false" style="height: 400px; border: 1px solid #e0e0e0; border-radius: 4px" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :preview-connection="selectedConnection" :language-connections="connections" />
             </div>
-
             <v-alert v-if="!selectedConnection" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Verbindung aus, um eine Vorschau zu sehen </v-alert>
           </v-card-text>
         </v-card>
@@ -40,115 +37,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import type { GraphDataModel } from '@maxgraph/core'
+import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
+import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import EditorEntityList from './EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import ConnectionEditorForm from './form/ConnectionEditorForm.vue'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
 
-// Dummy Data
-const connections = ref<DiagramConnection[]>([
-  {
-    id: 'association',
-    name: 'Association',
-    label: '',
-    type: 'association',
-    style: {
-      lineStyle: 'solid',
-      strokeColor: '#000000',
-      strokeWidth: 2,
-      startArrow: 'none',
-      endArrow: 'none'
-    },
-    labelStyle: {
-      position: 'middle',
-      fontSize: 12
-    },
-    validation: {
-      allowSelfConnection: false,
-      allowMultipleConnections: true,
-      sourceElementTypes: '',
-      targetElementTypes: ''
-    }
-  },
-  {
-    id: 'inheritance',
-    name: 'Vererbung',
-    label: '',
-    type: 'inheritance',
-    style: {
-      lineStyle: 'solid',
-      strokeColor: '#000000',
-      strokeWidth: 2,
-      startArrow: 'none',
-      endArrow: 'classic'
-    },
-    labelStyle: {
-      position: 'middle',
-      fontSize: 12
-    },
-    validation: {
-      allowSelfConnection: false,
-      allowMultipleConnections: false,
-      sourceElementTypes: 'class',
-      targetElementTypes: 'class,interface'
-    }
-  },
-  {
-    id: 'dependency',
-    name: 'Abhängigkeit',
-    label: '<<use>>',
-    type: 'dependency',
-    style: {
-      lineStyle: 'dashed',
-      strokeColor: '#666666',
-      strokeWidth: 1,
-      startArrow: 'none',
-      endArrow: 'classic'
-    },
-    labelStyle: {
-      position: 'middle',
-      fontSize: 10
-    },
-    validation: {
-      allowSelfConnection: false,
-      allowMultipleConnections: true,
-      sourceElementTypes: '',
-      targetElementTypes: ''
-    }
-  }
-])
+// Props
+interface Props {
+  languageId?: string
+  id?: string
+}
+
+const props = defineProps<Props>()
+const route = useRoute()
+
+const store = useDiagramLanguageStore()
+const { languages, setCurrentLanguage } = useDiagramLanguages()
 
 // State
 const selectedConnectionId = ref<string>('')
 const canvasModel = ref<GraphDataModel>()
-const canvasRef = ref()
+const drawingCanvasRef = ref()
 
-// Computed
+// Computed - Verbindungen aus Store
+const connections = computed(() => store.currentLanguage?.connections || [])
 const selectedConnection = computed(() => connections.value.find((conn) => conn.id === selectedConnectionId.value))
-
-const canvasConfig = computed(() => ({
-  width: '100%',
-  height: '400px',
-  backgroundColor: '#fafafa',
-  gridEnabled: true,
-  panningEnabled: true,
-  zoomEnabled: true
-}))
 
 // Methods
 const updateAll = () => {
-  // Update logic can be added here if needed
-  console.log('Connection updated')
+  // Update-Logik für die Vorschau (analog zu ElementEditor)
+  debouncedUpdate()
+  debouncedStoreUpdate()
 }
 const selectConnection = (connectionId: string) => {
   selectedConnectionId.value = connectionId
-  updateCanvasPreview()
+  nextTick(() => {
+    setTimeout(() => renderConnectionPreview(), 50)
+  })
 }
 
 const addNewConnection = () => {
+  if (!store.currentLanguage) return
+
   const newConnection: DiagramConnection = {
     id: `connection_${Date.now()}`,
     name: 'Neue Verbindung',
@@ -173,17 +109,18 @@ const addNewConnection = () => {
     }
   }
 
-  connections.value.push(newConnection)
+  store.addConnectionToLanguage(store.currentLanguage.id, newConnection)
   selectedConnectionId.value = newConnection.id
 }
 
 const deleteConnection = (connectionId: string) => {
-  const index = connections.value.findIndex((conn) => conn.id === connectionId)
-  if (index !== -1) {
-    connections.value.splice(index, 1)
-    if (selectedConnectionId.value === connectionId) {
-      selectedConnectionId.value = connections.value.length > 0 ? connections.value[0].id : ''
-    }
+  if (!store.currentLanguage) return
+
+  store.removeConnectionFromLanguage(store.currentLanguage.id, connectionId)
+
+  if (selectedConnectionId.value === connectionId) {
+    const remainingConnections = connections.value
+    selectedConnectionId.value = remainingConnections.length > 0 ? remainingConnections[0].id : ''
   }
 }
 
@@ -206,91 +143,81 @@ const connectionColorMap = {
   realization: 'teal'
 }
 
-const updateCanvasPreview = () => {
-  if (!selectedConnection.value || !canvasRef.value?.graph) {
-    return
+// Vorschau-Logik wie im ElementEditor
+const renderConnectionPreview = () => {
+  // Hier könnte eine zentrale Vorschau-Logik für Verbindungen implementiert werden,
+  // z.B. mit Beispielknoten und einer Verbindung, falls benötigt.
+  // Für jetzt reicht das Weiterreichen der Props an DrawingCanvas.
+}
+
+// Debounced Update für Vorschau und Store
+let updateTimeout: number | null = null
+const debouncedUpdate = () => {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout)
   }
+  updateTimeout = setTimeout(() => {
+    renderConnectionPreview()
+  }, 150)
+}
 
-  // Canvas leeren
-  const graph = canvasRef.value.graph
-  graph.removeCells(graph.getChildCells())
+const debouncedStoreUpdate = () => {
+  if (selectedConnection.value && store.currentLanguage) {
+    store.updateConnectionInLanguage(store.currentLanguage.id, selectedConnection.value.id, selectedConnection.value)
+  }
+}
 
-  // Beispiel-Elemente und Verbindung hinzufügen
-  const parent = graph.getDefaultParent()
-  graph.getDataModel().beginUpdate()
+// Sprachen-ID aus Route laden
+const loadLanguageFromRoute = () => {
+  const languageId = props.id || (route.params.id as string)
 
-  try {
-    // Zwei Beispiel-Knoten
-    const vertex1 = graph.insertVertex({
-      parent,
-      value: 'Element A',
-      x: 50,
-      y: 100,
-      width: 100,
-      height: 60,
-      style: {
-        fillColor: '#e1f5fe',
-        strokeColor: '#0277bd',
-        rounded: true
-      }
-    })
-
-    const vertex2 = graph.insertVertex({
-      parent,
-      value: 'Element B',
-      x: 250,
-      y: 100,
-      width: 100,
-      height: 60,
-      style: {
-        fillColor: '#e8f5e8',
-        strokeColor: '#2e7d32',
-        rounded: true
-      }
-    })
-
-    // Verbindung zwischen den Knoten
-    const conn = selectedConnection.value
-    graph.insertEdge({
-      parent,
-      source: vertex1,
-      target: vertex2,
-      value: conn.label,
-      style: {
-        strokeColor: conn.style.strokeColor,
-        strokeWidth: conn.style.strokeWidth,
-        dashed: conn.style.lineStyle === 'dashed',
-        dotted: conn.style.lineStyle === 'dotted',
-        startArrow: conn.style.startArrow,
-        endArrow: conn.style.endArrow,
-        fontSize: conn.labelStyle.fontSize,
-        labelPosition: conn.labelStyle.position
-      }
-    })
-  } finally {
-    graph.getDataModel().endUpdate()
+  if (languageId) {
+    const language = languages.find((lang) => lang.id === languageId)
+    if (language) {
+      setCurrentLanguage(language)
+      console.log('Sprache aus Route geladen:', language.name)
+    } else {
+      console.warn('Sprache mit ID nicht gefunden:', languageId)
+    }
   }
 }
 
 // Watchers
 watch(
   selectedConnection,
-  () => {
-    updateCanvasPreview()
+  (newConn) => {
+    if (newConn) {
+      renderConnectionPreview()
+      debouncedUpdate()
+    }
   },
-  { deep: true }
+  { immediate: true, deep: true }
 )
 
 // Lifecycle
 onMounted(() => {
+  // Route laden
+  loadLanguageFromRoute()
+
   if (connections.value.length > 0) {
     selectedConnectionId.value = connections.value[0].id
   }
 
-  // Canvas initialisieren nach kurzer Verzögerung
-  setTimeout(() => {
-    updateCanvasPreview()
-  }, 500)
+  // Canvas initialisieren mit mehreren Versuchen (wie im ElementEditor)
+  const initializeCanvas = (attempts = 0) => {
+    if (attempts > 10) {
+      console.warn('Failed to initialize canvas after 10 attempts')
+      return
+    }
+    if (drawingCanvasRef.value?.graph) {
+      renderConnectionPreview()
+    } else {
+      setTimeout(() => initializeCanvas(attempts + 1), 200)
+    }
+  }
+  nextTick(() => {
+    setTimeout(() => initializeCanvas(), 100)
+  })
 })
 </script>
 
@@ -340,6 +267,8 @@ onMounted(() => {
 }
 
 .preview-canvas {
+  flex: 1;
+  min-height: 280px;
   border-radius: 4px;
   overflow: hidden;
 }

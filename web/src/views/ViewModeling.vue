@@ -21,7 +21,7 @@
     <v-row class="flex-grow-1">
       <v-col cols="12" class="canvas-column">
         <div class="canvas-wrapper">
-          <DrawingCanvas :model="model" :language-elements="activeLanguage?.elements" />
+          <DrawingCanvas :model="model" :language-elements="activeLanguage?.elements" :language-connections="activeLanguage?.connections" />
         </div>
       </v-col>
     </v-row>
