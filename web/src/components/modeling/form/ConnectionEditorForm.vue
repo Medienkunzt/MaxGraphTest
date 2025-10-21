@@ -5,7 +5,6 @@
 
     <v-select v-model="connection.type" :items="connectionTypes" label="Verbindungstyp" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
 
-    <!-- Linien-Style -->
     <v-expansion-panels variant="accordion">
       <v-expansion-panel>
         <v-expansion-panel-title>
@@ -13,11 +12,15 @@
           Linien-Style
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <v-select v-model="connection.style.lineStyle" :items="lineStyles" label="Linienstil" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
-
           <ColorPickerField v-model="connection.style.strokeColor" label="Linienfarbe" class="mb-3" @update:model-value="updateAll" />
 
           <v-slider v-model="connection.style.strokeWidth" label="Linienstärke" min="1" max="10" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
+
+          <v-switch v-model="connection.style.dashed" label="Gestrichelt" color="primary" density="compact" class="mb-2" @update:model-value="updateAll" />
+
+          <v-combobox v-if="connection.style.dashed" v-model="connection.style.dashPattern" :items="dashPatternPresets" item-title="title" item-value="value" label="Strichmuster" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
+
+          <v-switch v-if="connection.style.dashed" v-model="connection.style.fixDash" label="Strichbreite fixieren" color="primary" density="compact" class="mb-1" @update:model-value="updateAll" />
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -27,9 +30,11 @@
           Pfeilspitzen
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <v-select v-model="connection.style.startArrow" :items="arrowTypes" label="Start-Pfeil" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+          <v-select v-model="connection.style.startArrow" :items="arrowTypes" item-title="title" item-value="value" label="Start-Pfeil" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+          <v-switch v-model="connection.style.startFill" label="Start gefüllt" color="primary" density="compact" class="mb-3" @update:model-value="updateAll" />
 
-          <v-select v-model="connection.style.endArrow" :items="arrowTypes" label="End-Pfeil" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+          <v-select v-model="connection.style.endArrow" :items="arrowTypes" item-title="title" item-value="value" label="End-Pfeil" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+          <v-switch v-model="connection.style.endFill" label="Ende gefüllt" color="primary" density="compact" class="mb-1" @update:model-value="updateAll" />
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -41,9 +46,19 @@
         <v-expansion-panel-text>
           <v-text-field v-model="connection.label" label="Label Text" variant="outlined" density="compact" class="mb-3" @input="updateAll" />
 
-          <v-select v-model="connection.labelStyle.position" :items="labelPositions" label="Label Position" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+          <ColorPickerField v-model="connection.labelStyle.fontColor" label="Schriftfarbe" class="mb-3" @update:model-value="updateAll" />
+
+          <v-select v-model="connection.labelStyle.position" :items="labelPositions" item-title="title" item-value="value" label="Label Position" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+
+          <v-select v-model="connection.labelStyle.align" :items="alignOptions" item-title="title" item-value="value" label="Textausrichtung" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
+
+          <v-select v-model="connection.labelStyle.verticalAlign" :items="verticalAlignOptions" item-title="title" item-value="value" label="Vertikale Ausrichtung" variant="outlined" density="compact" class="mb-3" @update:model-value="updateAll" />
 
           <v-slider v-model="connection.labelStyle.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
+
+          <v-text-field v-model.number="connection.labelStyle.offsetX" label="Label Offset X" variant="outlined" density="compact" type="number" class="mb-3" @update:model-value="updateAll" />
+
+          <v-text-field v-model.number="connection.labelStyle.offsetY" label="Label Offset Y" variant="outlined" density="compact" type="number" class="mb-3" @update:model-value="updateAll" />
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -53,26 +68,19 @@
           Erweiterte Optionen
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <v-select v-model="connection.edgeStyle" :items="edgeStyles" label="Edge Style" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
+          <v-select v-model="connection.style.edgeStyle" :items="edgeStyles" item-title="title" item-value="value" label="Edge Style" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
 
-          <v-select v-model="connection.elbow" :items="elbowOptions" label="Elbow Direction" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
+          <v-select v-model="connection.style.elbow" :items="elbowOptions" item-title="title" item-value="value" label="Elbow Direction" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
 
-          <v-checkbox v-model="connection.curved" label="Kurvig (Curved)" density="compact" @update:model-value="updateAll" />
+          <v-checkbox v-model="connection.style.curved" label="Kurvig" density="compact" @update:model-value="updateAll" />
+          <v-checkbox v-model="connection.style.rounded" label="Abgerundet" density="compact" @update:model-value="updateAll" />
+          <v-checkbox v-model="connection.style.orthogonal" label="Orthogonal" density="compact" @update:model-value="updateAll" />
 
-          <v-checkbox v-model="connection.rounded" label="Abgerundet (Rounded)" density="compact" @update:model-value="updateAll" />
-
-          <v-checkbox v-model="connection.orthogonal" label="Orthogonal" density="compact" @update:model-value="updateAll" />
-
-          <v-slider v-if="connection.curved || connection.rounded" v-model="connection.arcSize" label="Arc Size" min="1" max="50" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
-
-          <v-select v-model="connection.align" :items="alignOptions" label="Text Align" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
-
-          <v-select v-model="connection.verticalAlign" :items="verticalAlignOptions" label="Vertical Align" variant="outlined" density="compact" clearable class="mb-3" @update:model-value="updateAll" />
+          <v-slider v-if="connection.style.curved || connection.style.rounded" v-model="connection.style.arcSize" label="Arc Size" min="1" max="50" step="1" thumb-label class="mb-3" @update:model-value="updateAll" />
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
 
-    <!-- Validierungsregeln -->
     <v-card variant="outlined" class="mt-4">
       <v-card-subtitle>Validierungsregeln</v-card-subtitle>
       <v-card-text>
@@ -87,25 +95,22 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { AlignValue, ArrowValue, VAlignValue } from '@maxgraph/core'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
 import ColorPickerField from './ColorPickerField.vue'
 
-// Props
 interface Props {
   selectedConnection: DiagramConnection
 }
 
 const props = defineProps<Props>()
 
-// Local reference to the connection for reactivity
 const connection = computed(() => props.selectedConnection)
 
-// Emits
 const emit = defineEmits<{
   update: []
 }>()
 
-// Options
 const connectionTypes = [
   { title: 'Association', value: 'association' },
   { title: 'Composition', value: 'composition' },
@@ -115,25 +120,49 @@ const connectionTypes = [
   { title: 'Realization', value: 'realization' }
 ]
 
-const lineStyles = [
-  { title: 'Durchgezogen', value: 'solid' },
-  { title: 'Gestrichelt', value: 'dashed' },
-  { title: 'Gepunktet', value: 'dotted' }
+const dashPatternPresets = [
+  { title: 'Standard (6 4)', value: '6 4' },
+  { title: 'Fein (4 4)', value: '4 4' },
+  { title: 'Punktiert (2 6)', value: '2 6' }
 ]
 
-const arrowTypes = [
+type ArrowOption = { title: string; value: ArrowValue }
+
+const arrowTypes: ArrowOption[] = [
   { title: 'Kein Pfeil', value: 'none' },
   { title: 'Standard', value: 'classic' },
-  { title: 'Gefüllt', value: 'filled' },
+  { title: 'Standard (dünn)', value: 'classicThin' },
+  { title: 'Block', value: 'block' },
+  { title: 'Block (dünn)', value: 'blockThin' },
   { title: 'Offen', value: 'open' },
+  { title: 'Offen (dünn)', value: 'openThin' },
   { title: 'Oval', value: 'oval' },
-  { title: 'Diamant', value: 'diamond' }
+  { title: 'Diamant', value: 'diamond' },
+  { title: 'Diamant (dünn)', value: 'diamondThin' }
 ]
 
-const labelPositions = [
+type PositionOption = { title: string; value: AlignValue | 'ignore' }
+
+const labelPositions: PositionOption[] = [
+  { title: 'Zentriert', value: 'center' },
+  { title: 'Links', value: 'left' },
+  { title: 'Rechts', value: 'right' },
+  { title: 'Ignorieren', value: 'ignore' }
+]
+
+type AlignOption = { title: string; value: AlignValue }
+type VAlignOption = { title: string; value: VAlignValue }
+
+const alignOptions: AlignOption[] = [
+  { title: 'Links', value: 'left' },
+  { title: 'Zentriert', value: 'center' },
+  { title: 'Rechts', value: 'right' }
+]
+
+const verticalAlignOptions: VAlignOption[] = [
+  { title: 'Oben', value: 'top' },
   { title: 'Mitte', value: 'middle' },
-  { title: 'Start', value: 'start' },
-  { title: 'Ende', value: 'end' }
+  { title: 'Unten', value: 'bottom' }
 ]
 
 const edgeStyles = [
@@ -145,22 +174,9 @@ const edgeStyles = [
 
 const elbowOptions = [
   { title: 'Horizontal', value: 'horizontal' },
-  { title: 'Vertical', value: 'vertical' }
+  { title: 'Vertikal', value: 'vertical' }
 ]
 
-const alignOptions = [
-  { title: 'Links', value: 'left' },
-  { title: 'Zentriert', value: 'center' },
-  { title: 'Rechts', value: 'right' }
-]
-
-const verticalAlignOptions = [
-  { title: 'Oben', value: 'top' },
-  { title: 'Mitte', value: 'middle' },
-  { title: 'Unten', value: 'bottom' }
-]
-
-// Methods
 const updateAll = () => {
   emit('update')
 }

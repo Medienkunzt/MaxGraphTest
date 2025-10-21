@@ -511,14 +511,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: '',
           type: 'inheritance',
           style: {
-            lineStyle: 'solid',
             strokeColor: '#000000',
             strokeWidth: 2,
+            dashed: false,
             startArrow: 'none',
-            endArrow: 'classic'
+            endArrow: 'classic',
+            startFill: true,
+            endFill: true
           },
           labelStyle: {
-            position: 'middle',
+            position: 'center',
+            align: 'center',
+            verticalAlign: 'middle',
+            fontColor: '#000000',
             fontSize: 10
           },
           validation: {
@@ -535,14 +540,20 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: '',
           type: 'realization',
           style: {
-            lineStyle: 'dashed',
             strokeColor: '#000000',
             strokeWidth: 1,
+            dashed: true,
+            dashPattern: '6 4',
             startArrow: 'none',
-            endArrow: 'classic'
+            endArrow: 'classic',
+            startFill: true,
+            endFill: true
           },
           labelStyle: {
-            position: 'middle',
+            position: 'center',
+            align: 'center',
+            verticalAlign: 'middle',
+            fontColor: '#000000',
             fontSize: 10
           },
           validation: {
@@ -559,14 +570,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: '',
           type: 'association',
           style: {
-            lineStyle: 'solid',
             strokeColor: '#000000',
             strokeWidth: 1,
+            dashed: false,
             startArrow: 'none',
-            endArrow: 'none'
+            endArrow: 'none',
+            startFill: true,
+            endFill: true
           },
           labelStyle: {
-            position: 'middle',
+            position: 'center',
+            align: 'center',
+            verticalAlign: 'middle',
+            fontColor: '#000000',
             fontSize: 10
           },
           validation: {
@@ -583,14 +599,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: '',
           type: 'directed-association',
           style: {
-            lineStyle: 'solid',
             strokeColor: '#000000',
             strokeWidth: 1,
+            dashed: false,
             startArrow: 'none',
-            endArrow: 'open'
+            endArrow: 'open',
+            startFill: true,
+            endFill: false
           },
           labelStyle: {
-            position: 'middle',
+            position: 'center',
+            align: 'center',
+            verticalAlign: 'middle',
+            fontColor: '#000000',
             fontSize: 10
           },
           validation: {
@@ -607,14 +628,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: '',
           type: 'aggregation',
           style: {
-            lineStyle: 'solid',
             strokeColor: '#000000',
             strokeWidth: 1,
+            dashed: false,
             startArrow: 'diamond',
-            endArrow: 'none'
+            startFill: false,
+            endArrow: 'none',
+            endFill: true
           },
           labelStyle: {
-            position: 'middle',
+            position: 'center',
+            align: 'center',
+            verticalAlign: 'middle',
+            fontColor: '#000000',
             fontSize: 10
           },
           validation: {
@@ -631,14 +657,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: '',
           type: 'composition',
           style: {
-            lineStyle: 'solid',
             strokeColor: '#000000',
             strokeWidth: 2,
-            startArrow: 'filled-diamond',
-            endArrow: 'none'
+            dashed: false,
+            startArrow: 'diamond',
+            startFill: true,
+            endArrow: 'none',
+            endFill: true
           },
           labelStyle: {
-            position: 'middle',
+            position: 'center',
+            align: 'center',
+            verticalAlign: 'middle',
+            fontColor: '#000000',
             fontSize: 10
           },
           validation: {
@@ -655,14 +686,20 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: '<<use>>',
           type: 'dependency',
           style: {
-            lineStyle: 'dashed',
             strokeColor: '#666666',
             strokeWidth: 1,
+            dashed: true,
+            dashPattern: '6 4',
             startArrow: 'none',
-            endArrow: 'open'
+            endArrow: 'open',
+            startFill: true,
+            endFill: false
           },
           labelStyle: {
-            position: 'middle',
+            position: 'center',
+            align: 'center',
+            verticalAlign: 'middle',
+            fontColor: '#666666',
             fontSize: 9
           },
           validation: {
@@ -679,14 +716,20 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: '',
           type: 'note',
           style: {
-            lineStyle: 'dashed',
             strokeColor: '#9e9e9e',
             strokeWidth: 1,
+            dashed: true,
+            dashPattern: '4 4',
             startArrow: 'none',
-            endArrow: 'none'
+            endArrow: 'none',
+            startFill: true,
+            endFill: true
           },
           labelStyle: {
-            position: 'middle',
+            position: 'center',
+            align: 'center',
+            verticalAlign: 'middle',
+            fontColor: '#9e9e9e',
             fontSize: 9
           },
           validation: {

@@ -44,18 +44,34 @@ export class CustomConnectionHandler extends ConnectionHandler {
   /**
    * Wird aufgerufen, wenn eine Verbindung fertiggestellt wird
    * Hier können wir noch zusätzliche Metadaten zur Edge hinzufügen
-   */
+  */
   override insertEdge(parent: any, id: string | null, value: any, source: any, target: any, style?: any) {
     // Wenn eine Verbindung ausgewählt ist, füge Metadaten hinzu
     if (this.selectedConnection) {
       const connectionType = this.selectedConnection.type
       const connectionId = this.selectedConnection.id
+      const edgeLabel = this.selectedConnection.label ?? ''
+      const connectionStyle = createStyleFromConnection(this.selectedConnection)
 
       // Speichere Connection-Info in der Edge
-      const edge = super.insertEdge(parent, id ?? '', value, source, target, style)
+      const edge = super.insertEdge(parent, id ?? '', edgeLabel, source, target, connectionStyle)
       if (edge) {
         ;(edge as any).connectionType = connectionType
         ;(edge as any).connectionId = connectionId
+        ;(edge as any).connectionStyle = this.selectedConnection.style
+        ;(edge as any).connectionLabelStyle = this.selectedConnection.labelStyle
+
+        const geometry = edge.getGeometry()
+        if (geometry) {
+          const clone = geometry.clone()
+          if (this.selectedConnection.labelStyle.offsetX !== undefined) {
+            clone.x = this.selectedConnection.labelStyle.offsetX
+          }
+          if (this.selectedConnection.labelStyle.offsetY !== undefined) {
+            clone.y = this.selectedConnection.labelStyle.offsetY
+          }
+          edge.setGeometry(clone)
+        }
       }
       return edge
     }

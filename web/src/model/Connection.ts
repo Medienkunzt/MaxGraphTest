@@ -1,9 +1,21 @@
+import type { AlignValue, ArrowValue, ColorValue, VAlignValue } from '@maxgraph/core'
+
 export interface ConnectionStyle {
-  lineStyle: string
-  strokeColor: string
+  strokeColor: ColorValue
   strokeWidth: number
-  startArrow: string
-  endArrow: string
+  dashed: boolean
+  dashPattern?: string
+  fixDash?: boolean
+  startArrow: ArrowValue
+  startFill?: boolean
+  endArrow: ArrowValue
+  endFill?: boolean
+  curved?: boolean
+  rounded?: boolean
+  arcSize?: number
+  edgeStyle?: string
+  elbow?: 'horizontal' | 'vertical'
+  orthogonal?: boolean | null
 }
 
 export interface ConnectionValidation {
@@ -20,18 +32,16 @@ export interface DiagramConnection {
   type: string
   style: ConnectionStyle
   labelStyle: {
-    position: string
+    position: AlignValue | 'ignore'
+    align: AlignValue
+    verticalAlign: VAlignValue
+    fontColor: ColorValue
     fontSize: number
+    backgroundColor?: ColorValue
+    borderColor?: ColorValue
+    offsetX?: number
+    offsetY?: number
   }
   validation: ConnectionValidation
-  // Erweiterte Edge-Properties (optional)
-  curved?: boolean
-  rounded?: boolean
-  arcSize?: number
-  edgeStyle?: string
-  elbow?: string
-  orthogonal?: boolean
   points?: { x: number; y: number }[]
-  align?: string
-  verticalAlign?: string
 }

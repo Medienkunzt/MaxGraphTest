@@ -1,5 +1,5 @@
 import { Cell, Geometry, ConnectionConstraint, Point, Rectangle } from '@maxgraph/core'
-import type { Graph } from '@maxgraph/core'
+import type { Graph, CellStyle } from '@maxgraph/core'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
 
@@ -150,37 +150,57 @@ export function addCellToGraph(graph: Graph, cell: Cell, element: DiagramElement
  * @param connection - Die DiagramConnection-Definition
  * @returns Das Style-Objekt für MaxGraph
  */
-export function createStyleFromConnection(connection: DiagramConnection): Record<string, any> {
-  const style: Record<string, any> = {
-    strokeColor: connection.style.strokeColor,
-    strokeWidth: connection.style.strokeWidth,
-    dashed: connection.style.lineStyle === 'dashed',
-    dotted: connection.style.lineStyle === 'dotted',
-    startArrow: connection.style.startArrow,
-    endArrow: connection.style.endArrow,
-    fontSize: connection.labelStyle.fontSize
+export function createStyleFromConnection(connection: DiagramConnection): CellStyle {
+  const { style: connectionStyle, labelStyle } = connection
+
+  const labelAlign = labelStyle.align ?? 'center'
+  const labelVAlign = labelStyle.verticalAlign ?? 'middle'
+  const labelPosition = labelStyle.position ?? 'center'
+  const fontSize = labelStyle.fontSize ?? 12
+  const fontColor = labelStyle.fontColor ?? '#000000'
+
+  const style: CellStyle = {
+    strokeColor: connectionStyle.strokeColor,
+    strokeWidth: connectionStyle.strokeWidth,
+    dashed: !!connectionStyle.dashed,
+    startArrow: connectionStyle.startArrow,
+    endArrow: connectionStyle.endArrow,
+    fontSize,
+    fontColor,
+    align: labelAlign,
+    verticalAlign: labelVAlign,
+    labelPosition
   }
 
-  // Optionale Properties - nur valide Werte setzen
-  if (['left', 'center', 'right'].includes(connection.align ?? '')) {
-    style.align = connection.align
+  if (connectionStyle.dashPattern) {
+    style.dashPattern = connectionStyle.dashPattern
+  }
+  if (connectionStyle.fixDash !== undefined) {
+    style.fixDash = connectionStyle.fixDash
+  }
+  if (connectionStyle.startFill !== undefined) {
+    style.startFill = connectionStyle.startFill
   } else {
-    style.align = 'center'
+    style.startFill = true
   }
-
-  if (['top', 'middle', 'bottom'].includes(connection.verticalAlign ?? '')) {
-    style.verticalAlign = connection.verticalAlign
+  if (connectionStyle.endFill !== undefined) {
+    style.endFill = connectionStyle.endFill
   } else {
-    style.verticalAlign = 'middle'
+    style.endFill = true
+  }
+  if (labelStyle.backgroundColor) {
+    style.labelBackgroundColor = labelStyle.backgroundColor
+  }
+  if (labelStyle.borderColor) {
+    style.labelBorderColor = labelStyle.borderColor
   }
 
-  // Erweiterte Edge-Style Properties
-  if (connection.curved !== undefined) style.curved = connection.curved
-  if (connection.rounded !== undefined) style.rounded = connection.rounded
-  if (connection.arcSize !== undefined) style.arcSize = connection.arcSize
-  if (connection.edgeStyle !== undefined) style.edgeStyle = connection.edgeStyle
-  if (connection.elbow !== undefined) style.elbow = connection.elbow
-  if (connection.orthogonal !== undefined) style.orthogonal = connection.orthogonal
+  if (connectionStyle.curved !== undefined) style.curved = connectionStyle.curved
+  if (connectionStyle.rounded !== undefined) style.rounded = connectionStyle.rounded
+  if (connectionStyle.arcSize !== undefined) style.arcSize = connectionStyle.arcSize
+  if (connectionStyle.edgeStyle !== undefined) style.edgeStyle = connectionStyle.edgeStyle
+  if (connectionStyle.elbow !== undefined) style.elbow = connectionStyle.elbow
+  if (connectionStyle.orthogonal !== undefined) style.orthogonal = connectionStyle.orthogonal
 
   return style
 }
@@ -208,7 +228,6 @@ export function renderConnectionPreview(graph: Graph, connection: DiagramConnect
 
     // Style aus Connection erstellen
     const style = createStyleFromConnection(connection)
-    style.labelPosition = connection.labelStyle.position
 
     // Punkte für Edge (optional)
     let points: Point[] | undefined = undefined
@@ -247,6 +266,14 @@ export function renderConnectionPreview(graph: Graph, connection: DiagramConnect
 
     if (points && edge.geometry) {
       edge.geometry.points = points
+    }
+    if (edge.geometry) {
+      if (connection.labelStyle.offsetX !== undefined) {
+        edge.geometry.x = connection.labelStyle.offsetX
+      }
+      if (connection.labelStyle.offsetY !== undefined) {
+        edge.geometry.y = connection.labelStyle.offsetY
+      }
     }
 
     graph.setSelectionCell(edge)
