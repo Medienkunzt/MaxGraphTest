@@ -26,7 +26,7 @@
           <v-divider />
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :preview-connection="selectedConnection" :language-connections="connections" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :preview-connection="selectedConnection" :language-connections="connections" :language-elements="elements" />
             </div>
             <v-alert v-if="!selectedConnection" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Verbindung aus, um eine Vorschau zu sehen </v-alert>
           </v-card-text>
@@ -67,6 +67,7 @@ const drawingCanvasRef = ref()
 
 // Computed - Verbindungen aus Store
 const connections = computed(() => store.currentLanguage?.connections || [])
+const elements = computed(() => store.currentLanguage?.elements || [])
 const selectedConnection = computed(() => connections.value.find((conn) => conn.id === selectedConnectionId.value))
 
 // Methods

@@ -28,7 +28,7 @@
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" />
             </div>
 
             <v-alert v-if="!selectedElement" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element aus, um eine Vorschau zu sehen </v-alert>
@@ -78,6 +78,7 @@ const elementDefinition = ref<DiagramElement | null>(null)
 const elements = computed(() => store.currentLanguage?.elements || [])
 
 const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
+const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
 
 const selectedElement = computed(() => elements.value.find((elem: DiagramElement) => elem.id === selectedElementId.value))
 

@@ -76,8 +76,6 @@
     <!-- Dialoge -->
     <DialogLanguageEditor v-model="showLanguageDialog" :language="selectedLanguage" @save="handleSaveLanguage" />
 
-    <DialogLanguageTester v-model="showTesterDialog" :language="selectedLanguage" />
-
     <DialogConfirm ref="confirmDialog" />
   </v-container>
 </template>
@@ -88,7 +86,6 @@ import { useRouter } from 'vue-router'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { DiagramLanguage } from '@/model/DiagramLanguage'
 import DialogLanguageEditor from '@/components/dialog/DialogLanguageEditor.vue'
-import DialogLanguageTester from '@/components/dialog/DialogLanguageTester.vue'
 import DialogConfirm from '@/components/dialog/DialogConfirm.vue'
 
 const router = useRouter()
