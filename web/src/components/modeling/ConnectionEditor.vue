@@ -92,21 +92,25 @@ const addNewConnection = () => {
     label: '',
     type: 'association',
     style: {
+      shape: 'connector',
       strokeColor: '#000000',
       strokeWidth: 2,
+      strokeOpacity: 100,
       dashed: false,
+      fixDash: false,
       startArrow: 'none',
-      endArrow: 'none',
       startFill: true,
-      endFill: true
-    },
-    labelStyle: {
-      position: 'center',
+      endArrow: 'none',
+      endFill: true,
       align: 'center',
       verticalAlign: 'middle',
+      labelPosition: 'center',
       fontColor: '#000000',
-      fontSize: 12
+      fontSize: 12,
+      rounded: false,
+      curved: false
     },
+    labelOffset: {},
     validation: {
       allowSelfConnection: false,
       allowMultipleConnections: true,

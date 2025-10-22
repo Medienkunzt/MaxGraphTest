@@ -150,61 +150,6 @@ export function addCellToGraph(graph: Graph, cell: Cell, element: DiagramElement
  * @param connection - Die DiagramConnection-Definition
  * @returns Das Style-Objekt für MaxGraph
  */
-export function createStyleFromConnection(connection: DiagramConnection): CellStyle {
-  const { style: connectionStyle, labelStyle } = connection
-
-  const labelAlign = labelStyle.align ?? 'center'
-  const labelVAlign = labelStyle.verticalAlign ?? 'middle'
-  const labelPosition = labelStyle.position ?? 'center'
-  const fontSize = labelStyle.fontSize ?? 12
-  const fontColor = labelStyle.fontColor ?? '#000000'
-
-  const style: CellStyle = {
-    strokeColor: connectionStyle.strokeColor,
-    strokeWidth: connectionStyle.strokeWidth,
-    dashed: !!connectionStyle.dashed,
-    startArrow: connectionStyle.startArrow,
-    endArrow: connectionStyle.endArrow,
-    fontSize,
-    fontColor,
-    align: labelAlign,
-    verticalAlign: labelVAlign,
-    labelPosition
-  }
-
-  if (connectionStyle.dashPattern) {
-    style.dashPattern = connectionStyle.dashPattern
-  }
-  if (connectionStyle.fixDash !== undefined) {
-    style.fixDash = connectionStyle.fixDash
-  }
-  if (connectionStyle.startFill !== undefined) {
-    style.startFill = connectionStyle.startFill
-  } else {
-    style.startFill = true
-  }
-  if (connectionStyle.endFill !== undefined) {
-    style.endFill = connectionStyle.endFill
-  } else {
-    style.endFill = true
-  }
-  if (labelStyle.backgroundColor) {
-    style.labelBackgroundColor = labelStyle.backgroundColor
-  }
-  if (labelStyle.borderColor) {
-    style.labelBorderColor = labelStyle.borderColor
-  }
-
-  if (connectionStyle.curved !== undefined) style.curved = connectionStyle.curved
-  if (connectionStyle.rounded !== undefined) style.rounded = connectionStyle.rounded
-  if (connectionStyle.arcSize !== undefined) style.arcSize = connectionStyle.arcSize
-  if (connectionStyle.edgeStyle !== undefined) style.edgeStyle = connectionStyle.edgeStyle
-  if (connectionStyle.elbow !== undefined) style.elbow = connectionStyle.elbow
-  if (connectionStyle.orthogonal !== undefined) style.orthogonal = connectionStyle.orthogonal
-
-  return style
-}
-
 /**
  * Rendert eine Verbindungs-Vorschau im Graph (nur die Edge, mit Dummy-Knoten)
  *
@@ -226,8 +171,23 @@ export function renderConnectionPreview(graph: Graph, connection: DiagramConnect
       x2 = 320,
       y2 = 120
 
-    // Style aus Connection erstellen
-    const style = createStyleFromConnection(connection)
+    // Style direkt aus der Connection verwenden und mit Defaults ergänzen
+    const style: CellStyle = {
+      shape: 'connector',
+      strokeColor: '#000000',
+      strokeWidth: 1,
+      strokeOpacity: 100,
+      startArrow: 'none',
+      endArrow: 'none',
+      startFill: true,
+      endFill: true,
+      align: 'center',
+      verticalAlign: 'middle',
+      labelPosition: 'center',
+      fontColor: '#000000',
+      fontSize: 12,
+      ...connection.style
+    }
 
     // Punkte für Edge (optional)
     let points: Point[] | undefined = undefined
@@ -268,11 +228,11 @@ export function renderConnectionPreview(graph: Graph, connection: DiagramConnect
       edge.geometry.points = points
     }
     if (edge.geometry) {
-      if (connection.labelStyle.offsetX !== undefined) {
-        edge.geometry.x = connection.labelStyle.offsetX
+      if (connection.labelOffset?.x !== undefined) {
+        edge.geometry.x = connection.labelOffset.x
       }
-      if (connection.labelStyle.offsetY !== undefined) {
-        edge.geometry.y = connection.labelStyle.offsetY
+      if (connection.labelOffset?.y !== undefined) {
+        edge.geometry.y = connection.labelOffset.y
       }
     }
 

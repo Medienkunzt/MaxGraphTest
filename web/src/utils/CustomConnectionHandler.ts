@@ -1,6 +1,6 @@
 import { ConnectionHandler, CellState, InternalMouseEvent, type Graph } from '@maxgraph/core'
+import type { CellStyle } from '@maxgraph/core'
 import type { DiagramConnection } from '@/model/Connection'
-import { createStyleFromConnection } from './elementFactory'
 
 /**
  * Custom ConnectionHandler, der den Style der ausgewählten Verbindung verwendet
@@ -22,7 +22,6 @@ export class CustomConnectionHandler extends ConnectionHandler {
 
   /**
    * Erstellt den Edge-State für die Vorschau mit dem Style der ausgewählten Verbindung
-   * Verwendet createStyleFromConnection aus elementFactory für Konsistenz
    */
   override createEdgeState(_me: InternalMouseEvent): CellState | null {
     void _me
@@ -33,8 +32,23 @@ export class CustomConnectionHandler extends ConnectionHandler {
       return new CellState(this.graph.view, edge, this.graph.getCellStyle(edge))
     }
 
-    // Baue Style mit zentraler Factory-Funktion
-    const style = createStyleFromConnection(this.selectedConnection)
+    // Verwende den Style der ausgewählten Verbindung direkt inklusive Standardwerten
+    const style: CellStyle = {
+      shape: 'connector',
+      strokeColor: '#000000',
+      strokeWidth: 1,
+      strokeOpacity: 100,
+      startArrow: 'none',
+      endArrow: 'none',
+      startFill: true,
+      endFill: true,
+      align: 'center',
+      verticalAlign: 'middle',
+      labelPosition: 'center',
+      fontColor: '#000000',
+      fontSize: 12,
+      ...this.selectedConnection.style
+    }
 
     // Erstelle Edge mit dem Style
     const edge = this.graph.createEdge(null, this.selectedConnection.label || '', null, null, null, style)
@@ -51,24 +65,39 @@ export class CustomConnectionHandler extends ConnectionHandler {
       const connectionType = this.selectedConnection.type
       const connectionId = this.selectedConnection.id
       const edgeLabel = this.selectedConnection.label ?? ''
-      const connectionStyle = createStyleFromConnection(this.selectedConnection)
+      const connectionStyle: CellStyle = {
+        shape: 'connector',
+        strokeColor: '#000000',
+        strokeWidth: 1,
+        strokeOpacity: 100,
+        startArrow: 'none',
+        endArrow: 'none',
+        startFill: true,
+        endFill: true,
+        align: 'center',
+        verticalAlign: 'middle',
+        labelPosition: 'center',
+        fontColor: '#000000',
+        fontSize: 12,
+        ...this.selectedConnection.style
+      }
 
       // Speichere Connection-Info in der Edge
       const edge = super.insertEdge(parent, id ?? '', edgeLabel, source, target, connectionStyle)
       if (edge) {
         ;(edge as any).connectionType = connectionType
         ;(edge as any).connectionId = connectionId
-        ;(edge as any).connectionStyle = this.selectedConnection.style
-        ;(edge as any).connectionLabelStyle = this.selectedConnection.labelStyle
+        ;(edge as any).connectionStyle = connectionStyle
+        ;(edge as any).connectionLabelOffset = this.selectedConnection.labelOffset
 
         const geometry = edge.getGeometry()
         if (geometry) {
           const clone = geometry.clone()
-          if (this.selectedConnection.labelStyle.offsetX !== undefined) {
-            clone.x = this.selectedConnection.labelStyle.offsetX
+          if (this.selectedConnection.labelOffset?.x !== undefined) {
+            clone.x = this.selectedConnection.labelOffset.x
           }
-          if (this.selectedConnection.labelStyle.offsetY !== undefined) {
-            clone.y = this.selectedConnection.labelStyle.offsetY
+          if (this.selectedConnection.labelOffset?.y !== undefined) {
+            clone.y = this.selectedConnection.labelOffset.y
           }
           edge.setGeometry(clone)
         }
