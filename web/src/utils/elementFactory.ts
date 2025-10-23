@@ -1,5 +1,5 @@
 import { Cell, Geometry, ConnectionConstraint, Point, Rectangle } from '@maxgraph/core'
-import type { Graph, CellStyle } from '@maxgraph/core'
+import type { Graph } from '@maxgraph/core'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
 
@@ -158,86 +158,3 @@ export function addCellToGraph(graph: Graph, cell: Cell, element: DiagramElement
  * @param graph - Die Graph-Instanz
  * @param connection - Die DiagramConnection-Definition
  */
-export function renderConnectionPreview(graph: Graph, connection: DiagramConnection): void {
-  // Canvas leeren
-  graph.removeCells(graph.getChildCells())
-  const parent = graph.getDefaultParent()
-
-  graph.getDataModel().beginUpdate()
-  try {
-    // Dummy-Start- und Endpunkte für die Edge
-    const x1 = 80,
-      y1 = 120,
-      x2 = 320,
-      y2 = 120
-
-    // Style direkt aus der Connection verwenden und mit Defaults ergänzen
-    const style: CellStyle = {
-      shape: 'connector',
-      strokeColor: '#000000',
-      strokeWidth: 1,
-      strokeOpacity: 100,
-      startArrow: 'none',
-      endArrow: 'none',
-      startFill: true,
-      endFill: true,
-      align: 'center',
-      verticalAlign: 'middle',
-      labelPosition: 'center',
-      fontColor: '#000000',
-      fontSize: 12,
-      ...connection.style
-    }
-
-    // Punkte für Edge (optional)
-    let points: Point[] | undefined = undefined
-    if (connection.points && Array.isArray(connection.points) && connection.points.length > 0) {
-      points = connection.points.map((pt: { x: number; y: number }) => new Point(pt.x, pt.y))
-    }
-
-    // Dummy-Vertexe (unsichtbar)
-    const v1 = graph.insertVertex({
-      parent,
-      value: '',
-      x: x1,
-      y: y1,
-      width: 1,
-      height: 1,
-      style: { opacity: 0 }
-    })
-    const v2 = graph.insertVertex({
-      parent,
-      value: '',
-      x: x2,
-      y: y2,
-      width: 1,
-      height: 1,
-      style: { opacity: 0 }
-    })
-
-    // Edge erstellen
-    const edge = graph.insertEdge({
-      parent,
-      source: v1,
-      target: v2,
-      value: connection.label,
-      style
-    })
-
-    if (points && edge.geometry) {
-      edge.geometry.points = points
-    }
-    if (edge.geometry) {
-      if (connection.labelOffset?.x !== undefined) {
-        edge.geometry.x = connection.labelOffset.x
-      }
-      if (connection.labelOffset?.y !== undefined) {
-        edge.geometry.y = connection.labelOffset.y
-      }
-    }
-
-    graph.setSelectionCell(edge)
-  } finally {
-    graph.getDataModel().endUpdate()
-  }
-}

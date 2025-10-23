@@ -12,7 +12,7 @@
       <v-col cols="4" class="px-1 editor-col">
         <div class="scroll-column">
           <BasicEditorForm type="connection" :selected-item="selectedConnection">
-            <ConnectionEditorForm v-if="selectedConnection" :selected-connection="selectedConnection" @update="updateAll" />
+            <ConnectionEditorForm v-if="selectedConnection" v-model:preview-mode="previewMode" :selected-connection="selectedConnection" @update="updateAll" />
           </BasicEditorForm>
         </div>
       </v-col>
@@ -26,7 +26,14 @@
           <v-divider />
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :preview-connection="selectedConnection" :language-connections="connections" :language-elements="elements" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :preview-connection="selectedConnection" :preview-mode="previewMode" :language-connections="connections" :language-elements="elements" />
+              <div v-if="previewMode === 'none'" class="preview-overlay pa-4">
+                <v-icon size="32" class="mr-2">mdi-eye-off-outline</v-icon>
+                <div>
+                  <div class="text-subtitle-2">Vorschau deaktiviert</div>
+                  <div class="text-caption">Wähle eine Vorschauoption, um die Darstellung der Verbindung zu prüfen.</div>
+                </div>
+              </div>
             </div>
             <v-alert v-if="!selectedConnection" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Verbindung aus, um eine Vorschau zu sehen </v-alert>
           </v-card-text>
@@ -47,6 +54,7 @@ import EditorEntityList from './EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import ConnectionEditorForm from './form/ConnectionEditorForm.vue'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
+import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, type ConnectionPreviewMode } from '@/utils/connectionPreview'
 
 // Props
 interface Props {
@@ -64,6 +72,7 @@ const { languages, setCurrentLanguage } = useDiagramLanguages()
 const selectedConnectionId = ref<string>('')
 const canvasModel = ref<GraphDataModel>()
 const drawingCanvasRef = ref()
+const previewMode = ref<ConnectionPreviewMode>('simple')
 
 // Computed - Verbindungen aus Store
 const connections = computed(() => store.currentLanguage?.connections || [])
@@ -110,13 +119,7 @@ const addNewConnection = () => {
       rounded: false,
       curved: false
     },
-    labelOffset: {},
-    validation: {
-      allowSelfConnection: false,
-      allowMultipleConnections: true,
-      sourceElementTypes: '',
-      targetElementTypes: ''
-    }
+    labelOffset: {}
   }
 
   store.addConnectionToLanguage(store.currentLanguage.id, newConnection)
@@ -154,10 +157,30 @@ const connectionColorMap = {
 }
 
 // Vorschau-Logik wie im ElementEditor
+const getPreviewGraph = () => {
+  const canvas = drawingCanvasRef.value as { graph?: any } | undefined
+  if (!canvas?.graph) return null
+  const exposed = canvas.graph
+  return exposed && 'value' in exposed ? exposed.value : exposed
+}
+
 const renderConnectionPreview = () => {
-  // Hier könnte eine zentrale Vorschau-Logik für Verbindungen implementiert werden,
-  // z.B. mit Beispielknoten und einer Verbindung, falls benötigt.
-  // Für jetzt reicht das Weiterreichen der Props an DrawingCanvas.
+  const graphInstance = getPreviewGraph()
+  const connection = selectedConnection.value
+
+  if (!graphInstance) return
+
+  if (!connection || previewMode.value === 'none') {
+    clearConnectionPreview(graphInstance)
+    return
+  }
+
+  if (previewMode.value === 'scenario') {
+    renderScenarioConnectionPreview(graphInstance, connection)
+    return
+  }
+
+  renderSimpleConnectionPreview(graphInstance, connection)
 }
 
 // Debounced Update für Vorschau und Store
@@ -199,9 +222,19 @@ watch(
     if (newConn) {
       renderConnectionPreview()
       debouncedUpdate()
+    } else {
+      renderConnectionPreview()
     }
   },
   { immediate: true, deep: true }
+)
+
+watch(
+  previewMode,
+  () => {
+    renderConnectionPreview()
+  },
+  { immediate: true }
 )
 
 // Lifecycle
@@ -281,5 +314,21 @@ onMounted(() => {
   min-height: 280px;
   border-radius: 4px;
   overflow: hidden;
+  position: relative;
+}
+
+.preview-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+.preview-overlay .v-icon {
+  color: var(--v-theme-primary);
 }
 </style>

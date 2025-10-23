@@ -58,7 +58,7 @@ export class CustomConnectionHandler extends ConnectionHandler {
   /**
    * Wird aufgerufen, wenn eine Verbindung fertiggestellt wird
    * Hier können wir noch zusätzliche Metadaten zur Edge hinzufügen
-  */
+   */
   override insertEdge(parent: any, id: string | null, value: any, source: any, target: any, style?: any) {
     // Wenn eine Verbindung ausgewählt ist, füge Metadaten hinzu
     if (this.selectedConnection) {
@@ -85,6 +85,8 @@ export class CustomConnectionHandler extends ConnectionHandler {
       // Speichere Connection-Info in der Edge
       const edge = super.insertEdge(parent, id ?? '', edgeLabel, source, target, connectionStyle)
       if (edge) {
+        // Connection-Instanzen sind standardmäßig verbindbar
+        edge.setConnectable(true)
         ;(edge as any).connectionType = connectionType
         ;(edge as any).connectionId = connectionId
         ;(edge as any).connectionStyle = connectionStyle

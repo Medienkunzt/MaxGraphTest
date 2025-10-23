@@ -510,6 +510,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           name: 'Vererbung',
           label: '',
           type: 'inheritance',
+          connectable: true,
           style: {
             shape: 'connector',
             strokeColor: '#000000',
@@ -525,12 +526,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#000000',
             fontSize: 10
-          },
-          validation: {
-            allowSelfConnection: false,
-            allowMultipleConnections: false,
-            sourceElementTypes: 'uml-class,uml-abstract-class',
-            targetElementTypes: 'uml-class,uml-abstract-class'
           }
         },
         // Realisierung (Interface-Implementierung)
@@ -539,6 +534,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           name: 'Realisierung',
           label: '',
           type: 'realization',
+          connectable: true,
           style: {
             shape: 'connector',
             strokeColor: '#000000',
@@ -555,12 +551,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#000000',
             fontSize: 10
-          },
-          validation: {
-            allowSelfConnection: false,
-            allowMultipleConnections: true,
-            sourceElementTypes: 'uml-class,uml-abstract-class',
-            targetElementTypes: 'uml-interface'
           }
         },
         // Assoziation
@@ -569,6 +559,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           name: 'Assoziation',
           label: '',
           type: 'association',
+          connectable: true,
           style: {
             shape: 'connector',
             strokeColor: '#000000',
@@ -584,12 +575,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#000000',
             fontSize: 10
-          },
-          validation: {
-            allowSelfConnection: true,
-            allowMultipleConnections: true,
-            sourceElementTypes: 'uml-class,uml-abstract-class,uml-interface',
-            targetElementTypes: 'uml-class,uml-abstract-class,uml-interface'
           }
         },
         // Gerichtete Assoziation
@@ -598,6 +583,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           name: 'Gerichtete Assoziation',
           label: '',
           type: 'directed-association',
+          connectable: true,
           style: {
             shape: 'connector',
             strokeColor: '#000000',
@@ -613,12 +599,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#000000',
             fontSize: 10
-          },
-          validation: {
-            allowSelfConnection: false,
-            allowMultipleConnections: true,
-            sourceElementTypes: 'uml-class,uml-abstract-class,uml-interface',
-            targetElementTypes: 'uml-class,uml-abstract-class,uml-interface'
           }
         },
         // Aggregation
@@ -627,6 +607,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           name: 'Aggregation',
           label: '',
           type: 'aggregation',
+          connectable: true,
           style: {
             shape: 'connector',
             strokeColor: '#000000',
@@ -642,12 +623,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#000000',
             fontSize: 10
-          },
-          validation: {
-            allowSelfConnection: false,
-            allowMultipleConnections: true,
-            sourceElementTypes: 'uml-class,uml-abstract-class',
-            targetElementTypes: 'uml-class,uml-abstract-class'
           }
         },
         // Komposition
@@ -656,6 +631,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           name: 'Komposition',
           label: '',
           type: 'composition',
+          connectable: true,
           style: {
             shape: 'connector',
             strokeColor: '#000000',
@@ -671,12 +647,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#000000',
             fontSize: 10
-          },
-          validation: {
-            allowSelfConnection: false,
-            allowMultipleConnections: true,
-            sourceElementTypes: 'uml-class,uml-abstract-class',
-            targetElementTypes: 'uml-class,uml-abstract-class'
           }
         },
         // Abhängigkeit
@@ -685,6 +655,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           name: 'Abhängigkeit',
           label: '<<use>>',
           type: 'dependency',
+          connectable: true,
           style: {
             shape: 'connector',
             strokeColor: '#666666',
@@ -701,12 +672,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#666666',
             fontSize: 9
-          },
-          validation: {
-            allowSelfConnection: false,
-            allowMultipleConnections: true,
-            sourceElementTypes: '*',
-            targetElementTypes: '*'
           }
         },
         // Notiz-Verbindung
@@ -715,6 +680,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           name: 'Notiz-Verbindung',
           label: '',
           type: 'note',
+          connectable: false,
           style: {
             shape: 'connector',
             strokeColor: '#9e9e9e',
@@ -731,30 +697,10 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#9e9e9e',
             fontSize: 9
-          },
-          validation: {
-            allowSelfConnection: false,
-            allowMultipleConnections: true,
-            sourceElementTypes: 'uml-note',
-            targetElementTypes: '*'
           }
         }
       ],
       syntax: [
-        // Klassennamen-Konvention
-        {
-          id: 'uml-class-naming',
-          name: 'Klassenbenennung',
-          label: 'Klassenbenennung',
-          type: 'naming',
-          severity: 'warning',
-          description: 'Klassen sollten in PascalCase benannt werden (z.B. BeispielKlasse)',
-          config: {
-            appliesTo: ['uml-class', 'uml-abstract-class', 'uml-interface'],
-            pattern: '[A-Z][a-zA-Z0-9]*',
-            caseSensitive: true
-          }
-        },
         // Attribut-Format
         {
           id: 'uml-attribute-format',

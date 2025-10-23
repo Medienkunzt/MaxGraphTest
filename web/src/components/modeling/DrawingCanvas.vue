@@ -57,7 +57,8 @@ import { useGridSettings } from '@/composables/useGridSettings'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
-import { createCellFromElement, addCellToGraph, renderConnectionPreview as createConnectionPreview } from '@/utils/elementFactory'
+import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
+import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview } from '@/utils/connectionPreview'
 import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
@@ -137,6 +138,7 @@ const props = withDefaults(
     languageElements?: DiagramElement[]
     languageConnections?: DiagramConnection[]
     previewConnection?: DiagramConnection
+    previewMode?: 'none' | 'simple' | 'scenario'
   }>(),
   {
     allowEdit: true,
@@ -144,7 +146,8 @@ const props = withDefaults(
     contextMenu: false,
     languageElements: undefined,
     languageConnections: undefined,
-    previewConnection: undefined
+    previewConnection: undefined,
+    previewMode: 'simple'
   }
 )
 
@@ -232,11 +235,20 @@ onMounted(() => {
 watch(
   () => props.previewConnection,
   (newConn) => {
-    if (newConn && graph.value) {
+    if (graph.value) {
       renderConnectionPreviewOnly(newConn)
     }
   },
   { immediate: true, deep: true }
+)
+
+watch(
+  () => props.previewMode,
+  () => {
+    if (graph.value) {
+      renderConnectionPreviewOnly(props.previewConnection)
+    }
+  }
 )
 
 // Watch für languageConnections - aktualisiere ConnectionHandler
@@ -254,13 +266,22 @@ watch(
   { deep: true }
 )
 
-// Vorschau nur für eine Verbindung (nutzt zentrale Factory-Funktion)
-function renderConnectionPreviewOnly(connection: DiagramConnection) {
+// Vorschau nur für eine Verbindung (nutzt zentrale Preview-Hilfen)
+function renderConnectionPreviewOnly(connection?: DiagramConnection | null) {
   const g = graph.value
   if (!g) return
 
-  // Nutze die zentrale Factory-Funktion für konsistentes Rendering
-  createConnectionPreview(g, connection)
+  if (!connection || props.previewMode === 'none') {
+    clearConnectionPreview(g)
+    return
+  }
+
+  if (props.previewMode === 'scenario') {
+    renderScenarioConnectionPreview(g, connection)
+    return
+  }
+
+  renderSimpleConnectionPreview(g, connection)
 }
 
 const initGraph = () => {
