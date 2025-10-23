@@ -4,7 +4,7 @@
       <!-- Syntax-Regeln Liste (links) -->
       <v-col cols="4" class="pr-2 editor-col">
         <div class="scroll-column">
-          <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-id="selectedRuleId" empty-text="Keine Syntax-Regeln definiert" title-field="name" :show-severity-chip="true" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
+          <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-id="selectedRuleId" empty-text="Keine Syntax-Regeln definiert" :show-severity-chip="true" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
         </div>
       </v-col>
 
@@ -17,55 +17,21 @@
         </div>
       </v-col>
 
-      <!-- Validierungs-Vorschau (rechts) -->
+      <!-- Canvas Vorschau (rechts) -->
       <v-col cols="4" class="pl-2 preview-column">
         <v-card class="preview-card">
           <v-card-title class="py-2">
-            <span class="text-h6">Validierungs-Vorschau</span>
+            <span class="text-h6">Vorschau</span>
           </v-card-title>
 
           <v-divider />
 
           <v-card-text>
-            <!-- Canvas für Beispiel-Diagramm -->
-            <div class="preview-canvas mb-3">
-              <DrawingCanvas ref="canvasRef" :model="canvasModel" :config="canvasConfig" style="height: 300px; border: 1px solid #e0e0e0; border-radius: 4px" />
+            <div class="preview-canvas">
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" />
             </div>
 
-            <!-- Validierungs-Ergebnisse -->
-            <v-card variant="outlined">
-              <v-card-subtitle class="d-flex align-center">
-                <v-icon class="mr-2">mdi-check-circle</v-icon>
-                Validierungs-Ergebnisse
-              </v-card-subtitle>
-
-              <v-divider />
-
-              <v-list density="compact">
-                <v-list-item v-for="result in validationResults" :key="result.id">
-                  <template #prepend>
-                    <v-icon :color="result.severity === 'error' ? 'error' : result.severity === 'warning' ? 'warning' : 'success'" size="small">
-                      {{ result.severity === 'error' ? 'mdi-close-circle' : result.severity === 'warning' ? 'mdi-alert' : 'mdi-check-circle' }}
-                    </v-icon>
-                  </template>
-
-                  <v-list-item-title>{{ result.message }}</v-list-item-title>
-                  <v-list-item-subtitle>{{ result.element }}</v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-
-              <v-card-text v-if="validationResults.length === 0" class="text-center text-medium-emphasis"> Keine Validierungsfehler gefunden </v-card-text>
-            </v-card>
-
-            <!-- Test-Aktionen -->
-            <v-card variant="outlined" class="mt-3">
-              <v-card-subtitle>Test-Aktionen</v-card-subtitle>
-              <v-card-text>
-                <v-btn variant="outlined" size="small" prepend-icon="mdi-plus" class="mr-2 mb-2" @click="addTestElement"> Test-Element </v-btn>
-                <v-btn variant="outlined" size="small" prepend-icon="mdi-connection" class="mr-2 mb-2" @click="addTestConnection"> Test-Verbindung </v-btn>
-                <v-btn variant="outlined" size="small" prepend-icon="mdi-delete" class="mb-2" @click="clearCanvas"> Leeren </v-btn>
-              </v-card-text>
-            </v-card>
+            <v-alert v-if="!selectedRule" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Syntax-Regel aus, um eine Vorschau zu sehen </v-alert>
           </v-card-text>
         </v-card>
       </v-col>
@@ -74,7 +40,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
@@ -82,62 +49,40 @@ import type { GraphDataModel } from '@maxgraph/core'
 import SyntaxEditorForm from './form/SyntaxEditorForm.vue'
 import type { DiagramSyntax } from '@/model/DiagramLanguage'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
+import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
+
+// Props
+interface Props {
+  languageId?: string
+  id?: string
+}
+
+const props = defineProps<Props>()
+const route = useRoute()
 
 // Store
 const store = useDiagramLanguageStore()
+const { languages, setCurrentLanguage } = useDiagramLanguages()
 
-interface ValidationResult {
-  id: string
-  severity: 'error' | 'warning' | 'success'
-  message: string
-  element: string
-}
-
-// Data
-const syntaxRules = computed(() => store.currentLanguage?.syntax || [])
 // State
 const selectedRuleId = ref<string>('')
 const canvasModel = ref<GraphDataModel>()
-const canvasRef = ref()
-const validationResults = ref<ValidationResult[]>([
-  {
-    id: '1',
-    severity: 'success',
-    message: 'Alle Benennungsregeln eingehalten',
-    element: 'Klasse "Person"'
-  },
-  {
-    id: '2',
-    severity: 'warning',
-    message: 'Empfehlung: Fügen Sie weitere Attribute hinzu',
-    element: 'Klasse "Person"'
-  }
-])
+const drawingCanvasRef = ref()
 
 // Computed
+const syntaxRules = computed(() => store.currentLanguage?.syntax || [])
 const selectedRule = computed(() => syntaxRules.value.find((rule: DiagramSyntax) => rule.id === selectedRuleId.value))
-
-const canvasConfig = computed(() => ({
-  width: '100%',
-  height: '300px',
-  backgroundColor: '#fafafa',
-  gridEnabled: true,
-  panningEnabled: true,
-  zoomEnabled: true
-}))
+const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
+const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
 
 // Methods
-const updateAll = () => {
-  // Update logic can be added here if needed
-  console.log('Syntax rule updated')
-  runValidation()
-}
 const selectRule = (ruleId: string) => {
   selectedRuleId.value = ruleId
-  runValidation()
 }
 
 const addNewRule = () => {
+  if (!store.currentLanguage) return
+
   const newRule: DiagramSyntax = {
     id: `rule_${Date.now()}`,
     name: 'Neue Regel',
@@ -148,19 +93,18 @@ const addNewRule = () => {
     config: {}
   }
 
-  if (store.currentLanguage) {
-    store.currentLanguage.syntax.push(newRule)
-  }
+  store.addSyntaxToLanguage(store.currentLanguage.id, newRule)
   selectedRuleId.value = newRule.id
 }
 
 const deleteRule = (ruleId: string) => {
-  const index = syntaxRules.value.findIndex((rule: DiagramSyntax) => rule.id === ruleId)
-  if (index !== -1 && store.currentLanguage) {
-    store.currentLanguage.syntax.splice(index, 1)
-    if (selectedRuleId.value === ruleId) {
-      selectedRuleId.value = syntaxRules.value.length > 0 ? syntaxRules.value[0].id : ''
-    }
+  if (!store.currentLanguage) return
+
+  store.removeSyntaxFromLanguage(store.currentLanguage.id, ruleId)
+
+  if (selectedRuleId.value === ruleId) {
+    const remainingRules = syntaxRules.value
+    selectedRuleId.value = remainingRules.length > 0 ? remainingRules[0].id : ''
   }
 }
 
@@ -179,105 +123,79 @@ const ruleColorMap = {
   naming: 'purple'
 }
 
-const runValidation = () => {
-  // Dummy-Validierung - in echter Implementierung würde hier die Regel ausgeführt
-  validationResults.value = [
-    {
-      id: Date.now().toString(),
-      severity: Math.random() > 0.5 ? 'success' : 'warning',
-      message: `Test-Ergebnis für Regel "${selectedRule.value?.name}"`,
-      element: 'Test-Element'
-    }
-  ]
-}
+// Update-Funktionen
+let updateTimeout: number | null = null
 
-const addTestElement = () => {
-  if (!canvasRef.value?.graph) return
-
-  const graph = canvasRef.value.graph
-  const parent = graph.getDefaultParent()
-
-  graph.getDataModel().beginUpdate()
-  try {
-    graph.insertVertex({
-      parent,
-      value: 'TestKlasse',
-      x: Math.random() * 200 + 50,
-      y: Math.random() * 150 + 50,
-      width: 120,
-      height: 80,
-      style: {
-        fillColor: '#e1f5fe',
-        strokeColor: '#0277bd',
-        rounded: true
-      }
-    })
-  } finally {
-    graph.getDataModel().endUpdate()
+const debouncedUpdate = () => {
+  if (updateTimeout) {
+    clearTimeout(updateTimeout)
   }
-
-  runValidation()
+  updateTimeout = setTimeout(() => {
+    // Hier würde die Validierung ausgeführt werden
+    console.log('Syntax rule preview updated')
+  }, 150)
 }
 
-const addTestConnection = () => {
-  if (!canvasRef.value?.graph) return
+const debouncedStoreUpdate = () => {
+  if (selectedRule.value && store.currentLanguage) {
+    store.updateSyntaxInLanguage(store.currentLanguage.id, selectedRule.value.id, selectedRule.value)
+  }
+}
 
-  const graph = canvasRef.value.graph
-  const cells = graph.getChildCells()
+const updateAll = () => {
+  debouncedUpdate()
+  debouncedStoreUpdate()
+}
 
-  if (cells.length >= 2) {
-    const parent = graph.getDefaultParent()
+// Sprachen-ID aus Route laden
+const loadLanguageFromRoute = () => {
+  const languageId = props.id || (route.params.id as string)
 
-    graph.getDataModel().beginUpdate()
-    try {
-      graph.insertEdge({
-        parent,
-        source: cells[0],
-        target: cells[1],
-        value: 'test',
-        style: {
-          strokeColor: '#000000',
-          endArrow: 'triangle'
-        }
-      })
-    } finally {
-      graph.getDataModel().endUpdate()
+  if (languageId) {
+    const language = languages.find((lang) => lang.id === languageId)
+    if (language) {
+      setCurrentLanguage(language)
+      console.log('Sprache aus Route geladen:', language.name)
+    } else {
+      console.warn('Sprache mit ID nicht gefunden:', languageId)
     }
   }
-
-  runValidation()
-}
-
-const clearCanvas = () => {
-  if (!canvasRef.value?.graph) return
-
-  const graph = canvasRef.value.graph
-  graph.removeCells(graph.getChildCells())
-  validationResults.value = []
 }
 
 // Watchers
 watch(
   selectedRule,
   () => {
-    runValidation()
+    debouncedUpdate()
   },
   { deep: true }
 )
 
 // Lifecycle
 onMounted(() => {
+  // Route laden
+  loadLanguageFromRoute()
+
   if (syntaxRules.value.length > 0) {
     selectedRuleId.value = syntaxRules.value[0].id
   }
 
-  // Canvas mit Beispiel-Diagramm initialisieren
-  setTimeout(() => {
-    addTestElement()
-    setTimeout(() => {
-      addTestElement()
-    }, 200)
-  }, 500)
+  // Canvas initialisieren mit mehreren Versuchen (wie im ElementEditor)
+  const initializeCanvas = (attempts = 0) => {
+    if (attempts > 10) {
+      console.warn('Failed to initialize canvas after 10 attempts')
+      return
+    }
+    if (drawingCanvasRef.value?.graph) {
+      console.log('Canvas initialized successfully for syntax preview')
+    } else {
+      setTimeout(() => initializeCanvas(attempts + 1), 200)
+    }
+  }
+
+  nextTick(() => {
+    setTimeout(() => initializeCanvas(), 100)
+  })
 })
 </script>
 

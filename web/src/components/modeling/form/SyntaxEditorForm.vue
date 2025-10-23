@@ -91,43 +91,18 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-
-// Types
-interface RuleConfig {
-  elementType?: string[]
-  minOccurrences?: number
-  maxOccurrences?: number
-  requiresContainer?: boolean
-  sourceTypes?: string[]
-  targetTypes?: string[]
-  connectionTypes?: string[]
-  allowSelfConnection?: boolean
-  allowMultipleConnections?: boolean
-  attributeName?: string
-  requiredFor?: string[]
-  pattern?: string
-  required?: boolean
-  appliesTo?: string[]
-  prefix?: string
-  suffix?: string
-  caseSensitive?: boolean
-}
-
-interface SyntaxRule {
-  id: string
-  name: string
-  type: string
-  severity: string
-  description: string
-  config: RuleConfig
-}
+import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
+import type { DiagramSyntax } from '@/model/DiagramLanguage'
 
 // Props
 interface Props {
-  selectedRule: SyntaxRule
+  selectedRule: DiagramSyntax
 }
 
 const props = defineProps<Props>()
+
+// Store
+const store = useDiagramLanguageStore()
 
 // Local reference to the rule for reactivity
 const rule = computed(() => props.selectedRule)
@@ -136,6 +111,26 @@ const rule = computed(() => props.selectedRule)
 const emit = defineEmits<{
   update: []
 }>()
+
+// Dynamische Element- und Verbindungstypen aus dem Store
+const elementTypes = computed(() => {
+  const elements = store.currentLanguage?.elements || []
+  return [
+    { title: 'Alle Typen', value: '*' },
+    ...elements.map((elem) => ({
+      title: elem.name,
+      value: elem.id
+    }))
+  ]
+})
+
+const connectionTypes = computed(() => {
+  const connections = store.currentLanguage?.connections || []
+  return connections.map((conn) => ({
+    title: conn.name,
+    value: conn.id
+  }))
+})
 
 // Options
 const ruleTypes = [
@@ -149,23 +144,6 @@ const severityLevels = [
   { title: 'Fehler', value: 'error' },
   { title: 'Warnung', value: 'warning' },
   { title: 'Info', value: 'info' }
-]
-
-const elementTypes = [
-  { title: 'Alle Typen', value: '*' },
-  { title: 'Rectangle', value: 'rectangle' },
-  { title: 'Ellipse', value: 'ellipse' },
-  { title: 'Diamond', value: 'diamond' },
-  { title: 'Triangle', value: 'triangle' },
-  { title: 'Custom Shape', value: 'custom' }
-]
-
-const connectionTypes = [
-  { title: 'Association', value: 'association' },
-  { title: 'Composition', value: 'composition' },
-  { title: 'Aggregation', value: 'aggregation' },
-  { title: 'Inheritance', value: 'inheritance' },
-  { title: 'Dependency', value: 'dependency' }
 ]
 
 // Methods
