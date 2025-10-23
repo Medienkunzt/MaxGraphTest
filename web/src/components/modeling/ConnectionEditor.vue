@@ -27,13 +27,6 @@
           <v-card-text>
             <div class="preview-canvas">
               <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :preview-connection="selectedConnection" :preview-mode="previewMode" :language-connections="connections" :language-elements="elements" />
-              <div v-if="previewMode === 'none'" class="preview-overlay pa-4">
-                <v-icon size="32" class="mr-2">mdi-eye-off-outline</v-icon>
-                <div>
-                  <div class="text-subtitle-2">Vorschau deaktiviert</div>
-                  <div class="text-caption">Wähle eine Vorschauoption, um die Darstellung der Verbindung zu prüfen.</div>
-                </div>
-              </div>
             </div>
             <v-alert v-if="!selectedConnection" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Verbindung aus, um eine Vorschau zu sehen </v-alert>
           </v-card-text>
@@ -54,7 +47,7 @@ import EditorEntityList from './EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import ConnectionEditorForm from './form/ConnectionEditorForm.vue'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
-import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, type ConnectionPreviewMode } from '@/utils/connectionPreview'
+import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, renderRoutingConnectionPreview, type ConnectionPreviewMode } from '@/utils/connectionPreview'
 
 // Props
 interface Props {
@@ -170,13 +163,18 @@ const renderConnectionPreview = () => {
 
   if (!graphInstance) return
 
-  if (!connection || previewMode.value === 'none') {
+  if (!connection) {
     clearConnectionPreview(graphInstance)
     return
   }
 
   if (previewMode.value === 'scenario') {
     renderScenarioConnectionPreview(graphInstance, connection)
+    return
+  }
+
+  if (previewMode.value === 'routing') {
+    renderRoutingConnectionPreview(graphInstance, connection)
     return
   }
 
@@ -312,9 +310,29 @@ onMounted(() => {
 .preview-canvas {
   flex: 1;
   min-height: 280px;
+  max-height: 100%;
   border-radius: 4px;
   overflow: hidden;
   position: relative;
+}
+
+.preview-canvas :deep(.v-card) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-canvas :deep(.v-card-text) {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.preview-canvas :deep(.graph-container) {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .preview-overlay {

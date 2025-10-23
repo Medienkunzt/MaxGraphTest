@@ -58,7 +58,7 @@ import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
 import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
-import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview } from '@/utils/connectionPreview'
+import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, renderRoutingConnectionPreview } from '@/utils/connectionPreview'
 import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
@@ -138,7 +138,7 @@ const props = withDefaults(
     languageElements?: DiagramElement[]
     languageConnections?: DiagramConnection[]
     previewConnection?: DiagramConnection
-    previewMode?: 'none' | 'simple' | 'scenario'
+    previewMode?: 'simple' | 'scenario' | 'routing'
   }>(),
   {
     allowEdit: true,
@@ -271,13 +271,18 @@ function renderConnectionPreviewOnly(connection?: DiagramConnection | null) {
   const g = graph.value
   if (!g) return
 
-  if (!connection || props.previewMode === 'none') {
+  if (!connection) {
     clearConnectionPreview(g)
     return
   }
 
   if (props.previewMode === 'scenario') {
     renderScenarioConnectionPreview(g, connection)
+    return
+  }
+
+  if (props.previewMode === 'routing') {
+    renderRoutingConnectionPreview(g, connection)
     return
   }
 

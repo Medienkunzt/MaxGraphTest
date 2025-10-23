@@ -1,15 +1,12 @@
 /**
  * Konfiguration für die Sichtbarkeit von Feldern basierend auf Komplexitätslevel
- * und Development-Status
  */
 
-export type ComplexityLevel = 'basic' | 'advanced' | 'expert'
+export type ComplexityLevel = 'basic' | 'advanced' | 'expert' | 'dev'
 
 export interface FieldVisibilityConfig {
   /** Minimales Komplexitätslevel, ab dem das Feld sichtbar ist */
   minComplexity?: ComplexityLevel
-  /** Nur in Development-Modus sichtbar */
-  development?: boolean
   /** Callback für bedingte Sichtbarkeit */
   condition?: () => boolean
 }
@@ -17,14 +14,13 @@ export interface FieldVisibilityConfig {
 export interface VisibilityContext {
   /** Aktuelles Komplexitätslevel */
   complexity: ComplexityLevel
-  /** Development-Modus aktiv */
-  isDevelopment: boolean
 }
 
 const complexityRank: Record<ComplexityLevel, number> = {
   basic: 0,
   advanced: 1,
-  expert: 2
+  expert: 2,
+  dev: 3
 }
 
 /**
@@ -32,11 +28,6 @@ const complexityRank: Record<ComplexityLevel, number> = {
  */
 export function isFieldVisible(config: FieldVisibilityConfig | undefined, context: VisibilityContext): boolean {
   if (!config) return true
-
-  // Development-Check
-  if (config.development && !context.isDevelopment) {
-    return false
-  }
 
   // Complexity-Check
   if (config.minComplexity) {
@@ -65,7 +56,7 @@ export function createVisibilityChecker(context: VisibilityContext) {
     isBasic: context.complexity === 'basic',
     isAdvanced: context.complexity === 'advanced',
     isExpert: context.complexity === 'expert',
-    isDevelopment: context.isDevelopment
+    isDev: context.complexity === 'dev'
   }
 }
 
@@ -98,5 +89,12 @@ export const complexityLevels: ComplexityLevelMeta[] = [
     description: 'Alle verfügbaren Parameter, inklusive spezieller Routing- und Typografie-Optionen.',
     color: 'deep-purple-accent-4',
     icon: 'mdi-atom-variant'
+  },
+  {
+    value: 'dev',
+    label: 'Development',
+    description: 'Experimentelle Features und Optionen in der Entwicklung.',
+    color: 'warning',
+    icon: 'mdi-flask-outline'
   }
 ]

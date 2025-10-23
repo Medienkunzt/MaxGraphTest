@@ -22,15 +22,6 @@
       <div class="text-caption">{{ currentLevelMeta.description }}</div>
     </section>
 
-    <!-- Development Mode Toggle (nur für Entwickler) -->
-    <section v-if="showDevelopmentToggle" class="mb-4">
-      <v-switch v-model="isDevelopment" color="warning" density="compact" label="Development-Modus" hint="Zeigt experimentelle Features während der Entwicklung." persistent-hint>
-        <template #prepend>
-          <v-icon color="warning">mdi-flask-outline</v-icon>
-        </template>
-      </v-switch>
-    </section>
-
     <!-- Vorschau -->
     <section class="mb-6">
       <div class="d-flex align-center justify-space-between mb-2">
@@ -141,18 +132,9 @@ const triggerUpdate = () => {
 const complexity = ref<ComplexityLevel>('basic')
 const currentLevelMeta = computed(() => complexityLevels.find((l) => l.value === complexity.value) ?? complexityLevels[0])
 
-// Development Mode
-const isDevelopment = ref(false)
-const showDevelopmentToggle = computed(() => {
-  // Zeige den Toggle nur wenn URL-Parameter vorhanden ist oder localStorage gesetzt ist
-  const urlParams = new URLSearchParams(window.location.search)
-  return urlParams.has('dev') || localStorage.getItem('dev-mode') === 'true'
-})
-
 // Visibility Context
 const visibilityContext = computed<VisibilityContext>(() => ({
-  complexity: complexity.value,
-  isDevelopment: isDevelopment.value
+  complexity: complexity.value
 }))
 
 const visibility = computed(() => createVisibilityChecker(visibilityContext.value))
@@ -164,15 +146,15 @@ const previewModeModel = computed<PreviewMode>({
 })
 
 const previewOptions = [
-  { label: 'Keine Vorschau', value: 'none' as PreviewMode, icon: 'mdi-eye-off-outline', color: 'grey-darken-1' },
   { label: 'Einfacher Pfeil', value: 'simple' as PreviewMode, icon: 'mdi-vector-line', color: 'primary' },
-  { label: 'Szenario', value: 'scenario' as PreviewMode, icon: 'mdi-animation-outline', color: 'secondary' }
+  { label: 'Szenario', value: 'scenario' as PreviewMode, icon: 'mdi-animation-outline', color: 'secondary' },
+  { label: 'Routing-Demo', value: 'routing' as PreviewMode, icon: 'mdi-graph-outline', color: 'accent' }
 ]
 
 const previewDescriptions: Record<PreviewMode, string> = {
-  none: 'Blendet die grafische Vorschau aus.',
   simple: 'Zeigt einen einzelnen Pfeil mit den aktuellen Einstellungen.',
-  scenario: 'Visualisiert ein Beispielszenario mit mehreren Akteuren und Flüssen.'
+  scenario: 'Visualisiert ein Beispielszenario mit mehreren Akteuren und Flüssen.',
+  routing: 'Demonstriert verschiedene Routing-Algorithmen und Kantenverläufe.'
 }
 
 const previewDescription = computed(() => previewDescriptions[previewModeModel.value])

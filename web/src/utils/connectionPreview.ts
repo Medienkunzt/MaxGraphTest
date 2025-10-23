@@ -2,7 +2,7 @@ import { Graph, Point } from '@maxgraph/core'
 import type { CellStyle } from '@maxgraph/core'
 import type { DiagramConnection } from '@/model/Connection'
 
-export type ConnectionPreviewMode = 'none' | 'simple' | 'scenario'
+export type ConnectionPreviewMode = 'simple' | 'scenario' | 'routing'
 
 type EdgeStyle = CellStyle & Record<string, any>
 
@@ -72,6 +72,11 @@ export const renderSimpleConnectionPreview = (graph: Graph, connection: DiagramC
   } finally {
     graph.getDataModel().endUpdate()
   }
+
+  // // Fit the preview using the composable
+  // graph.fit(10)
+  // graph.view.validate()
+  // graph.refresh()
 }
 
 const createActorVertex = (graph: Graph, parent: any, { x, y, label, fill }: { x: number; y: number; label: string; fill: string }) => {
@@ -206,6 +211,8 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
       })
     })
 
+    void eventEdge
+
     const feedbackEdge = graph.insertEdge({
       parent,
       source: eventBus,
@@ -230,4 +237,309 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
   } finally {
     graph.getDataModel().endUpdate()
   }
+
+  // Fit the entire scenario to the visible area
+  graph.fit(10)
+  graph.view.validate()
+  graph.refresh()
+}
+
+export const renderRoutingConnectionPreview = (graph: Graph, connection: DiagramConnection): void => {
+  clearConnectionPreview(graph)
+  const parent = graph.getDefaultParent()
+
+  graph.getDataModel().beginUpdate()
+  try {
+    const baseStyle = cloneStyle(connection.style)
+
+    // Create a complex layout with obstacles to demonstrate routing algorithms
+    // This layout will show different paths depending on the routing algorithm chosen
+
+    // Central hub
+    const hub = graph.insertVertex({
+      parent,
+      value: 'Central\nHub',
+      x: 320,
+      y: 200,
+      width: 120,
+      height: 90,
+      style: {
+        shape: 'rounded',
+        fillColor: '#1976d2',
+        strokeColor: '#0d47a1',
+        fontColor: '#ffffff',
+        fontSize: 14,
+        fontStyle: 1
+      }
+    })
+
+    // Top node
+    const topNode = graph.insertVertex({
+      parent,
+      value: 'Service A',
+      x: 310,
+      y: 20,
+      width: 140,
+      height: 70,
+      style: {
+        shape: 'rounded',
+        fillColor: '#43a047',
+        strokeColor: '#2e7d32',
+        fontColor: '#ffffff',
+        fontSize: 13
+      }
+    })
+
+    // Left node
+    const leftNode = graph.insertVertex({
+      parent,
+      value: 'Service B',
+      x: 30,
+      y: 180,
+      width: 140,
+      height: 70,
+      style: {
+        shape: 'rounded',
+        fillColor: '#fb8c00',
+        strokeColor: '#e65100',
+        fontColor: '#ffffff',
+        fontSize: 13
+      }
+    })
+
+    // Right node
+    const rightNode = graph.insertVertex({
+      parent,
+      value: 'Service C',
+      x: 590,
+      y: 180,
+      width: 140,
+      height: 70,
+      style: {
+        shape: 'rounded',
+        fillColor: '#8e24aa',
+        strokeColor: '#6a1b9a',
+        fontColor: '#ffffff',
+        fontSize: 13
+      }
+    })
+
+    // Bottom left
+    const bottomLeft = graph.insertVertex({
+      parent,
+      value: 'Database',
+      x: 80,
+      y: 380,
+      width: 120,
+      height: 80,
+      style: {
+        shape: 'cylinder',
+        fillColor: '#039be5',
+        strokeColor: '#01579b',
+        fontColor: '#ffffff',
+        fontSize: 13
+      }
+    })
+
+    // Bottom right
+    const bottomRight = graph.insertVertex({
+      parent,
+      value: 'Cache',
+      x: 560,
+      y: 380,
+      width: 120,
+      height: 80,
+      style: {
+        shape: 'hexagon',
+        fillColor: '#e53935',
+        strokeColor: '#c62828',
+        fontColor: '#ffffff',
+        fontSize: 13
+      }
+    })
+
+    // Top-left diagonal element
+    const topLeftDiagonal = graph.insertVertex({
+      parent,
+      value: 'Analytics',
+      x: 30,
+      y: 30,
+      width: 130,
+      height: 65,
+      style: {
+        shape: 'rounded',
+        fillColor: '#00897b',
+        strokeColor: '#00695c',
+        fontColor: '#ffffff',
+        fontSize: 13
+      }
+    })
+
+    // Bottom-right diagonal element
+    const bottomRightDiagonal = graph.insertVertex({
+      parent,
+      value: 'Monitor',
+      x: 600,
+      y: 490,
+      width: 130,
+      height: 65,
+      style: {
+        shape: 'rounded',
+        fillColor: '#6d4c41',
+        strokeColor: '#4e342e',
+        fontColor: '#ffffff',
+        fontSize: 13
+      }
+    })
+
+    // Obstacle in the middle (to force routing around it)
+    const obstacle = graph.insertVertex({
+      parent,
+      value: 'Firewall',
+      x: 310,
+      y: 330,
+      width: 140,
+      height: 60,
+      style: {
+        shape: 'rectangle',
+        fillColor: '#757575',
+        strokeColor: '#424242',
+        fontColor: '#ffffff',
+        fontSize: 12,
+        opacity: 60
+      }
+    })
+
+    void obstacle
+
+    // Create edges that will show different routing behavior
+    // Edge 1: Top to Hub (straight vs curved)
+    const edge1 = graph.insertEdge({
+      parent,
+      source: topNode,
+      target: hub,
+      value: connection.label || '',
+      style: cloneStyle(baseStyle)
+    })
+
+    applyLabelOffset(edge1, connection.labelOffset)
+
+    // Edge 2: Left to Hub (will show orthogonal vs elbow differences)
+    const edge2 = graph.insertEdge({
+      parent,
+      source: leftNode,
+      target: hub,
+      value: '',
+      style: cloneStyle(baseStyle)
+    })
+
+    // Edge 3: Right to Hub
+    const edge3 = graph.insertEdge({
+      parent,
+      source: rightNode,
+      target: hub,
+      value: '',
+      style: cloneStyle(baseStyle)
+    })
+
+    // Edge 4: Hub to Bottom Left (needs to route around obstacle)
+    const edge4 = graph.insertEdge({
+      parent,
+      source: hub,
+      target: bottomLeft,
+      value: '',
+      style: cloneStyle(baseStyle)
+    })
+
+    // Edge 5: Hub to Bottom Right (needs to route around obstacle)
+    const edge5 = graph.insertEdge({
+      parent,
+      source: hub,
+      target: bottomRight,
+      value: '',
+      style: cloneStyle(baseStyle)
+    })
+
+    // Edge 6: Lateral connection (Left to Right, passing above/below hub)
+    const edge6 = graph.insertEdge({
+      parent,
+      source: leftNode,
+      target: rightNode,
+      value: '',
+      style: cloneStyle({
+        ...baseStyle,
+        dashed: true,
+        dashPattern: baseStyle.dashPattern ?? '6 4'
+      })
+    })
+
+    // Edge 7: Diagonal connection (Top-Left to Bottom-Right) - shows routing difference clearly
+    const edge7 = graph.insertEdge({
+      parent,
+      source: topLeftDiagonal,
+      target: bottomRightDiagonal,
+      value: '',
+      style: cloneStyle(baseStyle)
+    })
+
+    // Edge 8: Analytics to Hub
+    const edge8 = graph.insertEdge({
+      parent,
+      source: topLeftDiagonal,
+      target: hub,
+      value: '',
+      style: cloneStyle(baseStyle)
+    })
+
+    // Edge 9: Cache to Monitor
+    const edge9 = graph.insertEdge({
+      parent,
+      source: bottomRight,
+      target: bottomRightDiagonal,
+      value: '',
+      style: cloneStyle(baseStyle)
+    })
+
+    // Info note explaining what to observe
+    graph.insertVertex({
+      parent,
+      value: `Routing-Demo\n\nÄndern Sie die Routing-Einstellungen und beobachten Sie:\n\n• Wie Kanten um das Hindernis (Firewall) routen\n• Unterschiede bei orthogonalen vs. diagonalen Verbindungen\n• Diagonale Verbindung (Analytics ↔ Monitor)\n• Effekte von 'rounded' und 'curved' Optionen\n• Verhalten bei verschiedenen Edge-Styles`,
+      x: 30,
+      y: 570,
+      width: 700,
+      height: 110,
+      style: {
+        shape: 'note',
+        fillColor: '#fff3e0',
+        strokeColor: '#ff9800',
+        fontColor: '#bf360c',
+        fontSize: 11,
+        whiteSpace: 'wrap',
+        align: 'left',
+        verticalAlign: 'top',
+        spacingLeft: 10,
+        spacingTop: 8
+      }
+    })
+
+    // Select the first edge to highlight the current style
+    graph.setSelectionCell(edge1)
+
+    // Suppress unused variable warnings
+    void edge2
+    void edge3
+    void edge4
+    void edge5
+    void edge6
+    void edge7
+    void edge8
+    void edge9
+  } finally {
+    graph.getDataModel().endUpdate()
+  }
+
+  // Fit the entire layout to the visible area
+  graph.fit(10)
+  graph.view.validate()
+  graph.refresh()
 }
