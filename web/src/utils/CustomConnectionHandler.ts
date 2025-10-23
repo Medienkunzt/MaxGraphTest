@@ -44,7 +44,6 @@ export class CustomConnectionHandler extends ConnectionHandler {
       endFill: true,
       align: 'center',
       verticalAlign: 'middle',
-      labelPosition: 'center',
       fontColor: '#000000',
       fontSize: 12,
       ...this.selectedConnection.style
@@ -76,7 +75,6 @@ export class CustomConnectionHandler extends ConnectionHandler {
         endFill: true,
         align: 'center',
         verticalAlign: 'middle',
-        labelPosition: 'center',
         fontColor: '#000000',
         fontSize: 12,
         ...this.selectedConnection.style

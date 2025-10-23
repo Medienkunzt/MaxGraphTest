@@ -1,7 +1,7 @@
 <template>
   <v-menu v-model="menu" :close-on-content-click="false" transition="scale-transition" max-width="300" min-width="200">
     <template #activator="{ props: activatorProps }">
-      <v-text-field v-bind="activatorProps" v-model="textValue" :label="label" variant="outlined" density="compact" prepend-inner-icon="mdi-eyedropper" hide-details>
+      <v-text-field v-bind="activatorProps" v-model="textValue" :label="label" :hint="hint" variant="outlined" density="compact" prepend-inner-icon="mdi-eyedropper" :persistent-hint="!!hint">
         <template #append-inner>
           <span class="color-preview" :style="previewStyle"></span>
         </template>
@@ -14,7 +14,6 @@
       </v-card-actions>
     </v-card>
   </v-menu>
-  <br />
 </template>
 
 <script setup lang="ts">
@@ -22,7 +21,8 @@ import { computed, ref, watch } from 'vue'
 
 interface Props {
   label: string
-  modelValue: string
+  modelValue?: string
+  hint?: string
 }
 
 const props = defineProps<Props>()

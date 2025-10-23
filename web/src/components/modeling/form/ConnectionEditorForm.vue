@@ -38,28 +38,6 @@
 
     <!-- Panels -->
     <v-expansion-panels variant="accordion">
-      <!-- Routing Panel -->
-      <v-expansion-panel value="routing">
-        <v-expansion-panel-title>
-          <v-icon class="mr-2">mdi-map-marker-path</v-icon>
-          Verlauf & Routing
-        </v-expansion-panel-title>
-        <v-expansion-panel-text>
-          <ConnectionRoutingPanel :connection="connection" :visibility-context="visibilityContext" @update="triggerUpdate" />
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-
-      <!-- Ports Panel -->
-      <v-expansion-panel v-if="visibility.isVisible({ minComplexity: 'advanced' })" value="ports">
-        <v-expansion-panel-title>
-          <v-icon class="mr-2">mdi-dock-window</v-icon>
-          Ports & Attachments
-        </v-expansion-panel-title>
-        <v-expansion-panel-text>
-          <ConnectionPortsPanel :connection="connection" :visibility-context="visibilityContext" @update="triggerUpdate" />
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-
       <!-- Line & Marker Panel -->
       <v-expansion-panel value="line-marker">
         <v-expansion-panel-title>
@@ -68,6 +46,17 @@
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <ConnectionLineMarkerPanel :connection="connection" :visibility-context="visibilityContext" @update="triggerUpdate" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
+      <!-- Routing Panel -->
+      <v-expansion-panel value="routing">
+        <v-expansion-panel-title>
+          <v-icon class="mr-2">mdi-map-marker-path</v-icon>
+          Verlauf & Routing
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <ConnectionRoutingPanel :connection="connection" :visibility-context="visibilityContext" @update="triggerUpdate" />
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -92,12 +81,23 @@
           <ConnectionInteractionPanel :connection="connection" :visibility-context="visibilityContext" @update="triggerUpdate" />
         </v-expansion-panel-text>
       </v-expansion-panel>
+
+      <!-- Ports Panel -->
+      <v-expansion-panel v-if="visibility.isVisible({ minComplexity: 'advanced' })" value="ports">
+        <v-expansion-panel-title>
+          <v-icon class="mr-2">mdi-dock-window</v-icon>
+          Ports & Attachments
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <ConnectionPortsPanel :connection="connection" :visibility-context="visibilityContext" @update="triggerUpdate" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
     </v-expansion-panels>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, provide, reactive, ref, watch } from 'vue'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
 import type { ConnectionPreviewMode } from '@/utils/connectionPreview'
 import type { ComplexityLevel, VisibilityContext } from './config/fieldVisibility'
@@ -132,12 +132,20 @@ const triggerUpdate = () => {
 const complexity = ref<ComplexityLevel>('basic')
 const currentLevelMeta = computed(() => complexityLevels.find((l) => l.value === complexity.value) ?? complexityLevels[0])
 
-// Visibility Context
-const visibilityContext = computed<VisibilityContext>(() => ({
+// Visibility Context - als reactive object für provide/inject
+const visibilityContext: VisibilityContext = reactive({
   complexity: complexity.value
-}))
+})
 
-const visibility = computed(() => createVisibilityChecker(visibilityContext.value))
+// Synchronisiere die Complexity-Änderungen mit dem Context
+watch(complexity, (newComplexity) => {
+  visibilityContext.complexity = newComplexity
+})
+
+// Stelle visibilityContext für alle Child-Komponenten bereit
+provide('visibilityContext', visibilityContext)
+
+const visibility = computed(() => createVisibilityChecker(visibilityContext))
 
 // Preview Mode
 const previewModeModel = computed<PreviewMode>({

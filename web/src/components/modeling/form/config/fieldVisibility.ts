@@ -73,7 +73,7 @@ export const complexityLevels: ComplexityLevelMeta[] = [
     value: 'basic',
     label: 'Standard',
     description: 'Nur häufig genutzte Einstellungen anzeigen.',
-    color: 'primary',
+    color: 'success',
     icon: 'mdi-tune-variant'
   },
   {
@@ -94,7 +94,7 @@ export const complexityLevels: ComplexityLevelMeta[] = [
     value: 'dev',
     label: 'Development',
     description: 'Experimentelle Features und Optionen in der Entwicklung.',
-    color: 'warning',
+    color: 'red',
     icon: 'mdi-flask-outline'
   }
 ]

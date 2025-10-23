@@ -1,43 +1,61 @@
 <template>
   <div>
-    <v-switch v-model="localStyle.noEdgeStyle" color="primary" density="compact" class="mb-3" label="Edge Style deaktivieren" hint="Ignoriert den individuell gesetzten Edge Style." persistent-hint @update:model-value="emit('update')" />
+    <FieldWithIndicator>
+      <v-switch v-model="localStyle.noEdgeStyle" color="primary" density="compact" class="mb-3" label="Edge Style deaktivieren" hint="Ignoriert den individuell gesetzten Edge Style." persistent-hint @update:model-value="emit('update')" />
+    </FieldWithIndicator>
 
-    <v-combobox v-if="!localStyle.noEdgeStyle" v-model="edgeStyleValue" :items="edgeStyleOptions" label="Edge Style" variant="outlined" density="compact" clearable class="mb-3" hint="Bestimmt den Algorithmus, der den Verlauf der Kante berechnet." persistent-hint @update:model-value="setEdgeStyle" />
+    <FieldWithIndicator :config="{ condition: () => !localStyle.noEdgeStyle }">
+      <v-combobox v-model="edgeStyleValue" :items="edgeStyleOptions" label="Edge Style" variant="outlined" density="compact" clearable class="mb-3" hint="Bestimmt den Algorithmus, der den Verlauf der Kante berechnet." persistent-hint @update:model-value="setEdgeStyle" />
+    </FieldWithIndicator>
 
-    <v-select v-if="visibility.isVisible({ condition: () => showElbowOption })" v-model="elbowValue" :items="elbowOptions" label="Elbow Richtung" variant="outlined" density="compact" clearable class="mb-3" hint="Richtung des ersten Knicks bei Elbow-Kanten." persistent-hint @update:model-value="setOptionalString('elbow', $event)" />
+    <FieldWithIndicator :config="{ condition: () => showElbowOption }">
+      <v-select v-model="elbowValue" :items="elbowOptions" label="Elbow Richtung" variant="outlined" density="compact" clearable class="mb-3" hint="Richtung des ersten Knicks bei Elbow-Kanten." persistent-hint @update:model-value="setOptionalString('elbow', $event)" />
+    </FieldWithIndicator>
 
-    <v-select v-if="visibility.isVisible({ condition: () => showDirectionOption })" v-model="directionValue" :items="directionOptions" label="Richtungspräferenz" variant="outlined" density="compact" clearable class="mb-3" hint="Steuert die bevorzugte Richtung für Loops und spezielle EdgeStyles." persistent-hint @update:model-value="setOptionalString('direction', $event)" />
+    <FieldWithIndicator :config="{ condition: () => showDirectionOption }">
+      <v-select v-model="directionValue" :items="directionOptions" label="Richtungspräferenz" variant="outlined" density="compact" clearable class="mb-3" hint="Steuert die bevorzugte Richtung für Loops und spezielle EdgeStyles." persistent-hint @update:model-value="setOptionalString('direction', $event)" />
+    </FieldWithIndicator>
 
-    <v-select v-if="visibility.isVisible({ condition: () => showOrthogonalOption })" v-model="orthogonalValue" :items="orthogonalOptions" label="Orthogonaler Verlauf" variant="outlined" density="compact" class="mb-3" hint="Erzwingt rechte Winkel im Linienverlauf." persistent-hint @update:model-value="setTriState('orthogonal', $event)" />
+    <FieldWithIndicator :config="{ condition: () => showOrthogonalOption }">
+      <v-select v-model="orthogonalValue" :items="orthogonalOptions" label="Orthogonaler Verlauf" variant="outlined" density="compact" class="mb-3" hint="Erzwingt rechte Winkel im Linienverlauf." persistent-hint @update:model-value="setTriState('orthogonal', $event)" />
+    </FieldWithIndicator>
 
-    <v-switch v-if="visibility.isVisible({ minComplexity: 'advanced', condition: () => showLoopOptions })" v-model="localStyle.orthogonalLoop" color="primary" density="compact" class="mb-2" label="Orthogonale Loops verwenden" hint="Verwendet orthogonale Schleifen um dasselbe Element." persistent-hint @update:model-value="emit('update')" />
+    <FieldWithIndicator :config="{ minComplexity: 'advanced', condition: () => showLoopOptions }">
+      <v-switch v-model="localStyle.orthogonalLoop" color="primary" density="compact" class="mb-2" label="Orthogonale Loops verwenden" hint="Verwendet orthogonale Schleifen um dasselbe Element." persistent-hint @update:model-value="emit('update')" />
+    </FieldWithIndicator>
 
     <div class="d-flex flex-wrap">
-      <v-switch v-model="localStyle.curved" color="primary" density="compact" class="mr-6 mb-2" label="Kurvige Segmente" hint="Zeichnet Übergänge zwischen Segmenten als Kurven." persistent-hint @update:model-value="emit('update')" />
-      <v-switch v-model="localStyle.rounded" color="primary" density="compact" class="mb-2" label="Abgerundete Knicke" hint="Rundet Ecken an Knickpunkten ab." persistent-hint @update:model-value="emit('update')" />
+      <FieldWithIndicator class="mr-6">
+        <v-switch v-model="localStyle.curved" color="primary" density="compact" class="mb-2" label="Kurvige Segmente" hint="Zeichnet Übergänge zwischen Segmenten als Kurven." persistent-hint @update:model-value="emit('update')" />
+      </FieldWithIndicator>
+      <FieldWithIndicator>
+        <v-switch v-model="localStyle.rounded" color="primary" density="compact" class="mb-2" label="Abgerundete Knicke" hint="Rundet Ecken an Knickpunkten ab." persistent-hint @update:model-value="emit('update')" />
+      </FieldWithIndicator>
     </div>
 
-    <v-text-field v-if="visibility.isVisible({ minComplexity: 'advanced', condition: () => showSegmentLength })" v-model="segmentValue" label="Segmentlänge (px)" variant="outlined" density="compact" type="number" class="mb-3" hint="Abstand zwischen Segmenten bei segmentierten Routen." persistent-hint @update:model-value="setStyleNumber('segment', $event, { min: 1, allowNegative: false })" />
+    <FieldWithIndicator :config="{ minComplexity: 'advanced', condition: () => showSegmentLength }">
+      <v-text-field v-model="segmentValue" label="Segmentlänge (px)" variant="outlined" density="compact" type="number" class="mb-3" hint="Abstand zwischen Segmenten bei segmentierten Routen." persistent-hint @update:model-value="setStyleNumber('segment', $event, { min: 1, allowNegative: false })" />
+    </FieldWithIndicator>
 
-    <v-text-field
-      v-if="visibility.isVisible({ minComplexity: 'expert', condition: () => showJettyControls })"
-      v-model="jettySizeValue"
-      label="Jetty Größe (px oder auto)"
-      variant="outlined"
-      density="compact"
-      class="mb-3"
-      hint="Abstand der Verbindung von Ports; 'auto' nutzt MaxGraph-Defaults."
-      persistent-hint
-      @update:model-value="setStyleAutoOrNumber('jettySize', $event, { min: 0, allowNegative: false })"
-    />
+    <FieldWithIndicator :config="{ minComplexity: 'expert', condition: () => showJettyControls }">
+      <v-text-field v-model="jettySizeValue" label="Jetty Größe (px oder auto)" variant="outlined" density="compact" class="mb-3" hint="Abstand der Verbindung von Ports; 'auto' nutzt MaxGraph-Defaults." persistent-hint @update:model-value="setStyleAutoOrNumber('jettySize', $event, { min: 0, allowNegative: false })" />
+    </FieldWithIndicator>
 
-    <v-text-field v-if="visibility.isVisible({ minComplexity: 'expert', condition: () => showJettyControls })" v-model="sourceJettySizeValue" label="Jetty Quelle (px oder auto)" variant="outlined" density="compact" class="mb-3" hint="Jetty-Größe nur für die Quelle." persistent-hint @update:model-value="setStyleAutoOrNumber('sourceJettySize', $event, { min: 0, allowNegative: false })" />
+    <FieldWithIndicator :config="{ minComplexity: 'expert', condition: () => showJettyControls }">
+      <v-text-field v-model="sourceJettySizeValue" label="Jetty Quelle (px oder auto)" variant="outlined" density="compact" class="mb-3" hint="Jetty-Größe nur für die Quelle." persistent-hint @update:model-value="setStyleAutoOrNumber('sourceJettySize', $event, { min: 0, allowNegative: false })" />
+    </FieldWithIndicator>
 
-    <v-text-field v-if="visibility.isVisible({ minComplexity: 'expert', condition: () => showJettyControls })" v-model="targetJettySizeValue" label="Jetty Ziel (px oder auto)" variant="outlined" density="compact" class="mb-3" hint="Jetty-Größe nur für das Ziel." persistent-hint @update:model-value="setStyleAutoOrNumber('targetJettySize', $event, { min: 0, allowNegative: false })" />
+    <FieldWithIndicator :config="{ minComplexity: 'expert', condition: () => showJettyControls }">
+      <v-text-field v-model="targetJettySizeValue" label="Jetty Ziel (px oder auto)" variant="outlined" density="compact" class="mb-3" hint="Jetty-Größe nur für das Ziel." persistent-hint @update:model-value="setStyleAutoOrNumber('targetJettySize', $event, { min: 0, allowNegative: false })" />
+    </FieldWithIndicator>
 
-    <v-text-field v-if="visibility.isVisible({ minComplexity: 'expert', condition: () => showJettyControls })" v-model="routingCenterXValue" label="Routing Center X" variant="outlined" density="compact" type="number" class="mb-3" hint="Verschiebt den berechneten Mittelpunkt horizontal." persistent-hint @update:model-value="setStyleNumber('routingCenterX', $event, { allowNegative: true })" />
+    <FieldWithIndicator :config="{ minComplexity: 'expert', condition: () => showJettyControls }">
+      <v-text-field v-model="routingCenterXValue" label="Routing Center X" variant="outlined" density="compact" type="number" class="mb-3" hint="Verschiebt den berechneten Mittelpunkt horizontal." persistent-hint @update:model-value="setStyleNumber('routingCenterX', $event, { allowNegative: true })" />
+    </FieldWithIndicator>
 
-    <v-text-field v-if="visibility.isVisible({ minComplexity: 'expert', condition: () => showJettyControls })" v-model="routingCenterYValue" label="Routing Center Y" variant="outlined" density="compact" type="number" class="mb-3" hint="Verschiebt den berechneten Mittelpunkt vertikal." persistent-hint @update:model-value="setStyleNumber('routingCenterY', $event, { allowNegative: true })" />
+    <FieldWithIndicator :config="{ minComplexity: 'expert', condition: () => showJettyControls }">
+      <v-text-field v-model="routingCenterYValue" label="Routing Center Y" variant="outlined" density="compact" type="number" class="mb-3" hint="Verschiebt den berechneten Mittelpunkt vertikal." persistent-hint @update:model-value="setStyleNumber('routingCenterY', $event, { allowNegative: true })" />
+    </FieldWithIndicator>
   </div>
 </template>
 
@@ -45,8 +63,8 @@
 import { computed, watch } from 'vue'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
 import type { VisibilityContext } from '../config/fieldVisibility'
-import { createVisibilityChecker } from '../config/fieldVisibility'
 import { useStyleHelpers } from '../composables/useStyleHelpers'
+import FieldWithIndicator from './FieldWithIndicator.vue'
 
 interface Props {
   connection: DiagramConnection
@@ -57,7 +75,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{ update: [] }>()
 
 const localStyle = computed(() => props.connection.style as Record<string, any>)
-const visibility = computed(() => createVisibilityChecker(props.visibilityContext))
 
 const { setOptionalString, setStyleNumber, setStyleAutoOrNumber, setTriState, clearStyleKeys } = useStyleHelpers(localStyle, emit)
 

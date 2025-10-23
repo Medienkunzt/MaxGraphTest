@@ -110,7 +110,6 @@ const describeStyleSummary = (style: EdgeStyle): string => {
   if (style.endArrow && style.endArrow !== 'none') fragments.push(`Endpfeil: ${style.endArrow}`)
   if (style.strokeWidth) fragments.push(`Linienstärke: ${style.strokeWidth}px`)
   if (style.strokeColor) fragments.push(`Linienfarbe: ${style.strokeColor}`)
-  if (style.labelPosition) fragments.push(`Label-Position: ${style.labelPosition}`)
   if (style.portConstraint) fragments.push(`Port-Constraint: ${style.portConstraint}`)
 
   if (fragments.length === 0) {

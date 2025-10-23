@@ -106,7 +106,6 @@ const addNewConnection = () => {
       endFill: true,
       align: 'center',
       verticalAlign: 'middle',
-      labelPosition: 'center',
       fontColor: '#000000',
       fontSize: 12,
       rounded: false,
