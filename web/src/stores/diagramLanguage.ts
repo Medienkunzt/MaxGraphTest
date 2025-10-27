@@ -526,7 +526,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#000000',
             fontSize: 10
-          }
+          },
+          additionalLabels: []
         },
         // Realisierung (Interface-Implementierung)
         {
@@ -551,7 +552,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#000000',
             fontSize: 10
-          }
+          },
+          additionalLabels: []
         },
         // Assoziation
         {
@@ -573,9 +575,10 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'center',
             verticalAlign: 'middle',
             labelPosition: 'center',
-            fontColor: '#000000',
-            fontSize: 10
-          }
+          fontColor: '#000000',
+          fontSize: 10
+          },
+          additionalLabels: []
         },
         // Gerichtete Assoziation
         {
@@ -597,9 +600,10 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'center',
             verticalAlign: 'middle',
             labelPosition: 'center',
-            fontColor: '#000000',
-            fontSize: 10
-          }
+          fontColor: '#000000',
+          fontSize: 10
+          },
+          additionalLabels: []
         },
         // Aggregation
         {
@@ -621,9 +625,10 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'center',
             verticalAlign: 'middle',
             labelPosition: 'center',
-            fontColor: '#000000',
-            fontSize: 10
-          }
+          fontColor: '#000000',
+          fontSize: 10
+          },
+          additionalLabels: []
         },
         // Komposition
         {
@@ -645,9 +650,10 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'center',
             verticalAlign: 'middle',
             labelPosition: 'center',
-            fontColor: '#000000',
-            fontSize: 10
-          }
+          fontColor: '#000000',
+          fontSize: 10
+          },
+          additionalLabels: []
         },
         // Abhängigkeit
         {
@@ -672,7 +678,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#666666',
             fontSize: 9
-          }
+          },
+          additionalLabels: []
         },
         // Notiz-Verbindung
         {
@@ -697,7 +704,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             labelPosition: 'center',
             fontColor: '#9e9e9e',
             fontSize: 9
-          }
+          },
+          additionalLabels: []
         }
       ],
       syntax: [

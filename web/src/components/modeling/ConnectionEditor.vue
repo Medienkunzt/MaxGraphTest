@@ -111,7 +111,8 @@ const addNewConnection = () => {
       rounded: false,
       curved: false
     },
-    labelOffset: {}
+    labelOffset: {},
+    additionalLabels: []
   }
 
   store.addConnectionToLanguage(store.currentLanguage.id, newConnection)

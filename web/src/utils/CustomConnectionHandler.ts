@@ -1,6 +1,7 @@
 import { ConnectionHandler, CellState, InternalMouseEvent, type Graph } from '@maxgraph/core'
 import type { CellStyle } from '@maxgraph/core'
 import type { DiagramConnection } from '@/model/Connection'
+import { applyConnectionAdditionalLabels } from '@/utils/connectionLabelHelpers'
 
 /**
  * Custom ConnectionHandler, der den Style der ausgewählten Verbindung verwendet
@@ -89,6 +90,7 @@ export class CustomConnectionHandler extends ConnectionHandler {
         ;(edge as any).connectionId = connectionId
         ;(edge as any).connectionStyle = connectionStyle
         ;(edge as any).connectionLabelOffset = this.selectedConnection.labelOffset
+        ;(edge as any).connectionAdditionalLabels = this.selectedConnection.additionalLabels
 
         const geometry = edge.getGeometry()
         if (geometry) {
@@ -101,6 +103,8 @@ export class CustomConnectionHandler extends ConnectionHandler {
           }
           edge.setGeometry(clone)
         }
+
+        applyConnectionAdditionalLabels(this.graph, edge, this.selectedConnection)
       }
       return edge
     }

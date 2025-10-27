@@ -1,6 +1,7 @@
 import { Graph, Point } from '@maxgraph/core'
 import type { CellStyle } from '@maxgraph/core'
 import type { DiagramConnection } from '@/model/Connection'
+import { applyConnectionAdditionalLabels } from './connectionLabelHelpers'
 
 export type ConnectionPreviewMode = 'simple' | 'scenario' | 'routing'
 
@@ -67,6 +68,7 @@ export const renderSimpleConnectionPreview = (graph: Graph, connection: DiagramC
 
     applyLabelOffset(edge, connection.labelOffset)
     applyPoints(edge, connection.points)
+    applyConnectionAdditionalLabels(graph, edge, connection)
 
     graph.setSelectionCell(edge)
   } finally {
@@ -184,6 +186,7 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
 
     applyLabelOffset(requestEdge, connection.labelOffset)
     applyPoints(requestEdge, connection.points)
+    applyConnectionAdditionalLabels(graph, requestEdge, connection)
 
     const forwardEdge = graph.insertEdge({
       parent,
@@ -422,6 +425,7 @@ export const renderRoutingConnectionPreview = (graph: Graph, connection: Diagram
     })
 
     applyLabelOffset(edge1, connection.labelOffset)
+    applyConnectionAdditionalLabels(graph, edge1, connection)
 
     // Edge 2: Left to Hub (will show orthogonal vs elbow differences)
     const edge2 = graph.insertEdge({

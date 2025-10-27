@@ -71,6 +71,17 @@
         </v-expansion-panel-text>
       </v-expansion-panel>
 
+      <!-- Additional Labels Panel -->
+      <v-expansion-panel value="additional-labels">
+        <v-expansion-panel-title>
+          <v-icon class="mr-2">mdi-label-multiple</v-icon>
+          Zusätzliche Labels
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <ConnectionAdditionalLabelsPanel :connection="connection" :visibility-context="visibilityContext" @update="triggerUpdate" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
       <!-- Interaction Panel -->
       <v-expansion-panel v-if="visibility.isVisible({ minComplexity: 'advanced' })" value="interaction">
         <v-expansion-panel-title>
@@ -107,6 +118,7 @@ import ConnectionPortsPanel from './panels/ConnectionPortsPanel.vue'
 import ConnectionLineMarkerPanel from './panels/ConnectionLineMarkerPanel.vue'
 import ConnectionLabelPanel from './panels/ConnectionLabelPanel.vue'
 import ConnectionInteractionPanel from './panels/ConnectionInteractionPanel.vue'
+import ConnectionAdditionalLabelsPanel from './panels/ConnectionAdditionalLabelsPanel.vue'
 
 type PreviewMode = ConnectionPreviewMode
 

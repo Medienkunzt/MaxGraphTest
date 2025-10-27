@@ -125,6 +125,9 @@ class MyCustomGraph extends Graph {
     if (allow === false) {
       return false
     }
+    if (allow === true) {
+      return true
+    }
     return super.isCellEditable(cell)
   }
 }
