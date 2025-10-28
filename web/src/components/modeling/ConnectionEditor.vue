@@ -4,7 +4,7 @@
       <!-- Liste der Verbindungen (links) -->
       <v-col cols="4" class="pr-2 editor-col">
         <div class="scroll-column">
-          <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-id="selectedConnectionId" empty-text="Keine Verbindungen definiert" title-field="name" :icon-map="connectionIconMap" :color-map="connectionColorMap" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
+          <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-index="selectedConnectionIndex" empty-text="Keine Verbindungen definiert" title-field="type" subtitle-field="label" icon-field="listIcon" color-field="listColor" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
         </div>
       </v-col>
 
@@ -26,7 +26,7 @@
           <v-divider />
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :preview-connection="selectedConnection" :preview-mode="previewMode" :language-connections="connections" :language-elements="elements" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :preview-connection="selectedConnection" :preview-mode="previewMode" :language-connections="connections" :language-elements="elements" :language-syntax="languageSyntaxForCanvas" />
             </div>
             <v-alert v-if="!selectedConnection" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Verbindung aus, um eine Vorschau zu sehen </v-alert>
           </v-card-text>
@@ -62,7 +62,7 @@ const store = useDiagramLanguageStore()
 const { languages, setCurrentLanguage } = useDiagramLanguages()
 
 // State
-const selectedConnectionId = ref<string>('')
+const selectedConnectionIndex = ref<number>(-1)
 const canvasModel = ref<GraphDataModel>()
 const drawingCanvasRef = ref()
 const previewMode = ref<ConnectionPreviewMode>('simple')
@@ -70,7 +70,11 @@ const previewMode = ref<ConnectionPreviewMode>('simple')
 // Computed - Verbindungen aus Store
 const connections = computed(() => store.currentLanguage?.connections || [])
 const elements = computed(() => store.currentLanguage?.elements || [])
-const selectedConnection = computed(() => connections.value.find((conn) => conn.id === selectedConnectionId.value))
+const languageSyntaxForCanvas = computed(() => store.currentLanguage?.syntax ?? [])
+const selectedConnection = computed<DiagramConnection | undefined>(() => {
+  if (selectedConnectionIndex.value < 0) return undefined
+  return connections.value[selectedConnectionIndex.value]
+})
 
 // Methods
 const updateAll = () => {
@@ -78,8 +82,8 @@ const updateAll = () => {
   debouncedUpdate()
   debouncedStoreUpdate()
 }
-const selectConnection = (connectionId: string) => {
-  selectedConnectionId.value = connectionId
+const selectConnection = (connectionIndex: number) => {
+  selectedConnectionIndex.value = connectionIndex
   nextTick(() => {
     setTimeout(() => renderConnectionPreview(), 50)
   })
@@ -89,10 +93,12 @@ const addNewConnection = () => {
   if (!store.currentLanguage) return
 
   const newConnection: DiagramConnection = {
-    id: `connection_${Date.now()}`,
-    name: 'Neue Verbindung',
-    label: '',
-    type: 'association',
+    type: `connection_${Date.now()}`,
+    label: 'Neue Verbindung',
+    defaultLabel: '',
+    connectionType: 'association',
+    listIcon: 'mdi-vector-line',
+    listColor: 'blue',
     style: {
       shape: 'connector',
       strokeColor: '#000000',
@@ -116,37 +122,17 @@ const addNewConnection = () => {
   }
 
   store.addConnectionToLanguage(store.currentLanguage.id, newConnection)
-  selectedConnectionId.value = newConnection.id
+  selectedConnectionIndex.value = connections.value.length - 1
 }
 
-const deleteConnection = (connectionId: string) => {
+const deleteConnection = (connectionIndex: number) => {
   if (!store.currentLanguage) return
 
-  store.removeConnectionFromLanguage(store.currentLanguage.id, connectionId)
+  const connection = connections.value[connectionIndex]
+  if (!connection) return
 
-  if (selectedConnectionId.value === connectionId) {
-    const remainingConnections = connections.value
-    selectedConnectionId.value = remainingConnections.length > 0 ? remainingConnections[0].id : ''
-  }
-}
-
-// Icon und Color Maps für EntityList
-const connectionIconMap = {
-  association: 'mdi-minus',
-  inheritance: 'mdi-triangle-outline',
-  composition: 'mdi-rhombus',
-  aggregation: 'mdi-rhombus-outline',
-  dependency: 'mdi-dots-horizontal',
-  realization: 'mdi-triangle'
-}
-
-const connectionColorMap = {
-  association: 'blue',
-  inheritance: 'green',
-  composition: 'red',
-  aggregation: 'orange',
-  dependency: 'purple',
-  realization: 'teal'
+  store.removeConnectionFromLanguage(store.currentLanguage.id, connection.type)
+  selectedConnectionIndex.value = -1
 }
 
 // Vorschau-Logik wie im ElementEditor
@@ -194,7 +180,7 @@ const debouncedUpdate = () => {
 
 const debouncedStoreUpdate = () => {
   if (selectedConnection.value && store.currentLanguage) {
-    store.updateConnectionInLanguage(store.currentLanguage.id, selectedConnection.value.id, selectedConnection.value)
+    store.updateConnectionInLanguage(store.currentLanguage.id, selectedConnection.value.type, selectedConnection.value)
   }
 }
 
@@ -239,10 +225,6 @@ watch(
 onMounted(() => {
   // Route laden
   loadLanguageFromRoute()
-
-  if (connections.value.length > 0) {
-    selectedConnectionId.value = connections.value[0].id
-  }
 
   // Canvas initialisieren mit mehreren Versuchen (wie im ElementEditor)
   const initializeCanvas = (attempts = 0) => {

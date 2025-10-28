@@ -17,14 +17,14 @@ const sanitizeGeometryValue = (value: number | undefined, fallback = 0): number 
 }
 
 const ensureLabelCellId = (definition: ConnectionLabelCell): string => {
-  const trimmed = typeof definition.id === 'string' ? definition.id.trim() : ''
+  const trimmed = typeof definition.type === 'string' ? definition.type.trim() : ''
   if (!trimmed) {
     const fallback = `Label ${Math.floor(Math.random() * 100000)}`
-    definition.id = fallback
+    definition.type = fallback
     return fallback
   }
-  if (trimmed !== definition.id) {
-    definition.id = trimmed
+  if (trimmed !== definition.type) {
+    definition.type = trimmed
   }
   return trimmed
 }

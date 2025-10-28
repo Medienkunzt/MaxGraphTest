@@ -51,7 +51,7 @@ export class CustomConnectionHandler extends ConnectionHandler {
     }
 
     // Erstelle Edge mit dem Style
-    const edge = this.graph.createEdge(null, this.selectedConnection.label || '', null, null, null, style)
+    const edge = this.graph.createEdge(null, this.selectedConnection.defaultLabel || '', null, null, null, style)
     return new CellState(this.graph.view, edge, this.graph.getCellStyle(edge))
   }
 
@@ -62,9 +62,8 @@ export class CustomConnectionHandler extends ConnectionHandler {
   override insertEdge(parent: any, id: string | null, value: any, source: any, target: any, style?: any) {
     // Wenn eine Verbindung ausgewählt ist, füge Metadaten hinzu
     if (this.selectedConnection) {
-      const connectionType = this.selectedConnection.type
-      const connectionId = this.selectedConnection.id
-      const edgeLabel = this.selectedConnection.label ?? ''
+      const connectionId = this.selectedConnection.type
+      const edgeLabel = this.selectedConnection.defaultLabel ?? ''
       const connectionStyle: CellStyle = {
         shape: 'connector',
         strokeColor: '#000000',
@@ -86,7 +85,6 @@ export class CustomConnectionHandler extends ConnectionHandler {
       if (edge) {
         // Connection-Instanzen sind standardmäßig verbindbar
         edge.setConnectable(true)
-        ;(edge as any).connectionType = connectionType
         ;(edge as any).connectionId = connectionId
         ;(edge as any).connectionStyle = connectionStyle
         ;(edge as any).connectionLabelOffset = this.selectedConnection.labelOffset

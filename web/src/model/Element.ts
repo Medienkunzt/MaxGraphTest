@@ -35,10 +35,9 @@ export interface CollapsedAppearance {
 }
 
 interface BaseElement<TChild> {
-  id: string
-  label: string
-  name: string
-  type: 'canvas2d' | 'predefined' | 'swimlane'
+  type: string // Typ-Identifikator (z.B. "uml-class") - entspricht maxGraph's Multiplicity.type und dient als Bezeichnung
+  defaultLabel: string // Standard-Label für neue Instanzen im Graph (z.B. "Klassenname")
+  renderMode: 'canvas2d' | 'predefined' | 'swimlane' // Art der Darstellung
   canvas?: string
   predefinedShape?: string
   style: ElementStyle

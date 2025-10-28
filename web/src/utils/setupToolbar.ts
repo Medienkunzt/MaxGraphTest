@@ -3,11 +3,13 @@ import type { Graph, Cell } from '@maxgraph/core'
 import { MaxToolbar, Geometry, cellArrayUtils } from '@maxgraph/core'
 import { Cell as MaxGraphCell } from '@maxgraph/core'
 import { addCellsToContainer } from './setupSwimlaneSupport'
+import type { DiagramElement } from '@/model/Element'
+import { createCellFromElement, addCellToGraph } from './elementFactory'
 
 /**
  * Shape-Konfiguration für die Toolbar
  */
-interface ShapeConfig {
+export interface ShapeConfig {
   name: string
   width: number
   height: number
@@ -249,6 +251,74 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
   } catch (error) {
     console.error('Error initializing toolbar:', error)
   }
+}
+
+/**
+ * Erstellt Shape-Konfigurationen aus DiagramElement-Definitionen
+ *
+ * Wandelt DiagramElement-Definitionen in das Format um,
+ * das von der MaxGraph Toolbar erwartet wird.
+ *
+ * @param elements - Array von DiagramElement-Definitionen
+ * @param placeholderImage - Platzhalter-Bild für Shapes
+ * @returns Array von ShapeConfig-Definitionen
+ */
+export function buildShapesFromElements(elements: DiagramElement[], placeholderImage: string): ShapeConfig[] {
+  return elements.map((element) => {
+    const width = element.width ?? 120
+    const height = element.height ?? 80
+    const style = element.style ?? {}
+
+    // Basis-Style: Übernehme ALLE Style-Eigenschaften aus der Element-Definition
+    const baseStyle: Record<string, any> = {
+      shape: element.renderMode === 'swimlane' ? 'swimlane' : element.predefinedShape ?? 'rectangle',
+      ...style, // Alle Style-Eigenschaften aus Definition übernehmen
+      // Nur Defaults für fehlende Werte (identisch zu elementFactory.ts)
+      strokeColor: style.strokeColor ?? 'black',
+      fillColor: style.fillColor ?? '#f5f5f5',
+      strokeWidth: style.strokeWidth ?? 1,
+      fontSize: style.fontSize ?? 11,
+      fontColor: style.fontColor ?? 'black',
+      fontFamily: style.fontFamily ?? 'Arial',
+      align: style.align ?? 'center',
+      verticalAlign: style.verticalAlign ?? 'middle'
+    }
+
+    // Swimlane-spezifische Eigenschaften (nur Defaults, wenn nicht gesetzt)
+    if (element.renderMode === 'swimlane') {
+      if (baseStyle.startSize === undefined) baseStyle.startSize = 22
+      if (baseStyle.horizontal === undefined) baseStyle.horizontal = false
+      if (baseStyle.labelBackgroundColor === undefined) baseStyle.labelBackgroundColor = 'transparent'
+      if (baseStyle.childSpacing === undefined) baseStyle.childSpacing = 10
+      if (baseStyle.childSpacingX === undefined) baseStyle.childSpacingX = 10
+      if (baseStyle.autoFitWidth === undefined) baseStyle.autoFitWidth = true
+      if (baseStyle.autoStackY === undefined) baseStyle.autoStackY = true
+      if (baseStyle.autoResize === undefined) baseStyle.autoResize = true
+    }
+
+    return {
+      name: element.type,
+      label: element.defaultLabel ?? element.type,
+      width,
+      height,
+      style: baseStyle,
+      tooltip: element.type,
+      image: placeholderImage,
+      dropHandler: (graphInstance: Graph, parentCell: Cell | undefined, position: { x?: number; y?: number }) => {
+        const parentTarget = parentCell ?? graphInstance.getDefaultParent()
+        const x = (position.x ?? 0) - width / 2
+        const y = (position.y ?? 0) - height / 2
+
+        // Nutze die zentrale Element-Erstellungsmethode
+        const cellToInsert = createCellFromElement(element, x, y)
+
+        // Füge zum Graph hinzu mit Child-Elementen
+        addCellToGraph(graphInstance, cellToInsert, element, parentTarget)
+
+        graphInstance.setSelectionCell(cellToInsert)
+      }
+    }
+  })
 }
 
 /**

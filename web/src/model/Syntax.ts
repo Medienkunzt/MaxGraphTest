@@ -1,36 +1,28 @@
-export interface SyntaxRuleConfig {
-  // Structure rule config
-  elementType?: string[]
-  minOccurrences?: number
-  maxOccurrences?: number
-  requiresContainer?: boolean
+export type SyntaxRuleType = 'multiplicity'
 
-  // Connection rule config
-  sourceTypes?: string[]
-  targetTypes?: string[]
-  connectionTypes?: string[]
-  allowSelfConnection?: boolean
-  allowMultipleConnections?: boolean
-
-  // Attribute rule config
-  attributeName?: string
-  requiredFor?: string[]
-  pattern?: string
-  required?: boolean
-
-  // Naming rule config
-  appliesTo?: string[]
-  prefix?: string
-  suffix?: string
-  caseSensitive?: boolean
+export interface MultiplicityRuleConfig {
+  source: boolean
+  type: string | null // Element-Typ-Name (entspricht DiagramElement.type)
+  attr: string | null
+  value: string | null
+  min: number
+  max: number | null
+  validNeighbors: string[] // Array von Element-Typ-Namen (DiagramElement.type)
+  countError: string
+  typeError: string
+  validNeighborsAllowed: boolean
 }
 
-export interface DiagramSyntax {
-  id: string
-  name: string
-  label: string // Gleiche Konsistenz wie andere Interfaces
-  type: string
-  severity: string
+export interface SyntaxRuleBase {
+  type: string // Regel-Typ-Identifikator (z.B. "multiplicity-class-interface")
+  label: string // Anzeigename für UI (z.B. "Klassen & Interfaces")
+  ruleType: SyntaxRuleType // Art der Regel ("multiplicity", etc.)
   description: string
-  config: SyntaxRuleConfig
 }
+
+export interface MultiplicitySyntaxRule extends SyntaxRuleBase {
+  ruleType: 'multiplicity'
+  config: MultiplicityRuleConfig
+}
+
+export type DiagramSyntax = MultiplicitySyntaxRule

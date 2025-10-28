@@ -4,7 +4,7 @@
       <!-- Syntax-Regeln Liste (links) -->
       <v-col cols="4" class="pr-2 editor-col">
         <div class="scroll-column">
-          <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-id="selectedRuleId" empty-text="Keine Syntax-Regeln definiert" :show-severity-chip="true" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
+          <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-index="selectedRuleIndex" empty-text="Keine Syntax-Regeln definiert" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
         </div>
       </v-col>
 
@@ -28,7 +28,7 @@
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="syntaxRules" />
             </div>
 
             <v-alert v-if="!selectedRule" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Syntax-Regel aus, um eine Vorschau zu sehen </v-alert>
@@ -65,62 +65,67 @@ const store = useDiagramLanguageStore()
 const { languages, setCurrentLanguage } = useDiagramLanguages()
 
 // State
-const selectedRuleId = ref<string>('')
+const selectedRuleIndex = ref<number>(-1)
 const canvasModel = ref<GraphDataModel>()
 const drawingCanvasRef = ref()
 
 // Computed
 const syntaxRules = computed(() => store.currentLanguage?.syntax || [])
-const selectedRule = computed(() => syntaxRules.value.find((rule: DiagramSyntax) => rule.id === selectedRuleId.value))
+const selectedRule = computed<DiagramSyntax | undefined>(() => {
+  if (selectedRuleIndex.value < 0) return undefined
+  return syntaxRules.value[selectedRuleIndex.value]
+})
 const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
 const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
 
 // Methods
-const selectRule = (ruleId: string) => {
-  selectedRuleId.value = ruleId
+const selectRule = (ruleIndex: number) => {
+  selectedRuleIndex.value = ruleIndex
 }
 
 const addNewRule = () => {
   if (!store.currentLanguage) return
 
   const newRule: DiagramSyntax = {
-    id: `rule_${Date.now()}`,
-    name: 'Neue Regel',
+    type: `multiplicity_${Date.now()}`,
     label: 'Neue Regel',
-    type: 'structure',
-    severity: 'warning',
+    ruleType: 'multiplicity',
     description: '',
-    config: {}
+    config: {
+      source: true,
+      type: null,
+      attr: null,
+      value: null,
+      min: 0,
+      max: null,
+      validNeighbors: [],
+      countError: '',
+      typeError: '',
+      validNeighborsAllowed: true
+    }
   }
 
   store.addSyntaxToLanguage(store.currentLanguage.id, newRule)
-  selectedRuleId.value = newRule.id
+  selectedRuleIndex.value = syntaxRules.value.length - 1
 }
 
-const deleteRule = (ruleId: string) => {
+const deleteRule = (ruleIndex: number) => {
   if (!store.currentLanguage) return
 
-  store.removeSyntaxFromLanguage(store.currentLanguage.id, ruleId)
+  const rule = syntaxRules.value[ruleIndex]
+  if (!rule) return
 
-  if (selectedRuleId.value === ruleId) {
-    const remainingRules = syntaxRules.value
-    selectedRuleId.value = remainingRules.length > 0 ? remainingRules[0].id : ''
-  }
+  store.removeSyntaxFromLanguage(store.currentLanguage.id, rule.type)
+  selectedRuleIndex.value = -1
 }
 
 // Icon und Color Maps für EntityList
 const ruleIconMap = {
-  structure: 'mdi-sitemap',
-  connection: 'mdi-connection',
-  attribute: 'mdi-format-list-bulleted',
-  naming: 'mdi-text'
+  multiplicity: 'mdi-function-variant'
 }
 
 const ruleColorMap = {
-  structure: 'blue',
-  connection: 'green',
-  attribute: 'orange',
-  naming: 'purple'
+  multiplicity: 'blue'
 }
 
 // Update-Funktionen
@@ -138,7 +143,10 @@ const debouncedUpdate = () => {
 
 const debouncedStoreUpdate = () => {
   if (selectedRule.value && store.currentLanguage) {
-    store.updateSyntaxInLanguage(store.currentLanguage.id, selectedRule.value.id, selectedRule.value)
+    const ruleType = selectedRule.value.type
+    if (ruleType) {
+      store.updateSyntaxInLanguage(store.currentLanguage.id, ruleType, selectedRule.value)
+    }
   }
 }
 
@@ -175,10 +183,6 @@ watch(
 onMounted(() => {
   // Route laden
   loadLanguageFromRoute()
-
-  if (syntaxRules.value.length > 0) {
-    selectedRuleId.value = syntaxRules.value[0].id
-  }
 
   // Canvas initialisieren mit mehreren Versuchen (wie im ElementEditor)
   const initializeCanvas = (attempts = 0) => {
@@ -245,6 +249,8 @@ onMounted(() => {
 }
 
 .preview-canvas {
+  flex: 1;
+  min-height: 280px;
   border-radius: 4px;
   overflow: hidden;
 }

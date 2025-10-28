@@ -55,9 +55,8 @@ import { useGraphOperations } from '@/composables/useGraphOperations'
 import { useZoomOperations } from '@/composables/useZoomOperations'
 import { useGridSettings } from '@/composables/useGridSettings'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
-import { setupToolbar, createDefaultShapes } from '@/utils/setupToolbar'
+import { setupToolbar, createDefaultShapes, buildShapesFromElements } from '@/utils/setupToolbar'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
-import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
 import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, renderRoutingConnectionPreview } from '@/utils/connectionPreview'
 import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
 import GraphSettings from './GraphSettings.vue'
@@ -444,62 +443,7 @@ const buildLanguageShapes = computed(() => {
     })
   }
 
-  return elements.map((element) => {
-    const width = element.width ?? 120
-    const height = element.height ?? 80
-    const style = element.style ?? {}
-
-    // Basis-Style: Übernehme ALLE Style-Eigenschaften aus der Element-Definition
-    const baseStyle: Record<string, any> = {
-      shape: element.type === 'swimlane' ? 'swimlane' : element.predefinedShape ?? 'rectangle',
-      ...style, // Alle Style-Eigenschaften aus Definition übernehmen
-      // Nur Defaults für fehlende Werte (identisch zu ElementEditor.vue)
-      strokeColor: style.strokeColor ?? 'black',
-      fillColor: style.fillColor ?? '#f5f5f5',
-      strokeWidth: style.strokeWidth ?? 1,
-      fontSize: style.fontSize ?? 11,
-      fontColor: style.fontColor ?? 'black',
-      fontFamily: style.fontFamily ?? 'Arial',
-      align: style.align ?? 'center',
-      verticalAlign: style.verticalAlign ?? 'middle'
-    }
-
-    if (element.type === 'swimlane') {
-      // Swimlane-spezifische Eigenschaften (nur Defaults, wenn nicht gesetzt)
-      // Defaults identisch zu ElementEditor.vue
-      if (baseStyle.startSize === undefined) baseStyle.startSize = 22
-      if (baseStyle.horizontal === undefined) baseStyle.horizontal = false
-      if (baseStyle.labelBackgroundColor === undefined) baseStyle.labelBackgroundColor = 'transparent'
-      if (baseStyle.childSpacing === undefined) baseStyle.childSpacing = 10
-      if (baseStyle.childSpacingX === undefined) baseStyle.childSpacingX = 10
-      if (baseStyle.autoFitWidth === undefined) baseStyle.autoFitWidth = true
-      if (baseStyle.autoStackY === undefined) baseStyle.autoStackY = true
-      if (baseStyle.autoResize === undefined) baseStyle.autoResize = true
-    }
-
-    return {
-      name: element.name,
-      label: element.label ?? element.name,
-      width,
-      height,
-      style: baseStyle,
-      tooltip: element.name,
-      image: img_elementPlaceholder,
-      dropHandler: (graphInstance: Graph, parentCell: Cell | undefined, position: { x?: number; y?: number }) => {
-        const parentTarget = parentCell ?? graphInstance.getDefaultParent()
-        const x = (position.x ?? 0) - width / 2
-        const y = (position.y ?? 0) - height / 2
-
-        // Nutze die zentrale Element-Erstellungsmethode
-        const cellToInsert = createCellFromElement(element, x, y)
-
-        // Füge zum Graph hinzu mit Child-Elementen
-        addCellToGraph(graphInstance, cellToInsert, element, parentTarget)
-
-        graphInstance.setSelectionCell(cellToInsert)
-      }
-    }
-  })
+  return buildShapesFromElements(elements, img_elementPlaceholder)
 })
 
 const initializeToolbar = () => {
@@ -530,8 +474,29 @@ const emitUpdatedModel = () => {
   emit('update:model', graph.value!.getDataModel())
 }
 
+/**
+ * Leert den Canvas - entfernt alle Zellen
+ * Wiederverwendbare Methode für alle Editoren
+ */
+const clearCanvas = () => {
+  if (!graph.value) {
+    return
+  }
+
+  const parent = graph.value.getDefaultParent()
+  if (!parent) {
+    return
+  }
+
+  const childCells = graph.value.getChildCells(parent)
+  if (childCells && childCells.length > 0) {
+    graph.value.removeCells(childCells)
+  }
+}
+
 defineExpose({
-  graph
+  graph,
+  clearCanvas
 })
 </script>
 

@@ -1,21 +1,21 @@
 <template>
   <div>
     <!-- Grundeinstellungen -->
-    <v-text-field v-model="localElement.label" label="Label" variant="outlined" density="compact" class="mb-3" @input="emitUpdate" />
+    <v-text-field v-model="localElement.type" label="Typ-Identifikator" variant="outlined" density="compact" class="mb-3" hint="Eindeutiger Bezeichner (z.B. 'uml-class')" persistent-hint @input="emitUpdate" />
 
-    <v-text-field v-if="showId" v-model="localElement.id" label="ID" variant="outlined" density="compact" class="mb-3" @input="emitUpdate" />
+    <v-text-field v-model="localElement.defaultLabel" label="Standard-Label" variant="outlined" density="compact" class="mb-3" hint="Standard-Text für neue Instanzen" persistent-hint @input="emitUpdate" />
 
     <!-- Shape-Typ -->
-    <v-select v-model="localElement.type" :items="shapeTypes" item-title="title" item-value="value" label="Shape-Typ" variant="outlined" density="compact" class="mb-3" @update:model-value="onTypeChange" />
+    <v-select v-model="localElement.renderMode" :items="shapeTypes" item-title="title" item-value="value" label="Darstellungsart" variant="outlined" density="compact" class="mb-3" @update:model-value="onTypeChange" />
 
     <!-- Canvas2D Editor -->
-    <v-textarea v-if="localElement.type === 'canvas2d'" v-model="localElement.canvas" label="Canvas2D Befehle" variant="outlined" density="compact" rows="4" class="mb-3" hint="Befehle: MOVE x y, LINE x y, RECT x y w h, ELLIPSE x y w h" persistent-hint @input="emitUpdate" />
+    <v-textarea v-if="localElement.renderMode === 'canvas2d'" v-model="localElement.canvas" label="Canvas2D Befehle" variant="outlined" density="compact" rows="4" class="mb-3" hint="Befehle: MOVE x y, LINE x y, RECT x y w h, ELLIPSE x y w h" persistent-hint @input="emitUpdate" />
 
     <!-- Predefined Shape -->
-    <v-select v-if="localElement.type === 'predefined'" v-model="localElement.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-3" @update:model-value="emitUpdate" />
+    <v-select v-if="localElement.renderMode === 'predefined'" v-model="localElement.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-3" @update:model-value="emitUpdate" />
 
     <!-- Swimlane Beschreibung -->
-    <v-alert v-if="localElement.type === 'swimlane'" type="info" variant="tonal" class="mb-3">
+    <v-alert v-if="localElement.renderMode === 'swimlane'" type="info" variant="tonal" class="mb-3">
       <v-icon class="mr-2">mdi-view-column</v-icon>
       <strong>Swimlane Container-Element</strong>
       <div class="text-caption mt-1">Swimlanes eignen sich perfekt für Container wie Klassendiagramme, Use-Cases und andere strukturierte Elemente.</div>
@@ -151,8 +151,8 @@
         </v-expansion-panel-text>
       </v-expansion-panel>
 
-      <!-- Swimlane-Einstellungen (wenn Typ = swimlane) -->
-      <v-expansion-panel v-if="localElement.type === 'swimlane'">
+      <!-- Swimlane-Einstellungen (wenn renderMode = swimlane) -->
+      <v-expansion-panel v-if="localElement.renderMode === 'swimlane'">
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-view-column</v-icon>
           Swimlane-Einstellungen
@@ -220,9 +220,9 @@
             <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addChildElement"> Child hinzufügen </v-btn>
           </div>
 
-          <v-card v-for="(child, index) in localElement.children" :key="child.id" variant="outlined" class="mb-3">
+          <v-card v-for="(child, index) in localElement.children" :key="index" variant="outlined" class="mb-3">
             <v-card-title class="d-flex align-center justify-space-between py-2">
-              <span class="text-subtitle-2">{{ child.label }}</span>
+              <span class="text-subtitle-2">{{ child.defaultLabel }}</span>
               <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="removeChildElement(index)" />
             </v-card-title>
 
@@ -250,14 +250,12 @@ defineOptions({ name: 'ElementPropertiesEditor' })
 interface Props {
   element: DiagramElement | ChildElement
   isChild?: boolean
-  showId?: boolean
   depth?: number
   maxDepth?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isChild: false,
-  showId: true,
   depth: 0,
   maxDepth: 5
 })
@@ -303,10 +301,6 @@ watch(
       return
     }
 
-    if (!newVal.name) {
-      newVal.name = newVal.label
-    }
-
     const style = newVal.style as ElementStyle & Partial<ElementStyle>
     if (!style.strokeColor) style.strokeColor = '#000000'
     if (!style.fillColor) style.fillColor = '#ffffff'
@@ -317,7 +311,7 @@ watch(
     if (!style.align) style.align = 'center'
     if (!style.verticalAlign) style.verticalAlign = 'middle'
 
-    if (newVal.type === 'swimlane') {
+    if (newVal.renderMode === 'swimlane') {
       if (style.startSize === undefined) style.startSize = 30
       if (style.horizontal === undefined) style.horizontal = false
       if (style.childSpacing === undefined) style.childSpacing = 10
@@ -363,7 +357,7 @@ function emitUpdate() {
 
 function applySwimlaneDefaults() {
   const current = localElement.value
-  if (!current || current.type !== 'swimlane') {
+  if (!current || current.renderMode !== 'swimlane') {
     return
   }
 
@@ -405,10 +399,9 @@ function removeAnchorPoint(index: number) {
 
 function createDefaultChild(index: number): ChildElement {
   return {
-    id: `child-${Date.now()}-${index}`,
-    label: `Child ${index + 1}`,
-    name: `Child ${index + 1}`,
-    type: 'predefined',
+    type: `child-${index}`,
+    defaultLabel: `Child ${index + 1}`,
+    renderMode: 'predefined',
     predefinedShape: 'rectangle',
     position: {
       x: 1,

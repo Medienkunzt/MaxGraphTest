@@ -73,20 +73,20 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     }
   }
 
-  const updateElementInLanguage = (languageId: string, elementId: string, updates: Partial<DiagramElement>) => {
+  const updateElementInLanguage = (languageId: string, elementType: string, updates: Partial<DiagramElement>) => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (language) {
-      const elementIndex = language.elements.findIndex((elem) => elem.id === elementId)
+      const elementIndex = language.elements.findIndex((elem) => elem.type === elementType)
       if (elementIndex !== -1) {
         language.elements[elementIndex] = { ...language.elements[elementIndex], ...updates }
       }
     }
   }
 
-  const removeElementFromLanguage = (languageId: string, elementId: string) => {
+  const removeElementFromLanguage = (languageId: string, elementType: string) => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (language) {
-      const elementIndex = language.elements.findIndex((elem) => elem.id === elementId)
+      const elementIndex = language.elements.findIndex((elem) => elem.type === elementType)
       if (elementIndex !== -1) {
         language.elements.splice(elementIndex, 1)
       }
@@ -101,20 +101,20 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     }
   }
 
-  const updateConnectionInLanguage = (languageId: string, connectionId: string, updates: Partial<DiagramConnection>) => {
+  const updateConnectionInLanguage = (languageId: string, connectionType: string, updates: Partial<DiagramConnection>) => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (language) {
-      const connectionIndex = language.connections.findIndex((conn) => conn.id === connectionId)
+      const connectionIndex = language.connections.findIndex((conn) => conn.type === connectionType)
       if (connectionIndex !== -1) {
         language.connections[connectionIndex] = { ...language.connections[connectionIndex], ...updates }
       }
     }
   }
 
-  const removeConnectionFromLanguage = (languageId: string, connectionId: string) => {
+  const removeConnectionFromLanguage = (languageId: string, connectionType: string) => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (language) {
-      const connectionIndex = language.connections.findIndex((conn) => conn.id === connectionId)
+      const connectionIndex = language.connections.findIndex((conn) => conn.type === connectionType)
       if (connectionIndex !== -1) {
         language.connections.splice(connectionIndex, 1)
       }
@@ -129,20 +129,20 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     }
   }
 
-  const updateSyntaxInLanguage = (languageId: string, syntaxId: string, updates: Partial<DiagramSyntax>) => {
+  const updateSyntaxInLanguage = (languageId: string, syntaxType: string, updates: Partial<DiagramSyntax>) => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (language) {
-      const syntaxIndex = language.syntax.findIndex((syn) => syn.id === syntaxId)
+      const syntaxIndex = language.syntax.findIndex((syn) => syn.type === syntaxType)
       if (syntaxIndex !== -1) {
         language.syntax[syntaxIndex] = { ...language.syntax[syntaxIndex], ...updates }
       }
     }
   }
 
-  const removeSyntaxFromLanguage = (languageId: string, syntaxId: string) => {
+  const removeSyntaxFromLanguage = (languageId: string, syntaxType: string) => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (language) {
-      const syntaxIndex = language.syntax.findIndex((syn) => syn.id === syntaxId)
+      const syntaxIndex = language.syntax.findIndex((syn) => syn.type === syntaxType)
       if (syntaxIndex !== -1) {
         language.syntax.splice(syntaxIndex, 1)
       }
@@ -163,10 +163,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       elements: [
         // Klasse (mit 3 Abschnitten: Name, Attribute, Methoden)
         {
-          id: 'uml-class',
-          name: 'Klasse',
-          label: 'Klassenname',
-          type: 'swimlane',
+          type: 'uml-class',
+          defaultLabel: 'Klassenname',
+          renderMode: 'swimlane',
           x: 50,
           y: 50,
           width: 180,
@@ -220,10 +219,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Abstrakte Klasse
         {
-          id: 'uml-abstract-class',
-          name: 'Abstrakte Klasse',
-          label: '<<abstract>>\nAbstrakteKlasse',
-          type: 'swimlane',
+          type: 'uml-abstract-class',
+          defaultLabel: '<<abstract>>\nAbstrakteKlasse',
+          renderMode: 'swimlane',
           x: 50,
           y: 50,
           width: 180,
@@ -277,10 +275,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Interface
         {
-          id: 'uml-interface',
-          name: 'Interface',
-          label: '<<interface>>\nInterfaceName',
-          type: 'swimlane',
+          type: 'uml-interface',
+          defaultLabel: '<<interface>>\nInterfaceName',
+          renderMode: 'swimlane',
           x: 50,
           y: 50,
           width: 180,
@@ -334,10 +331,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Enumeration
         {
-          id: 'uml-enum',
-          name: 'Enumeration',
-          label: '<<enumeration>>\nEnumName',
-          type: 'swimlane',
+          type: 'uml-enum',
+          defaultLabel: '<<enumeration>>\nEnumName',
+          renderMode: 'swimlane',
           x: 50,
           y: 50,
           width: 180,
@@ -391,10 +387,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Paket
         {
-          id: 'uml-package',
-          name: 'Paket',
-          label: 'paket',
-          type: 'swimlane',
+          type: 'uml-package',
+          defaultLabel: 'paket',
+          renderMode: 'swimlane',
           x: 100,
           y: 100,
           width: 300,
@@ -443,10 +438,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Notiz
         {
-          id: 'uml-note',
-          name: 'Notiz',
-          label: 'Notiz',
-          type: 'canvas2d',
+          type: 'uml-note',
+          defaultLabel: 'Notiz',
+          renderMode: 'canvas2d',
           x: 40,
           y: 40,
           width: 160,
@@ -476,10 +470,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Text-Label für Attribute/Methoden
         {
-          id: 'uml-text-label',
-          name: 'Text-Label',
-          label: '+ attribut: Typ',
-          type: 'predefined',
+          type: 'uml-text-label',
+          defaultLabel: '+ attribut: Typ',
+          renderMode: 'predefined',
           x: 0,
           y: 0,
           width: 160,
@@ -506,10 +499,12 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       connections: [
         // Vererbung (Generalisierung)
         {
-          id: 'uml-inheritance',
-          name: 'Vererbung',
-          label: '',
-          type: 'inheritance',
+          type: 'uml-inheritance',
+          label: 'Vererbung',
+          defaultLabel: '',
+          connectionType: 'inheritance',
+          listIcon: 'mdi-triangle-outline',
+          listColor: 'green',
           connectable: true,
           style: {
             shape: 'connector',
@@ -531,10 +526,12 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Realisierung (Interface-Implementierung)
         {
-          id: 'uml-realization',
-          name: 'Realisierung',
-          label: '',
-          type: 'realization',
+          type: 'uml-realization',
+          label: 'Realisierung',
+          defaultLabel: '',
+          connectionType: 'realization',
+          listIcon: 'mdi-triangle',
+          listColor: 'teal',
           connectable: true,
           style: {
             shape: 'connector',
@@ -557,10 +554,12 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Assoziation
         {
-          id: 'uml-association',
-          name: 'Assoziation',
-          label: '',
-          type: 'association',
+          type: 'uml-association',
+          label: 'Assoziation',
+          defaultLabel: '',
+          connectionType: 'association',
+          listIcon: 'mdi-vector-line',
+          listColor: 'blue',
           connectable: true,
           style: {
             shape: 'connector',
@@ -575,17 +574,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'center',
             verticalAlign: 'middle',
             labelPosition: 'center',
-          fontColor: '#000000',
-          fontSize: 10
+            fontColor: '#000000',
+            fontSize: 10
           },
           additionalLabels: []
         },
         // Gerichtete Assoziation
         {
-          id: 'uml-directed-association',
-          name: 'Gerichtete Assoziation',
-          label: '',
-          type: 'directed-association',
+          type: 'uml-directed-association',
+          label: 'Gerichtete Assoziation',
+          defaultLabel: '',
+          connectionType: 'directed-association',
+          listIcon: 'mdi-arrow-right-thin',
+          listColor: 'indigo',
           connectable: true,
           style: {
             shape: 'connector',
@@ -600,17 +601,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'center',
             verticalAlign: 'middle',
             labelPosition: 'center',
-          fontColor: '#000000',
-          fontSize: 10
+            fontColor: '#000000',
+            fontSize: 10
           },
           additionalLabels: []
         },
         // Aggregation
         {
-          id: 'uml-aggregation',
-          name: 'Aggregation',
-          label: '',
-          type: 'aggregation',
+          type: 'uml-aggregation',
+          label: 'Aggregation',
+          defaultLabel: '',
+          connectionType: 'aggregation',
+          listIcon: 'mdi-rhombus-outline',
+          listColor: 'orange',
           connectable: true,
           style: {
             shape: 'connector',
@@ -625,17 +628,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'center',
             verticalAlign: 'middle',
             labelPosition: 'center',
-          fontColor: '#000000',
-          fontSize: 10
+            fontColor: '#000000',
+            fontSize: 10
           },
           additionalLabels: []
         },
         // Komposition
         {
-          id: 'uml-composition',
-          name: 'Komposition',
-          label: '',
-          type: 'composition',
+          type: 'uml-composition',
+          label: 'Komposition',
+          defaultLabel: '',
+          connectionType: 'composition',
+          listIcon: 'mdi-rhombus',
+          listColor: 'red',
           connectable: true,
           style: {
             shape: 'connector',
@@ -650,17 +655,19 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             align: 'center',
             verticalAlign: 'middle',
             labelPosition: 'center',
-          fontColor: '#000000',
-          fontSize: 10
+            fontColor: '#000000',
+            fontSize: 10
           },
           additionalLabels: []
         },
         // Abhängigkeit
         {
-          id: 'uml-dependency',
-          name: 'Abhängigkeit',
-          label: '<<use>>',
-          type: 'dependency',
+          type: 'uml-dependency',
+          label: 'Abhängigkeit',
+          defaultLabel: '<<use>>',
+          connectionType: 'dependency',
+          listIcon: 'mdi-dots-horizontal',
+          listColor: 'purple',
           connectable: true,
           style: {
             shape: 'connector',
@@ -683,10 +690,12 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         // Notiz-Verbindung
         {
-          id: 'uml-note-link',
-          name: 'Notiz-Verbindung',
-          label: '',
-          type: 'note',
+          type: 'uml-note-link',
+          label: 'Notiz-Verbindung',
+          defaultLabel: '',
+          connectionType: 'note',
+          listIcon: 'mdi-note-outline',
+          listColor: 'grey',
           connectable: false,
           style: {
             shape: 'connector',
@@ -709,74 +718,22 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         }
       ],
       syntax: [
-        // Attribut-Format
         {
-          id: 'uml-attribute-format',
-          name: 'Attributformat',
-          label: 'Attributformat',
-          type: 'attribute',
-          severity: 'info',
-          description: 'Attribute sollten Sichtbarkeitsmodifikatoren enthalten (+, -, #, ~)',
+          type: 'uml-class-interface-multiplicity',
+          label: 'Klassen & Interfaces',
+          ruleType: 'multiplicity',
+          description: 'Klassen dürfen höchstens zwei direkte Verbindungen zu Interfaces besitzen.',
           config: {
-            attributeName: 'attributes',
-            requiredFor: ['uml-class', 'uml-abstract-class'],
-            pattern: '[+\\-#~]\\s*[a-zA-Z][a-zA-Z0-9]*\\s*:\\s*[a-zA-Z][a-zA-Z0-9]*'
-          }
-        },
-        // Methoden-Format
-        {
-          id: 'uml-method-format',
-          name: 'Methodenformat',
-          label: 'Methodenformat',
-          type: 'attribute',
-          severity: 'info',
-          description: 'Methoden sollten Sichtbarkeit und Rückgabetyp definieren',
-          config: {
-            attributeName: 'methods',
-            requiredFor: ['uml-class', 'uml-abstract-class', 'uml-interface'],
-            pattern: '[+\\-#~]\\s*[a-zA-Z][a-zA-Z0-9]*\\s*\\(.*\\)\\s*:\\s*[a-zA-Z][a-zA-Z0-9]*'
-          }
-        },
-        // Vererbungstiefe
-        {
-          id: 'uml-inheritance-depth',
-          name: 'Vererbungstiefe',
-          label: 'Vererbungstiefe',
-          type: 'structure',
-          severity: 'warning',
-          description: 'Vererbungshierarchie sollte nicht mehr als 4 Ebenen tief sein',
-          config: {
-            elementType: ['uml-class', 'uml-abstract-class'],
-            maxOccurrences: 4,
-            requiresContainer: false
-          }
-        },
-        // Interface-Implementierung
-        {
-          id: 'uml-interface-implementation',
-          name: 'Interface-Implementierung',
-          label: 'Interface-Implementierung',
-          type: 'structure',
-          severity: 'info',
-          description: 'Interfaces sollten mindestens eine Methode definieren',
-          config: {
-            elementType: ['uml-interface'],
-            maxOccurrences: 999,
-            requiresContainer: false
-          }
-        },
-        // Enum-Werte
-        {
-          id: 'uml-enum-values',
-          name: 'Enum-Werte',
-          label: 'Enum-Werte',
-          type: 'attribute',
-          severity: 'error',
-          description: 'Enumerationen müssen mindestens einen Wert enthalten',
-          config: {
-            attributeName: 'values',
-            requiredFor: ['uml-enum'],
-            pattern: '[A-Z_][A-Z0-9_]*'
+            source: true,
+            type: 'uml-class',
+            attr: null,
+            value: null,
+            min: 0,
+            max: 2,
+            validNeighbors: ['uml-interface'],
+            countError: 'Klassen dürfen höchstens zwei Interface-Verbindungen haben.',
+            typeError: 'Klassen dürfen hier nur Interfaces verbinden.',
+            validNeighborsAllowed: true
           }
         }
       ]

@@ -4,7 +4,7 @@
       <!-- Element-Liste (links) -->
       <v-col cols="4" class="pr-2 editor-col">
         <div class="scroll-column">
-          <EditorEntityList title="Elemente" add-button-text="Neues Element" :items="elements" :selected-id="selectedElementId" empty-text="Keine Elemente definiert" :icon-map="elementIconMap" :color-map="elementColorMap" @add="addNewElement" @select="selectElement" @delete="deleteElement" />
+          <EditorEntityList title="Elemente" add-button-text="Neues Element" :items="elements" :selected-index="selectedElementIndex" empty-text="Keine Elemente definiert" title-field="type" subtitle-field="defaultLabel" icon-field="renderMode" color-field="renderMode" :icon-map="elementIconMap" :color-map="elementColorMap" @add="addNewElement" @select="selectElement" @delete="deleteElement" />
         </div>
       </v-col>
 
@@ -12,7 +12,7 @@
       <v-col cols="4" class="px-1 editor-col">
         <div class="scroll-column">
           <BasicEditorForm type="element" :selected-item="selectedElement">
-            <ElementEditorForm v-if="selectedElement" :selected-element="selectedElement" @update="updateAll" />
+            <ElementPropertiesEditor v-if="selectedElement" :element="selectedElement" @update="updateAll" />
           </BasicEditorForm>
         </div>
       </v-col>
@@ -28,7 +28,7 @@
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="languageSyntaxForCanvas" />
             </div>
 
             <v-alert v-if="!selectedElement" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element aus, um eine Vorschau zu sehen </v-alert>
@@ -52,7 +52,7 @@ import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { DiagramElement, ChildElement } from '@/model/Element'
 import EditorEntityList from './EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
-import ElementEditorForm from './form/ElementEditorForm.vue'
+import ElementPropertiesEditor from './form/ElementPropertiesEditor.vue'
 
 // Props
 interface Props {
@@ -67,7 +67,7 @@ const store = useDiagramLanguageStore()
 const { languages, setCurrentLanguage } = useDiagramLanguages()
 
 // State
-const selectedElementId = ref<string>('')
+const selectedElementIndex = ref<number>(-1)
 const canvasModel = ref<GraphDataModel>()
 const drawingCanvasRef = ref()
 
@@ -79,12 +79,13 @@ const elements = computed(() => store.currentLanguage?.elements || [])
 
 const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
 const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
+const languageSyntaxForCanvas = computed(() => store.currentLanguage?.syntax ?? [])
 
-const selectedElement = computed(() => elements.value.find((elem: DiagramElement) => elem.id === selectedElementId.value))
+const selectedElement = computed(() => elements.value[selectedElementIndex.value])
 
 // Methods
-const selectElement = (elementId: string) => {
-  selectedElementId.value = elementId
+const selectElement = (elementIndex: number) => {
+  selectedElementIndex.value = elementIndex
   // Kleine Verzögerung für UI-Update
   nextTick(() => {
     setTimeout(() => renderElementPreview(), 50)
@@ -95,10 +96,9 @@ const addNewElement = () => {
   if (!store.currentLanguage) return
 
   const newElement: DiagramElement = {
-    id: `element_${Date.now()}`,
-    name: 'Neues Element',
-    label: 'Neues Element',
-    type: 'canvas2d',
+    type: `element_${Date.now()}`,
+    defaultLabel: 'Neues Element',
+    renderMode: 'canvas2d',
     x: 50,
     y: 50,
     width: 100,
@@ -127,42 +127,35 @@ const addNewElement = () => {
   }
 
   store.addElementToLanguage(store.currentLanguage.id, newElement)
-  selectedElementId.value = newElement.id
+  selectedElementIndex.value = elements.value.length - 1
 }
 
-const deleteElement = (elementId: string) => {
+const deleteElement = (elementIndex: number) => {
   if (!store.currentLanguage) return
 
-  store.removeElementFromLanguage(store.currentLanguage.id, elementId)
+  const element = elements.value[elementIndex]
+  store.removeElementFromLanguage(store.currentLanguage.id, element.type)
 
-  if (selectedElementId.value === elementId) {
-    const remainingElements = elements.value
-    selectedElementId.value = remainingElements.length > 0 ? remainingElements[0].id : ''
+  // Auswahl zurücksetzen
+  selectedElementIndex.value = -1
+  elementDefinition.value = null
+
+  // Canvas leeren
+  if (drawingCanvasRef.value) {
+    drawingCanvasRef.value.clearCanvas()
   }
 }
 
 // Icon und Color Maps für EntityList
 const elementIconMap = {
-  rectangle: 'mdi-rectangle-outline',
-  ellipse: 'mdi-ellipse-outline',
-  diamond: 'mdi-rhombus-outline',
-  triangle: 'mdi-triangle-outline',
-  circle: 'mdi-circle-outline',
   canvas2d: 'mdi-draw',
   predefined: 'mdi-shape',
-  image: 'mdi-image',
   swimlane: 'mdi-view-column'
 }
 
 const elementColorMap = {
-  rectangle: 'blue',
-  ellipse: 'green',
-  diamond: 'orange',
-  triangle: 'purple',
-  circle: 'teal',
   canvas2d: 'indigo',
   predefined: 'cyan',
-  image: 'pink',
   swimlane: 'deep-purple'
 }
 
@@ -193,10 +186,7 @@ const renderElementPreview = () => {
 
   try {
     // Canvas leeren
-    const childCells = graph.getChildCells(parent)
-    if (childCells && childCells.length > 0) {
-      graph.removeCells(childCells)
-    }
+    drawingCanvasRef.value.clearCanvas()
 
     // Element mit zentraler Methode erstellen und hinzufügen
     graph.batchUpdate(() => {
@@ -239,8 +229,8 @@ const registerCustomShapes = (definition?: DiagramElement | ChildElement | null)
 const registerShapesRecursive = (definition: DiagramElement | ChildElement | undefined) => {
   if (!definition) return
 
-  if (definition.type === 'canvas2d' && 'canvas' in definition && definition.canvas) {
-    registerCustomShape(definition.id, definition.canvas)
+  if ('renderMode' in definition && definition.renderMode === 'canvas2d' && 'canvas' in definition && definition.canvas) {
+    registerCustomShape(definition.type, definition.canvas)
   }
 
   if ('children' in definition && definition.children && definition.children.length > 0) {
@@ -369,7 +359,7 @@ const debouncedUpdate = () => {
 
 const debouncedStoreUpdate = () => {
   if (selectedElement.value && store.currentLanguage) {
-    store.updateElementInLanguage(store.currentLanguage.id, selectedElement.value.id, selectedElement.value)
+    store.updateElementInLanguage(store.currentLanguage.id, selectedElement.value.type, selectedElement.value)
   }
 }
 
@@ -400,14 +390,9 @@ watch(
   { immediate: true, deep: true }
 )
 
-// Lifecycle
 onMounted(() => {
   // Route laden
   loadLanguageFromRoute()
-
-  if (elements.value.length > 0) {
-    selectedElementId.value = elements.value[0].id
-  }
 
   // Canvas initialisieren mit mehreren Versuchen
   const initializeCanvas = (attempts = 0) => {

@@ -3,9 +3,9 @@
     <v-divider vertical class="mr-2" />
     <span class="text-caption mr-2">Verbindungen:</span>
     <v-btn-toggle v-model="selectedIndex" mandatory density="compact" class="connection-toggle">
-      <v-btn v-for="(conn, index) in connections" :key="conn.id" :value="index" size="small" class="connection-btn">
-        <v-icon :color="getConnectionColor(conn.type)" size="small">{{ getConnectionIcon(conn.type) }}</v-icon>
-        <v-tooltip activator="parent" location="bottom">{{ conn.name }}</v-tooltip>
+      <v-btn v-for="(conn, index) in connections" :key="conn.type" :value="index" size="small" class="connection-btn">
+        <v-icon :color="conn.listColor" size="small">{{ conn.listIcon }}</v-icon>
+        <v-tooltip activator="parent" location="bottom">{{ conn.label }}</v-tooltip>
       </v-btn>
     </v-btn-toggle>
   </div>
@@ -44,32 +44,6 @@ watch(
     selectedIndex.value = newValue
   }
 )
-
-const getConnectionIcon = (type: string) => {
-  const iconMap: Record<string, string> = {
-    association: 'mdi-minus',
-    inheritance: 'mdi-triangle-outline',
-    composition: 'mdi-rhombus',
-    aggregation: 'mdi-rhombus-outline',
-    dependency: 'mdi-dots-horizontal',
-    realization: 'mdi-triangle',
-    'directed-association': 'mdi-arrow-right'
-  }
-  return iconMap[type] || 'mdi-minus'
-}
-
-const getConnectionColor = (type: string) => {
-  const colorMap: Record<string, string> = {
-    association: 'blue',
-    inheritance: 'green',
-    composition: 'red',
-    aggregation: 'orange',
-    dependency: 'purple',
-    realization: 'teal',
-    'directed-association': 'indigo'
-  }
-  return colorMap[type] || 'grey'
-}
 </script>
 
 <style scoped>

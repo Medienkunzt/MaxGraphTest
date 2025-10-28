@@ -1,7 +1,6 @@
 import { Cell, Geometry, ConnectionConstraint, Point, Rectangle } from '@maxgraph/core'
 import type { Graph } from '@maxgraph/core'
 import type { DiagramElement } from '@/model/Element'
-import type { DiagramConnection } from '@/model/Connection'
 
 /**
  * Erstellt eine MaxGraph Cell aus einer DiagramElement-Definition
@@ -21,7 +20,7 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
 
   // 1. Basis-Style aufbauen
   const baseStyle: Record<string, any> = {
-    shape: element.type === 'swimlane' ? 'swimlane' : element.predefinedShape ?? 'rectangle',
+    shape: element.renderMode === 'swimlane' ? 'swimlane' : element.predefinedShape ?? 'rectangle',
     ...style, // Alle Style-Eigenschaften aus Definition übernehmen
     // Defaults für fehlende Werte
     strokeColor: style.strokeColor ?? 'black',
@@ -35,7 +34,7 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
   }
 
   // Swimlane-spezifische Eigenschaften
-  if (element.type === 'swimlane') {
+  if (element.renderMode === 'swimlane') {
     if (baseStyle.startSize === undefined) baseStyle.startSize = 22
     if (baseStyle.horizontal === undefined) baseStyle.horizontal = false
     if (baseStyle.labelBackgroundColor === undefined) baseStyle.labelBackgroundColor = 'transparent'
@@ -51,9 +50,9 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
     baseStyle.foldable = true
   }
 
-  // Canvas2D: Shape-ID verwenden
-  if (element.type === 'canvas2d') {
-    baseStyle.shape = element.id
+  // Canvas2D: Shape-Type verwenden
+  if (element.renderMode === 'canvas2d') {
+    baseStyle.shape = element.type
   }
 
   // 2. Geometry erstellen
@@ -75,10 +74,9 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
 
   // 4. Cell erstellen
   const normalStyle = { ...baseStyle }
-  const cell = new Cell(element.label ?? element.name, geometry, normalStyle)
+  const cell = new Cell(element.defaultLabel, geometry, normalStyle)
   cell.setVertex(true)
   cell.setConnectable(element.connectable ?? true)
-  cell.setAttribute('diagramElementId', element.id)
   ;(cell as any).allowLabelEdit = element.allowLabelEdit !== false
 
   const collapseMetadata: Record<string, any> = {}
@@ -131,7 +129,7 @@ export function addCellToGraph(graph: Graph, cell: Cell, element: DiagramElement
         shape: child.predefinedShape || 'label'
       }
 
-      const childCell = new Cell(child.label, childGeometry, childStyle)
+      const childCell = new Cell(child.defaultLabel, childGeometry, childStyle)
       childCell.setVertex(true)
       childCell.setConnectable(child.connectable ?? false)
       ;(childCell as any).allowLabelEdit = child.allowLabelEdit !== false

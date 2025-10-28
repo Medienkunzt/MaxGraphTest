@@ -10,7 +10,7 @@
     <v-divider />
 
     <v-list density="compact">
-      <v-list-item v-for="item in items" :key="item.id" :active="selectedId === item.id" class="cursor-pointer" @click="$emit('select', item.id)">
+      <v-list-item v-for="(item, index) in items" :key="index" :active="selectedIndex === index" class="cursor-pointer" @click="$emit('select', index)">
         <template #prepend>
           <v-icon :color="getItemColor(item)" size="small">
             {{ getItemIcon(item) }}
@@ -26,7 +26,7 @@
             {{ item.severity }}
           </v-chip>
 
-          <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click.stop="$emit('delete', item.id)" />
+          <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click.stop="$emit('delete', index)" />
         </template>
       </v-list-item>
     </v-list>
@@ -39,7 +39,7 @@
 
 <script setup lang="ts">
 interface EntityItem {
-  id: string
+  type: string
   [key: string]: any
 }
 
@@ -47,7 +47,7 @@ interface Props {
   title: string
   addButtonText: string
   items: EntityItem[]
-  selectedId: string
+  selectedIndex?: number
   emptyText: string
   titleField?: string
   subtitleField?: string
@@ -59,6 +59,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  selectedIndex: -1,
   titleField: 'label',
   subtitleField: 'type',
   iconField: 'type',
@@ -70,26 +71,41 @@ const props = withDefaults(defineProps<Props>(), {
 
 defineEmits<{
   add: []
-  select: [id: string]
-  delete: [id: string]
+  select: [type: number]
+  delete: [type: number]
 }>()
 
 const getItemTitle = (item: EntityItem) => {
-  return item[props.titleField] || item.name || item.label || 'Unbenannt'
+  return item[props.titleField]
 }
 
 const getItemSubtitle = (item: EntityItem) => {
-  return item[props.subtitleField] || item.type || ''
+  return item[props.subtitleField] ?? ''
 }
 
 const getItemIcon = (item: EntityItem) => {
-  const type = item[props.iconField] || item.type
-  return props.iconMap[type] || getDefaultIcon(type)
+  const iconValue = item[props.iconField]
+  if (typeof iconValue === 'string' && iconValue.length > 0) {
+    if (props.iconMap[iconValue]) {
+      return props.iconMap[iconValue]
+    }
+    if (iconValue.startsWith('mdi-')) {
+      return iconValue
+    }
+  }
+  return 'mdi-circle-outline'
 }
 
 const getItemColor = (item: EntityItem) => {
-  const type = item[props.colorField] || item.type
-  return props.colorMap[type] || getDefaultColor(type)
+  const colorValue = item[props.colorField]
+  if (typeof colorValue === 'string' && colorValue.length > 0) {
+    if (props.colorMap[colorValue]) {
+      return props.colorMap[colorValue]
+    }
+    return colorValue
+  }
+  
+  return 'grey'
 }
 
 const getSeverityColor = (severity: string) => {
@@ -99,61 +115,5 @@ const getSeverityColor = (severity: string) => {
     info: 'info'
   }
   return severityColors[severity] || 'grey'
-}
-
-const getDefaultIcon = (type: string) => {
-  const defaultIcons: Record<string, string> = {
-    // Element types
-    rectangle: 'mdi-rectangle-outline',
-    ellipse: 'mdi-ellipse-outline',
-    diamond: 'mdi-rhombus-outline',
-    triangle: 'mdi-triangle-outline',
-    canvas2d: 'mdi-draw',
-    predefined: 'mdi-shape',
-    swimlane: 'mdi-view-column',
-    class: 'mdi-file-outline',
-    interface: 'mdi-file-code-outline',
-    // Connection types
-    association: 'mdi-minus',
-    inheritance: 'mdi-triangle-outline',
-    composition: 'mdi-rhombus',
-    aggregation: 'mdi-rhombus-outline',
-    dependency: 'mdi-dots-horizontal',
-    realization: 'mdi-triangle',
-    // Rule types
-    structure: 'mdi-sitemap',
-    connection: 'mdi-connection',
-    attribute: 'mdi-format-list-bulleted',
-    naming: 'mdi-text'
-  }
-  return defaultIcons[type] || 'mdi-circle-outline'
-}
-
-const getDefaultColor = (type: string) => {
-  const defaultColors: Record<string, string> = {
-    // Element types
-    rectangle: 'blue',
-    ellipse: 'green',
-    diamond: 'orange',
-    triangle: 'purple',
-    canvas2d: 'indigo',
-    predefined: 'cyan',
-    swimlane: 'deep-purple',
-    class: 'blue',
-    interface: 'teal',
-    // Connection types
-    association: 'blue',
-    inheritance: 'green',
-    composition: 'red',
-    aggregation: 'orange',
-    dependency: 'purple',
-    realization: 'teal',
-    // Rule types
-    structure: 'blue',
-    connection: 'green',
-    attribute: 'orange',
-    naming: 'purple'
-  }
-  return defaultColors[type] || 'grey'
 }
 </script>

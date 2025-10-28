@@ -1,7 +1,7 @@
 import type { CellStyle } from '@maxgraph/core'
 
 export interface ConnectionLabelCell {
-  id: string
+  type: string // Typ-Identifikator fuer das Label
   text: string
   geometry?: {
     x: number
@@ -18,11 +18,13 @@ export interface ConnectionLabelCell {
 }
 
 export interface DiagramConnection {
-  id: string
-  name: string
-  label: string
-  type: string
+  type: string // Typ-Identifikator (z.B. "uml-inheritance") - entspricht maxGraph's Typ-Konzept
+  label: string // Anzeigename fuer UI (z.B. "Vererbung")
+  defaultLabel: string // Standard-Label fuer neue Instanzen im Graph
+  connectionType?: string // Semantischer Typ (z.B. "inheritance", "association")
   style: CellStyle
+  listIcon?: string // Icon fuer die Anzeige in der Editor-Liste
+  listColor?: string // Farbe fuer die Anzeige in der Editor-Liste
   connectable?: boolean
   labelOffset?: {
     x?: number
