@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch, shallowRef } from 'vue'
 import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
@@ -75,6 +75,32 @@ import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
+import type { DiagramSyntax } from '@/model/Syntax'
+import { buildMultiplicitiesFromSyntax, Multiplicity as SyntaxMultiplicity } from '@/utils/multiplicity'
+
+const mergeMessages = (...messages: Array<string | null | undefined>): string | null => {
+  const seen = new Set<string>()
+  const ordered: string[] = []
+
+  messages.forEach((entry) => {
+    if (!entry) {
+      return
+    }
+
+    entry
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .forEach((line) => {
+        if (!seen.has(line)) {
+          seen.add(line)
+          ordered.push(line)
+        }
+      })
+  })
+
+  return ordered.length > 0 ? ordered.join('\n') : null
+}
 
 import img_rectangle from '@/assets/images/rectangle.gif'
 import img_ellipse from '@/assets/images/ellipse.gif'
@@ -104,6 +130,8 @@ class MyCustomCellEditorHandler extends CellEditorHandler {
 }
 
 class MyCustomGraph extends Graph {
+  private multiplicityRules: SyntaxMultiplicity[] = []
+
   constructor(container: HTMLElement, model?: GraphDataModel, plugins?: GraphPluginConstructor[]) {
     super(container, model, plugins)
 
@@ -140,6 +168,57 @@ class MyCustomGraph extends Graph {
     }
     return super.isCellEditable(cell)
   }
+
+  setMultiplicityRules(rules: SyntaxMultiplicity[]) {
+    this.multiplicityRules = Array.isArray(rules) ? [...rules] : []
+  }
+
+  override getEdgeValidationError = (edge: Cell | null, source: Cell | null, target: Cell | null) => {
+    const baseError = super.getEdgeValidationError(edge, source, target)
+    if (baseError === '') {
+      return ''
+    }
+
+    const multiplicityError = this.evaluateEdgeMultiplicity(edge, source, target)
+    return mergeMessages(baseError, multiplicityError)
+  }
+
+  override getCellValidationError = (cell: Cell) => {
+    const baseError = super.getCellValidationError(cell)
+    if (baseError === '') {
+      return ''
+    }
+
+    const multiplicityError = this.evaluateCellMultiplicity(cell)
+    return mergeMessages(baseError, multiplicityError)
+  }
+
+  private evaluateEdgeMultiplicity(edge: Cell | null, source: Cell | null, target: Cell | null): string | null {
+    if (!this.multiplicityRules.length) {
+      return null
+    }
+
+    const sourceOut = source?.getDirectedEdgeCount(true, edge ?? null) ?? 0
+    const targetIn = target?.getDirectedEdgeCount(false, edge ?? null) ?? 0
+
+    const errors = this.multiplicityRules
+      .map((rule) => rule.checkEdge(this, edge ?? null, source ?? null, target ?? null, sourceOut, targetIn))
+      .filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
+
+    return mergeMessages(...errors)
+  }
+
+  private evaluateCellMultiplicity(cell: Cell | null): string | null {
+    if (!cell || !this.multiplicityRules.length) {
+      return null
+    }
+
+    const errors = this.multiplicityRules
+      .map((rule) => rule.checkCell(this, cell))
+      .filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
+
+    return mergeMessages(...errors)
+  }
 }
 
 const props = withDefaults(
@@ -150,6 +229,7 @@ const props = withDefaults(
     contextMenu?: boolean
     languageElements?: DiagramElement[]
     languageConnections?: DiagramConnection[]
+    languageSyntax?: DiagramSyntax[]
     previewConnection?: DiagramConnection
     previewMode?: 'simple' | 'scenario' | 'routing'
   }>(),
@@ -159,6 +239,7 @@ const props = withDefaults(
     contextMenu: false,
     languageElements: undefined,
     languageConnections: undefined,
+    languageSyntax: undefined,
     previewConnection: undefined,
     previewMode: 'simple'
   }
@@ -195,6 +276,26 @@ const toolbarShapes = ref(
 )
 
 let undoManagerApi: UndoManagerApi | undefined
+
+const multiplicityRulesState = shallowRef<SyntaxMultiplicity[]>([])
+
+const applyMultiplicityRulesToGraph = (rules?: SyntaxMultiplicity[]) => {
+  const graphInstance = graph.value
+  if (!(graphInstance instanceof MyCustomGraph)) {
+    return
+  }
+
+  const normalizedRules = Array.isArray(rules) ? rules : multiplicityRulesState.value
+  graphInstance.setMultiplicityRules(normalizedRules)
+  graphInstance.refresh()
+  graphInstance.view.validate()
+  graphInstance.validateGraph()
+}
+
+const rebuildMultiplicityRules = (rules?: DiagramSyntax[]) => {
+  multiplicityRulesState.value = buildMultiplicitiesFromSyntax(rules ?? [])
+  applyMultiplicityRulesToGraph(multiplicityRulesState.value)
+}
 
 // Stelle Graph-Context für Child-Komponenten bereit
 provideGraphContext({
@@ -240,6 +341,14 @@ const redoGraph = () => {
 
 // Computed für Verbindungen
 const languageConnections = computed(() => props.languageConnections ?? [])
+
+watch(
+  () => props.languageSyntax,
+  (newSyntax) => {
+    rebuildMultiplicityRules(newSyntax ?? [])
+  },
+  { deep: true, immediate: true }
+)
 
 // Handler für Verbindungsauswahl
 const onConnectionSelected = (connection: DiagramConnection) => {
@@ -484,6 +593,8 @@ const initGraph = () => {
       }
     }, 100)
   })
+
+  applyMultiplicityRulesToGraph()
 }
 
 const buildLanguageShapes = computed(() => {

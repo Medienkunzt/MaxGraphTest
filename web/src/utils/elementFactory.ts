@@ -78,6 +78,11 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
   cell.setVertex(true)
   cell.setConnectable(element.connectable ?? true)
   ;(cell as any).allowLabelEdit = element.allowLabelEdit !== false
+  ;(cell as any).diagramElementType = element.type
+  ;(cell as any).diagramAttributes = {
+    type: element.type,
+    label: element.defaultLabel
+  }
 
   const collapseMetadata: Record<string, any> = {}
   const collapsedStyle = collapsedConfig?.style ? { ...normalStyle, ...collapsedConfig.style } : undefined

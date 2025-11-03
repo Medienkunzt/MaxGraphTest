@@ -125,6 +125,7 @@ const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, sh
 
       const templateCell = new MaxGraphCell(null, new Geometry(0, 0, shape.width, shape.height), shape.style)
       templateCell.setVertex(true)
+      ;(templateCell as any).diagramElementType = shape.name
 
       const isDroppingSwimlane = shape.style?.shape === 'swimlane' || graphInstance.isSwimlane(templateCell as unknown as Cell)
       const dropTarget = graphInstance.getCellAt(point.x, point.y)
@@ -136,6 +137,7 @@ const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, sh
       }
 
       const cloned = cellArrayUtils.cloneCell(templateCell)!
+      ;(cloned as any).diagramElementType = (templateCell as any).diagramElementType ?? shape.name
       if (cloned.geometry) {
         const newGeometry = new Geometry(point.x, point.y, cloned.geometry.width, cloned.geometry.height)
         if (cloned.geometry.alternateBounds) {
@@ -191,6 +193,7 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
     for (const shape of shapes) {
       const cell = new MaxGraphCell(shape.label ?? shape.name, new Geometry(0, 0, shape.width, shape.height), shape.style)
       cell.setVertex(true)
+      ;(cell as any).diagramElementType = shape.name
 
       // Erstelle einen Drop-Handler für Drag & Drop
       const dropHandler = (graph: Graph, evt: MouseEvent, target: Cell | null, x?: number, y?: number) => {
@@ -209,6 +212,7 @@ export function setupToolbar(graph: Ref<Graph | undefined>, toolbarContainer: Re
         }
 
         const cloned = cellArrayUtils.cloneCell(cell)!
+        ;(cloned as any).diagramElementType = (cell as any).diagramElementType ?? shape.name
         if (cloned.geometry) {
           cloned.geometry.x = resolvedX
           cloned.geometry.y = resolvedY
