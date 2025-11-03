@@ -1,22 +1,53 @@
 <template>
   <div class="floating-button-group" :class="{ 'hidden-during-pan': isPanning }">
-    <v-btn-group size="small" density="compact" variant="outlined">
-      <v-btn icon="mdi-magnify-minus" title="Herauszoomen" @click="handleZoomOut" />
-      <v-btn icon="mdi-fit-to-page" title="An Fenster anpassen" @click="handleFitToWindow" />
-      <v-btn icon="mdi-magnify-plus" title="Hineinzoomen" @click="handleZoomIn" />
-      <v-btn :icon="snapToGrid ? 'mdi-grid' : 'mdi-grid-off'" :color="snapToGrid ? 'primary' : 'grey'" title="Raster umschalten" @click="handleToggleGrid" />
-      <v-btn icon="mdi-refresh" title="Raster neu laden" @click="handleForceGridRepaint" />
-    </v-btn-group>
+    <div class="control-row">
+      <v-btn-group size="small" density="compact" variant="outlined">
+        <v-btn :icon="snapToGrid ? 'mdi-grid' : 'mdi-grid-off'" :color="snapToGrid ? 'primary' : 'grey'" title="Raster umschalten" @click="handleToggleGrid" />
+        <v-btn icon="mdi-refresh" title="Raster neu laden" @click="handleForceGridRepaint" />
+      </v-btn-group>
+    </div>
+    <div class="control-row">
+      <v-btn-group size="small" density="compact" variant="outlined">
+        <v-btn icon="mdi-undo" :disabled="!props.canUndo" title="Rückgängig (Strg+Z)" @click="handleUndo" />
+        <v-btn icon="mdi-redo" :disabled="!props.canRedo" title="Wiederholen (Strg+Y)" @click="handleRedo" />
+      </v-btn-group>
+    </div>
+    <div class="control-row">
+      <v-btn-group size="small" density="compact" variant="outlined">
+        <v-btn icon="mdi-magnify-minus" title="Herauszoomen" @click="handleZoomOut" />
+        <v-btn icon="mdi-fit-to-page" title="An Fenster anpassen" @click="handleFitToWindow" />
+        <v-btn icon="mdi-magnify-plus" title="Hineinzoomen" @click="handleZoomIn" />
+      </v-btn-group>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useGraphContext } from '@/composables/useGraphContext'
 
+const props = withDefaults(
+  defineProps<{
+    canUndo?: boolean
+    canRedo?: boolean
+  }>(),
+  {
+    canUndo: false,
+    canRedo: false
+  }
+)
+
 const { isPanning, snapToGrid } = useGraphContext()
 
 // Emits für Parent-Komponente
-const emit = defineEmits(['zoom-in', 'zoom-out', 'fit-to-window', 'toggle-grid', 'force-grid-repaint'])
+const emit = defineEmits(['undo', 'redo', 'zoom-in', 'zoom-out', 'fit-to-window', 'toggle-grid', 'force-grid-repaint'])
+
+const handleUndo = () => {
+  emit('undo')
+}
+
+const handleRedo = () => {
+  emit('redo')
+}
 
 const handleZoomIn = () => {
   emit('zoom-in')
@@ -45,6 +76,9 @@ const handleForceGridRepaint = () => {
   bottom: 16px;
   left: 16px;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
   padding: 8px;
@@ -53,6 +87,12 @@ const handleForceGridRepaint = () => {
     0 2px 6px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.control-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .floating-button-group .v-btn-group {

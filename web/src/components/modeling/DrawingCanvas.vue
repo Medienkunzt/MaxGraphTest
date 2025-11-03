@@ -37,7 +37,17 @@
         </div>
 
         <!-- Graph Controls Component -->
-        <GraphControls @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
+        <GraphControls
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          @undo="undoGraph"
+          @redo="redoGraph"
+          @zoom-in="zoomIn"
+          @zoom-out="zoomOut"
+          @fit-to-window="fitToWindow"
+          @toggle-grid="toggleGrid"
+          @force-grid-repaint="forceGridRepaint"
+        />
 
         <!-- Graph Settings Component -->
         <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" @update:use-grid-for-panning="updateUseGridForPanning" />
@@ -47,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
@@ -59,6 +69,7 @@ import { setupToolbar, createDefaultShapes, buildShapesFromElements } from '@/ut
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
 import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, renderRoutingConnectionPreview } from '@/utils/connectionPreview'
 import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
+import { setupUndoManager, type UndoManagerApi, type UndoManagerState } from '@/utils/setupUndoManager'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
@@ -161,6 +172,8 @@ const snapToGrid = ref(true)
 const tolerance = ref(10)
 const isPanning = ref(false)
 const useGridForPanning = ref(true)
+const canUndo = ref(false)
+const canRedo = ref(false)
 
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
@@ -181,6 +194,8 @@ const toolbarShapes = ref(
   })
 )
 
+let undoManagerApi: UndoManagerApi | undefined
+
 // Stelle Graph-Context für Child-Komponenten bereit
 provideGraphContext({
   graph,
@@ -195,6 +210,33 @@ provideGraphContext({
 const { deleteSelected, duplicateSelected, selectAll, clearSelection } = useGraphOperations(graph, parent)
 const { zoomIn, zoomOut, fitToWindow } = useZoomOperations(graph)
 const { updateGridSize, updateSnapToGrid, updateTolerance, updateUseGridForPanning, toggleGrid, forceGridRepaint } = useGridSettings(graph, gridSize, snapToGrid, tolerance, useGridForPanning)
+
+const applyUndoState = (state: UndoManagerState) => {
+  canUndo.value = state.canUndo
+  canRedo.value = state.canRedo
+}
+
+const undoGraph = () => {
+  if (!graph.value || !undoManagerApi?.canUndo()) {
+    return
+  }
+
+  undoManagerApi.undo()
+  graph.value.refresh()
+  graph.value.view.validate()
+  emitUpdatedModel()
+}
+
+const redoGraph = () => {
+  if (!graph.value || !undoManagerApi?.canRedo()) {
+    return
+  }
+
+  undoManagerApi.redo()
+  graph.value.refresh()
+  graph.value.view.validate()
+  emitUpdatedModel()
+}
 
 // Computed für Verbindungen
 const languageConnections = computed(() => props.languageConnections ?? [])
@@ -231,6 +273,13 @@ onMounted(() => {
   if (props.previewConnection) {
     renderConnectionPreviewOnly(props.previewConnection)
   }
+})
+
+onUnmounted(() => {
+  undoManagerApi?.destroy()
+  undoManagerApi = undefined
+  canUndo.value = false
+  canRedo.value = false
 })
 
 // Watch für previewConnection (nur für Preview-Modus)
@@ -320,6 +369,9 @@ const initGraph = () => {
   graph.value.setAllowNegativeCoordinates(false)
   graph.value.setHtmlLabels(true)
 
+  undoManagerApi?.destroy()
+  undoManagerApi = setupUndoManager(graph.value, applyUndoState)
+
   // Aktiviere Panning mit Standard-Implementierung (Rechtsklick oder mittlere Maustaste)
   graph.value.setPanning(true)
 
@@ -408,6 +460,9 @@ const initGraph = () => {
 
   // Initialisiere KeyHandler (nicht als Plugin, sondern separat wie in den Beispielen)
   keyHandler.value = new KeyHandler(graph.value)
+  keyHandler.value.bindControlKey(90, () => undoGraph())
+  keyHandler.value.bindControlKey(89, () => redoGraph())
+  ;(keyHandler.value as any)?.bindControlShiftKey?.(90, () => redoGraph())
 
   // Swimlane-Unterstützung aktivieren
   setupSwimlaneSupport(graph.value)
