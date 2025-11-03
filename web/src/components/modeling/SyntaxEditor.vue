@@ -20,15 +20,17 @@
       <!-- Canvas Vorschau (rechts) -->
       <v-col cols="4" class="pl-2 preview-column">
         <v-card class="preview-card">
-          <v-card-title class="py-2">
+          <v-card-title class="py-2 d-flex align-center">
             <span class="text-h6">Vorschau</span>
+            <v-spacer />
+            <AutonomyModeToggle v-model="autonomyMode" />
           </v-card-title>
 
           <v-divider />
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="syntaxRules" />
+              <DrawingCanvas ref="drawingCanvasRef" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="syntaxRules" :autonomy-mode="autonomyMode" />
             </div>
 
             <v-alert v-if="!selectedRule" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Syntax-Regel aus, um eine Vorschau zu sehen </v-alert>
@@ -43,6 +45,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
+import AutonomyModeToggle from '@/components/modeling/AutonomyModeToggle.vue'
 import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import type { GraphDataModel } from '@maxgraph/core'
@@ -68,6 +71,8 @@ const { languages, setCurrentLanguage } = useDiagramLanguages()
 const selectedRuleIndex = ref<number>(-1)
 const canvasModel = ref<GraphDataModel>()
 const drawingCanvasRef = ref()
+
+const autonomyMode = ref<'manual' | 'assisted' | 'strict'>('manual')
 
 // Computed
 const syntaxRules = computed(() => store.currentLanguage?.syntax || [])

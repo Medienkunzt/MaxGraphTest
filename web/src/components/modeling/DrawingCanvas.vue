@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <v-card class="pa-2" height="100%" width="100%">
     <v-card-text class="pa-1 canvas-content">
       <!-- Erweiterte Toolbar -->
@@ -27,6 +27,8 @@
 
         <!-- Connection Toolbar -->
         <ConnectionToolbar v-if="languageConnections.length > 0" v-model="selectedConnectionIndex" :connections="languageConnections" @select="onConnectionSelected" />
+
+        <AutonomyControls :mode="autonomyMode" :indicator="autonomyIndicator" :dialog="autonomyDialog" @manual-validate="triggerManualValidation" @update:dialog-visible="updateDialogVisibility" />
       </div>
 
       <!-- Graph Container -->
@@ -37,17 +39,7 @@
         </div>
 
         <!-- Graph Controls Component -->
-        <GraphControls
-          :can-undo="canUndo"
-          :can-redo="canRedo"
-          @undo="undoGraph"
-          @redo="redoGraph"
-          @zoom-in="zoomIn"
-          @zoom-out="zoomOut"
-          @fit-to-window="fitToWindow"
-          @toggle-grid="toggleGrid"
-          @force-grid-repaint="forceGridRepaint"
-        />
+        <GraphControls :can-undo="canUndo" :can-redo="canRedo" @undo="undoGraph" @redo="redoGraph" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
 
         <!-- Graph Settings Component -->
         <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" @update:use-grid-for-panning="updateUseGridForPanning" />
@@ -57,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch, shallowRef } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch, shallowRef } from 'vue'
 import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
@@ -73,10 +65,12 @@ import { setupUndoManager, type UndoManagerApi, type UndoManagerState } from '@/
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
+import AutonomyControls from './AutonomyControls.vue'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
 import type { DiagramSyntax } from '@/model/Syntax'
 import { buildMultiplicitiesFromSyntax, Multiplicity as SyntaxMultiplicity } from '@/utils/multiplicity'
+import type { AutonomyMode, AutonomyIndicatorState, AutonomyDialogState } from '@/types/autonomy'
 
 const mergeMessages = (...messages: Array<string | null | undefined>): string | null => {
   const seen = new Set<string>()
@@ -201,9 +195,7 @@ class MyCustomGraph extends Graph {
     const sourceOut = source?.getDirectedEdgeCount(true, edge ?? null) ?? 0
     const targetIn = target?.getDirectedEdgeCount(false, edge ?? null) ?? 0
 
-    const errors = this.multiplicityRules
-      .map((rule) => rule.checkEdge(this, edge ?? null, source ?? null, target ?? null, sourceOut, targetIn))
-      .filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
+    const errors = this.multiplicityRules.map((rule) => rule.checkEdge(this, edge ?? null, source ?? null, target ?? null, sourceOut, targetIn)).filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
 
     return mergeMessages(...errors)
   }
@@ -213,9 +205,7 @@ class MyCustomGraph extends Graph {
       return null
     }
 
-    const errors = this.multiplicityRules
-      .map((rule) => rule.checkCell(this, cell))
-      .filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
+    const errors = this.multiplicityRules.map((rule) => rule.checkCell(this, cell)).filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
 
     return mergeMessages(...errors)
   }
@@ -230,6 +220,7 @@ const props = withDefaults(
     languageElements?: DiagramElement[]
     languageConnections?: DiagramConnection[]
     languageSyntax?: DiagramSyntax[]
+    autonomyMode?: AutonomyMode
     previewConnection?: DiagramConnection
     previewMode?: 'simple' | 'scenario' | 'routing'
   }>(),
@@ -240,12 +231,125 @@ const props = withDefaults(
     languageElements: undefined,
     languageConnections: undefined,
     languageSyntax: undefined,
+    autonomyMode: 'manual',
     previewConnection: undefined,
     previewMode: 'simple'
   }
 )
 
 const emit = defineEmits(['update:model'])
+
+const autonomyMode = computed<AutonomyMode>(() => props.autonomyMode ?? 'manual')
+
+const validationState = reactive({
+  status: 'unknown' as 'unknown' | 'valid' | 'invalid',
+  messages: [] as string[],
+  lastChecked: 0
+})
+
+const validationDialog = ref(false)
+const validationDialogMessages = ref<string[]>([])
+
+const validationDialogTitle = computed(() => (validationDialogMessages.value.length > 0 ? 'Regelverletzungen' : 'Modell gültig'))
+
+const showValidationIndicator = computed(() => autonomyMode.value !== 'manual' || validationState.status !== 'unknown')
+
+const validationIndicatorLabel = computed(() => {
+  if (validationState.status === 'invalid') return 'Fehler'
+  if (validationState.status === 'valid') return 'Valide'
+  return 'Ungeprüft'
+})
+
+const validationTooltip = computed(() => {
+  if (validationState.status === 'invalid' && validationState.messages.length > 0) {
+    return validationState.messages.join('\n')
+  }
+  if (validationState.status === 'valid') {
+    return 'Keine Regelverletzungen vorhanden.'
+  }
+  return 'Noch keine Validierung durchgefuehrt.'
+})
+
+const shouldAutoValidate = computed(() => autonomyMode.value !== 'manual')
+const isStrictMode = computed(() => autonomyMode.value === 'strict')
+
+const getValidationSnapshot = () => validationState.messages.slice()
+
+const setValidationState = (messages: string[] | null, _origin: AutonomyMode) => {
+  if (messages == null) {
+    validationState.messages = []
+    validationState.status = 'unknown'
+    validationState.lastChecked = Date.now()
+    return
+  }
+
+  const unique = Array.from(new Set(messages.map((msg) => msg.trim()).filter((msg) => msg.length > 0)))
+  validationState.messages = unique
+  validationState.status = unique.length > 0 ? 'invalid' : 'valid'
+  validationState.lastChecked = Date.now()
+}
+
+const sanitizeValidationWarnings = (raw: string | null | undefined): string[] => {
+  if (!raw || typeof raw !== 'string') {
+    return []
+  }
+
+  const normalized = raw
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+  return Array.from(
+    new Set(
+      normalized
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+    )
+  )
+}
+
+const collectValidationMessages = (): string[] | null => {
+  const graphInstance = graph.value
+  if (!graphInstance) {
+    return null
+  }
+
+  const rawWarnings = (graphInstance as any).validateGraph?.()
+  const messages = sanitizeValidationWarnings(rawWarnings)
+  return messages
+}
+
+const openValidationDialog = (messages: string[]) => {
+  validationDialogMessages.value = [...messages]
+  validationDialog.value = true
+}
+
+const triggerManualValidation = () => {
+  const messages = collectValidationMessages()
+  if (messages == null) {
+    openValidationDialog(['Validierung ist derzeit nicht verfuegbar.'])
+    return
+  }
+
+  setValidationState(messages, 'manual')
+  openValidationDialog(messages)
+}
+
+const autonomyIndicator = computed<AutonomyIndicatorState>(() => ({
+  visible: showValidationIndicator.value,
+  text: validationIndicatorLabel.value,
+  tooltip: validationTooltip.value
+}))
+
+const autonomyDialog = computed<AutonomyDialogState>(() => ({
+  visible: validationDialog.value,
+  title: validationDialogTitle.value,
+  messages: validationDialogMessages.value
+}))
+
+const updateDialogVisibility = (visible: boolean) => {
+  validationDialog.value = visible
+}
 
 // Reaktive Variablen für Konfiguration
 const gridSize = ref(10)
@@ -277,6 +381,9 @@ const toolbarShapes = ref(
 
 let undoManagerApi: UndoManagerApi | undefined
 
+let strictUndoInProgress = false
+let strictUndoSnapshot: string[] | null = null
+
 const multiplicityRulesState = shallowRef<SyntaxMultiplicity[]>([])
 
 const applyMultiplicityRulesToGraph = (rules?: SyntaxMultiplicity[]) => {
@@ -289,15 +396,39 @@ const applyMultiplicityRulesToGraph = (rules?: SyntaxMultiplicity[]) => {
   graphInstance.setMultiplicityRules(normalizedRules)
   graphInstance.refresh()
   graphInstance.view.validate()
-  graphInstance.validateGraph()
+  const validationMessages = sanitizeValidationWarnings((graphInstance as any).validateGraph?.())
+
+  if (shouldAutoValidate.value) {
+    setValidationState(validationMessages, 'auto')
+  } else {
+    setValidationState(null, 'manual')
+  }
 }
+
+watch(
+  () => autonomyMode.value,
+  (mode) => {
+    if (mode === 'manual') {
+      setValidationState(null, 'manual')
+      return
+    }
+
+    const messages = collectValidationMessages()
+    setValidationState(messages, 'auto')
+
+    if (mode === 'strict' && messages && messages.length > 0) {
+      openValidationDialog(messages)
+    }
+  },
+  { immediate: true }
+)
 
 const rebuildMultiplicityRules = (rules?: DiagramSyntax[]) => {
   multiplicityRulesState.value = buildMultiplicitiesFromSyntax(rules ?? [])
   applyMultiplicityRulesToGraph(multiplicityRulesState.value)
 }
 
-// Stelle Graph-Context für Child-Komponenten bereit
+// Stelle Graph-Context fÃ¼r Child-Komponenten bereit
 provideGraphContext({
   graph,
   isPanning,
@@ -368,14 +499,47 @@ onMounted(() => {
   })
 
   graph.value!.getDataModel().addListener(InternalEvent.CHANGE, () => {
-    // Verhindere unnötige Refreshes während Batch-Updates
-    if (graph.value?.getDataModel().updateLevel && graph.value.getDataModel().updateLevel > 0) {
+    const currentGraph = graph.value
+    if (currentGraph?.getDataModel().updateLevel && currentGraph.getDataModel().updateLevel > 0) {
       return
     }
 
-    graph.value?.refresh()
-    graph.value?.view.validate()
+    currentGraph?.refresh()
+    currentGraph?.view.validate()
     emitUpdatedModel()
+
+    if (!shouldAutoValidate.value) {
+      return
+    }
+
+    if (strictUndoInProgress) {
+      strictUndoInProgress = false
+      const finalMessages = collectValidationMessages()
+      if (finalMessages != null) {
+        setValidationState(finalMessages, 'auto')
+      } else if (strictUndoSnapshot) {
+        setValidationState(strictUndoSnapshot, 'auto')
+      }
+      strictUndoSnapshot = null
+      return
+    }
+
+    const previousMessages = getValidationSnapshot()
+    const messages = collectValidationMessages()
+    setValidationState(messages, 'auto')
+
+    if (isStrictMode.value && previousMessages.length === 0 && messages && messages.length > 0) {
+      openValidationDialog(messages)
+      if (undoManagerApi?.canUndo()) {
+        strictUndoSnapshot = previousMessages
+        strictUndoInProgress = true
+        undoManagerApi.undo()
+      } else {
+        console.warn('Strict mode prevented a change but no undo information was available.')
+        strictUndoSnapshot = null
+        setValidationState(previousMessages, 'auto')
+      }
+    }
   })
 
   // Wenn eine einzelne Verbindung als Vorschau ausgewählt ist, zeige nur diese
