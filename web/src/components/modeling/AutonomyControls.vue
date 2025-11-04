@@ -19,7 +19,7 @@
 
 <script setup lang="ts">
 import { toRefs } from 'vue'
-import type { AutonomyMode } from '@/types/autonomy'
+import type { AutonomyMode } from '@/model/Autonomy'
 
 const props = defineProps<{
   mode: AutonomyMode

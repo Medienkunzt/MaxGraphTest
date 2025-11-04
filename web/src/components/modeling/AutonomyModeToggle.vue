@@ -8,7 +8,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AutonomyMode } from '@/types/autonomy'
+import type { AutonomyMode } from '@/model/Autonomy'
 
 const props = defineProps<{
   modelValue: AutonomyMode

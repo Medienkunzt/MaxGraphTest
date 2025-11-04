@@ -70,7 +70,7 @@ import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
 import type { DiagramSyntax } from '@/model/Syntax'
 import { buildMultiplicitiesFromSyntax, Multiplicity as SyntaxMultiplicity } from '@/utils/multiplicity'
-import type { AutonomyMode } from '@/types/autonomy'
+import type { AutonomyMode } from '@/model/Autonomy'
 
 const mergeMessages = (...messages: Array<string | null | undefined>): string | null => {
   const seen = new Set<string>()
