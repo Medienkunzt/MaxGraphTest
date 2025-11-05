@@ -27,9 +27,7 @@
 
       <v-select v-model="connection.listColor" :items="colorOptions" item-title="label" item-value="value" label="Farbe" variant="outlined" density="compact" class="mb-1" @update:model-value="triggerUpdate">
         <template #prepend-inner>
-          <v-icon :color="connection.listColor || 'primary'">
-            mdi-circle
-          </v-icon>
+          <v-icon :color="connection.listColor || 'primary'"> mdi-circle </v-icon>
         </template>
         <template #item="{ item, props }">
           <v-list-item v-bind="props">

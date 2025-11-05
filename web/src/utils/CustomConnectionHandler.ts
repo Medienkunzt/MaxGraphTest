@@ -51,7 +51,7 @@ export class CustomConnectionHandler extends ConnectionHandler {
     }
 
     // Erstelle Edge mit dem Style
-    const edge = this.graph.createEdge(null, this.selectedConnection.defaultLabel || '', null, null, null, style)
+    const edge = this.graph.createEdge(null, '', this.selectedConnection.defaultLabel ?? '', null, null, style)
     return new CellState(this.graph.view, edge, this.graph.getCellStyle(edge))
   }
 

@@ -28,6 +28,12 @@
         <!-- Connection Toolbar -->
         <ConnectionToolbar v-if="languageConnections.length > 0" v-model="selectedConnectionIndex" :connections="languageConnections" @select="onConnectionSelected" />
 
+        <!-- Validation Button -->
+        <v-btn v-if="hasValidationRules" size="small" density="compact" color="primary" class="validation-btn" title="Diagramm validieren" @click="manualValidate">
+          <v-icon start class="validation-icon">mdi-check-circle</v-icon>
+          <span class="validation-text">Validieren</span>
+        </v-btn>
+
         <AutonomyControls :mode="autonomyMode" @update:mode="$emit('update:autonomyMode', $event)" />
       </div>
 
@@ -49,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch, shallowRef } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
@@ -69,32 +75,8 @@ import AutonomyControls from './AutonomyControls.vue'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
 import type { DiagramSyntax } from '@/model/Syntax'
-import { buildMultiplicitiesFromSyntax, Multiplicity as SyntaxMultiplicity } from '@/utils/multiplicity'
+import { buildValidationRulesFromSyntax, DiagramValidator } from '@/utils/multiplicity'
 import type { AutonomyMode } from '@/model/Autonomy'
-
-const mergeMessages = (...messages: Array<string | null | undefined>): string | null => {
-  const seen = new Set<string>()
-  const ordered: string[] = []
-
-  messages.forEach((entry) => {
-    if (!entry) {
-      return
-    }
-
-    entry
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .forEach((line) => {
-        if (!seen.has(line)) {
-          seen.add(line)
-          ordered.push(line)
-        }
-      })
-  })
-
-  return ordered.length > 0 ? ordered.join('\n') : null
-}
 
 import img_rectangle from '@/assets/images/rectangle.gif'
 import img_ellipse from '@/assets/images/ellipse.gif'
@@ -124,8 +106,6 @@ class MyCustomCellEditorHandler extends CellEditorHandler {
 }
 
 class MyCustomGraph extends Graph {
-  private multiplicityRules: SyntaxMultiplicity[] = []
-
   constructor(container: HTMLElement, model?: GraphDataModel, plugins?: GraphPluginConstructor[]) {
     super(container, model, plugins)
 
@@ -161,53 +141,6 @@ class MyCustomGraph extends Graph {
       return true
     }
     return super.isCellEditable(cell)
-  }
-
-  setMultiplicityRules(rules: SyntaxMultiplicity[]) {
-    this.multiplicityRules = Array.isArray(rules) ? [...rules] : []
-  }
-
-  override getEdgeValidationError = (edge: Cell | null, source: Cell | null, target: Cell | null) => {
-    const baseError = super.getEdgeValidationError(edge, source, target)
-    if (baseError === '') {
-      return ''
-    }
-
-    const multiplicityError = this.evaluateEdgeMultiplicity(edge, source, target)
-    return mergeMessages(baseError, multiplicityError)
-  }
-
-  override getCellValidationError = (cell: Cell) => {
-    const baseError = super.getCellValidationError(cell)
-    if (baseError === '') {
-      return ''
-    }
-
-    const multiplicityError = this.evaluateCellMultiplicity(cell)
-    return mergeMessages(baseError, multiplicityError)
-  }
-
-  private evaluateEdgeMultiplicity(edge: Cell | null, source: Cell | null, target: Cell | null): string | null {
-    if (!this.multiplicityRules.length) {
-      return null
-    }
-
-    const sourceOut = source?.getDirectedEdgeCount(true, edge ?? null) ?? 0
-    const targetIn = target?.getDirectedEdgeCount(false, edge ?? null) ?? 0
-
-    const errors = this.multiplicityRules.map((rule) => rule.checkEdge(this, edge ?? null, source ?? null, target ?? null, sourceOut, targetIn)).filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
-
-    return mergeMessages(...errors)
-  }
-
-  private evaluateCellMultiplicity(cell: Cell | null): string | null {
-    if (!cell || !this.multiplicityRules.length) {
-      return null
-    }
-
-    const errors = this.multiplicityRules.map((rule) => rule.checkCell(this, cell)).filter((message): message is string => typeof message === 'string' && message.trim().length > 0)
-
-    return mergeMessages(...errors)
   }
 }
 
@@ -274,26 +207,32 @@ const toolbarShapes = ref(
 
 let undoManagerApi: UndoManagerApi | undefined
 
-const multiplicityRulesState = shallowRef<SyntaxMultiplicity[]>([])
+// Zentraler Validator für alle Diagramm-Regeln
+const diagramValidator = new DiagramValidator()
 
-const applyMultiplicityRulesToGraph = (rules?: SyntaxMultiplicity[]) => {
+const applyValidationRulesToGraph = () => {
   const graphInstance = graph.value
-  if (!(graphInstance instanceof MyCustomGraph)) {
+  if (!graphInstance) {
     return
   }
 
-  const normalizedRules = Array.isArray(rules) ? rules : multiplicityRulesState.value
-  graphInstance.setMultiplicityRules(normalizedRules)
+  // Graph aktualisieren
   graphInstance.refresh()
   graphInstance.view.validate()
 }
 
-const rebuildMultiplicityRules = (rules?: DiagramSyntax[]) => {
-  multiplicityRulesState.value = buildMultiplicitiesFromSyntax(rules ?? [])
-  applyMultiplicityRulesToGraph(multiplicityRulesState.value)
+const rebuildValidationRules = (rules?: DiagramSyntax[]) => {
+  const validationRules = buildValidationRulesFromSyntax(rules ?? [])
+  diagramValidator.addRules(validationRules)
+  applyValidationRulesToGraph()
 }
 
-// Stelle Graph-Context fÃ¼r Child-Komponenten bereit
+// Computed: Gibt es Validierungsregeln?
+const hasValidationRules = computed(() => {
+  return Array.isArray(props.languageSyntax) && props.languageSyntax.some((r) => r.ruleType === 'multiplicity')
+})
+
+// Stelle Graph-Context für Child-Komponenten bereit
 provideGraphContext({
   graph,
   isPanning,
@@ -341,7 +280,7 @@ const languageConnections = computed(() => props.languageConnections ?? [])
 watch(
   () => props.languageSyntax,
   (newSyntax) => {
-    rebuildMultiplicityRules(newSyntax ?? [])
+    rebuildValidationRules(newSyntax ?? [])
   },
   { deep: true, immediate: true }
 )
@@ -350,6 +289,23 @@ watch(
 const onConnectionSelected = (connection: DiagramConnection) => {
   if (customConnectionHandler.value) {
     customConnectionHandler.value.setSelectedConnection(connection)
+  }
+}
+
+// Manuelle Validierung
+const manualValidate = () => {
+  const currentGraph = graph.value
+  if (!currentGraph) {
+    return
+  }
+
+  // TODO: Eigene Validierung implementieren
+  const errors = diagramValidator.validateGraph(currentGraph)
+
+  if (errors.length === 0) {
+    alert('✓ Keine Validierungsfehler gefunden!')
+  } else {
+    alert('✗ Validierungsfehler:\n\n' + errors.join('\n'))
   }
 }
 
@@ -590,7 +546,7 @@ const initGraph = () => {
     }, 100)
   })
 
-  applyMultiplicityRulesToGraph()
+  applyValidationRulesToGraph()
 }
 
 const buildLanguageShapes = computed(() => {
@@ -706,6 +662,7 @@ defineExpose({
 
 .toolbar-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   min-height: 40px;
   background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
@@ -720,9 +677,37 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 4px;
-  border-right: 1px solid #ddd;
   padding-right: 8px;
+  margin-right: 0;
+  border-right: 1px solid #ddd;
+}
+
+/* Responsiv: Border bei schmalen Ansichten entfernen */
+@media (max-width: 900px) {
+  .maxgraph-toolbar {
+    border-right: none;
+    padding-right: 0;
+  }
+}
+
+/* Validierungs-Button */
+.validation-btn {
   margin-right: 8px;
+}
+
+/* Responsiv: Text bei schmalen Ansichten ausblenden */
+@media (max-width: 600px) {
+  .validation-text {
+    display: none;
+  }
+
+  .validation-icon {
+    margin-right: 0 !important;
+  }
+
+  .validation-btn {
+    min-width: 36px !important;
+  }
 }
 
 .toolbar-container {

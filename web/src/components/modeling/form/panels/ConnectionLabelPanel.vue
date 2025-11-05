@@ -141,10 +141,10 @@ const noLabel = computed(() => localStyle.value.noLabel === true)
 
 // Label Text
 const labelTextValue = computed({
-  get: () => props.connection.label ?? '',
+  get: () => props.connection.defaultLabel ?? '',
   set: (value: string) => {
     // eslint-disable-next-line vue/no-mutating-props
-    props.connection.label = value
+    props.connection.defaultLabel = value || undefined
   }
 })
 

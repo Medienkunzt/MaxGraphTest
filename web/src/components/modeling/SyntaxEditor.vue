@@ -2,14 +2,14 @@
   <v-container fluid class="pa-2 editor-surface">
     <v-row no-gutters class="editor-row">
       <!-- Syntax-Regeln Liste (links) -->
-      <v-col cols="4" class="pr-2 editor-col">
+      <v-col cols="3" class="pr-2 editor-col">
         <div class="scroll-column">
           <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-index="selectedRuleIndex" empty-text="Keine Syntax-Regeln definiert" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
         </div>
       </v-col>
 
       <!-- Regel-Editor (mitte) -->
-      <v-col cols="4" class="px-1 editor-col">
+      <v-col cols="5" class="px-1 editor-col">
         <div class="scroll-column">
           <BasicEditorForm type="syntax" :selected-item="selectedRule">
             <SyntaxEditorForm v-if="selectedRule" :selected-rule="selectedRule" @update="updateAll" />
@@ -91,27 +91,26 @@ const selectRule = (ruleIndex: number) => {
 const addNewRule = () => {
   if (!store.currentLanguage) return
 
+  const existingIndex = syntaxRules.value.findIndex((rule) => rule.ruleType === 'multiplicity')
+  if (existingIndex !== -1) {
+    selectedRuleIndex.value = existingIndex
+    return
+  }
+
   const newRule: DiagramSyntax = {
-    type: `multiplicity_${Date.now()}`,
-    label: 'Neue Regel',
+    type: 'multiplicity',
+    label: 'Multiplicity',
     ruleType: 'multiplicity',
     description: '',
     config: {
-      source: true,
-      type: null,
-      attr: null,
-      value: null,
-      min: 0,
-      max: null,
-      validNeighbors: [],
-      countError: '',
-      typeError: '',
-      validNeighborsAllowed: true
+      relations: [],
+      messageTemplate: ''
     }
   }
 
   store.addSyntaxToLanguage(store.currentLanguage.id, newRule)
-  selectedRuleIndex.value = syntaxRules.value.length - 1
+  const newIndex = syntaxRules.value.findIndex((rule) => rule.type === newRule.type)
+  selectedRuleIndex.value = newIndex !== -1 ? newIndex : syntaxRules.value.length - 1
 }
 
 const deleteRule = (ruleIndex: number) => {

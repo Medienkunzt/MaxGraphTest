@@ -62,7 +62,7 @@ export const renderSimpleConnectionPreview = (graph: Graph, connection: DiagramC
       parent,
       source,
       target,
-      value: connection.label,
+      value: connection.defaultLabel ?? '',
       style
     })
 
@@ -70,7 +70,7 @@ export const renderSimpleConnectionPreview = (graph: Graph, connection: DiagramC
     applyPoints(edge, connection.points)
     applyConnectionAdditionalLabels(graph, edge, connection)
 
-    graph.setSelectionCell(edge)
+    graph.clearSelection()
   } finally {
     graph.getDataModel().endUpdate()
   }
@@ -180,7 +180,7 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
       parent,
       source: client,
       target: gateway,
-      value: connection.label && connection.label.trim().length > 0 ? connection.label : 'Anfrage',
+      value: connection.defaultLabel ?? '',
       style: cloneStyle(baseStyle)
     })
 
@@ -235,7 +235,7 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
 
     applyLabelOffset(feedbackEdge, connection.labelOffset)
 
-    graph.setSelectionCell(requestEdge)
+    graph.clearSelection()
   } finally {
     graph.getDataModel().endUpdate()
   }
@@ -420,7 +420,7 @@ export const renderRoutingConnectionPreview = (graph: Graph, connection: Diagram
       parent,
       source: topNode,
       target: hub,
-      value: connection.label || '',
+      value: connection.defaultLabel ?? '',
       style: cloneStyle(baseStyle)
     })
 
@@ -526,7 +526,7 @@ export const renderRoutingConnectionPreview = (graph: Graph, connection: Diagram
     })
 
     // Select the first edge to highlight the current style
-    graph.setSelectionCell(edge1)
+    graph.clearSelection()
 
     // Suppress unused variable warnings
     void edge2

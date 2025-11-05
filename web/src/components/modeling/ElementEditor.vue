@@ -2,14 +2,14 @@
   <v-container fluid class="pa-2 editor-surface">
     <v-row no-gutters class="editor-row">
       <!-- Element-Liste (links) -->
-      <v-col cols="4" class="pr-2 editor-col">
+      <v-col cols="3" class="pr-2 editor-col">
         <div class="scroll-column">
           <EditorEntityList title="Elemente" add-button-text="Neues Element" :items="elements" :selected-index="selectedElementIndex" empty-text="Keine Elemente definiert" title-field="type" subtitle-field="defaultLabel" icon-field="renderMode" color-field="renderMode" :icon-map="elementIconMap" :color-map="elementColorMap" @add="addNewElement" @select="selectElement" @delete="deleteElement" />
         </div>
       </v-col>
 
       <!-- Element-Editor (mitte) -->
-      <v-col cols="4" class="px-1 editor-col">
+      <v-col cols="5" class="px-1 editor-col">
         <div class="scroll-column">
           <BasicEditorForm type="element" :selected-item="selectedElement">
             <ElementPropertiesEditor v-if="selectedElement" :element="selectedElement" @update="updateAll" />

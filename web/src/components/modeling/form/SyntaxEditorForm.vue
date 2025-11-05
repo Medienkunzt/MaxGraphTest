@@ -1,6 +1,6 @@
 <template>
   <div class="syntax-editor-form">
-    <v-text-field v-model="rule.label" label="Regel-Name" variant="outlined" density="compact" class="mb-3" @input="updateAll" />
+    <v-text-field v-model="rule.label" label="Regel-Label" variant="outlined" density="compact" class="mb-3" @input="updateAll" />
 
     <v-select v-model="rule.ruleType" :items="ruleTypes" label="Regel-Typ" variant="outlined" density="compact" class="mb-3" @update:model-value="onTypeChange" />
 
@@ -13,7 +13,7 @@
           Multiplicity-Einstellungen
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <MultiplicityForm :config="rule.config" :element-options="elementOptions" @update="updateAll" />
+          <MultiplicityForm :config="rule.config" :element-options="elementOptions" :connection-options="connectionOptions" @update="updateAll" />
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
@@ -46,37 +46,19 @@ const elementOptions = computed(() => {
   return elements.map((el) => el.type)
 })
 
+const connectionOptions = computed(() => {
+  const connections = store.currentLanguage?.connections || []
+  return connections.map((conn) => conn.type)
+})
+
 const updateAll = () => {
   emit('update')
 }
 
-const createDefaultMultiplicityConfig = (): MultiplicityRuleConfig => ({
-  source: true,
-  type: null,
-  attr: null,
-  value: null,
-  min: 0,
-  max: null,
-  validNeighbors: [],
-  countError: '',
-  typeError: '',
-  validNeighborsAllowed: true
-})
-
 const normalizeMultiplicityConfig = (config: Partial<MultiplicityRuleConfig> | undefined): MultiplicityRuleConfig => {
-  const defaults = createDefaultMultiplicityConfig()
-
   return {
-    source: typeof config?.source === 'boolean' ? config.source : defaults.source,
-    type: config?.type ?? defaults.type,
-    attr: config?.attr ?? null,
-    value: config?.value ?? null,
-    min: typeof config?.min === 'number' && !Number.isNaN(config.min) ? config.min : defaults.min,
-    max: typeof config?.max === 'number' && Number.isFinite(config.max) ? config.max : null,
-    validNeighbors: Array.isArray(config?.validNeighbors) ? config.validNeighbors : [],
-    countError: config?.countError ?? '',
-    typeError: config?.typeError ?? '',
-    validNeighborsAllowed: config?.validNeighborsAllowed ?? defaults.validNeighborsAllowed
+    relations: Array.isArray(config?.relations) ? config.relations : [],
+    messageTemplate: config?.messageTemplate ?? ''
   }
 }
 

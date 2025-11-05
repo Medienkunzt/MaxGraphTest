@@ -1,16 +1,35 @@
 export type SyntaxRuleType = 'multiplicity'
 
-export interface MultiplicityRuleConfig {
-  source: boolean
-  type: string | null // Element-Typ-Name (entspricht DiagramElement.type)
-  attr: string | null
-  value: string | null
+export type MultiplicityRelationState = 'allowed' | 'forbidden'
+
+export type MultiplicityScope = 'aggregate' | 'perConnection'
+
+export interface MultiplicityCombinedConfig {
+  connectionTypes: string[]
   min: number
   max: number | null
-  validNeighbors: string[] // Array von Element-Typ-Namen (DiagramElement.type)
-  countError: string
-  typeError: string
-  validNeighborsAllowed: boolean
+}
+
+export interface MultiplicitySeparateEntry {
+  connectionType: string
+  min: number
+  max: number | null
+}
+
+export interface MultiplicityRelationConfig {
+  sourceType: string
+  targetType: string
+  state: MultiplicityRelationState
+  mode: 'combined' | 'separate'
+  scope: MultiplicityScope
+  connectionMode: 'allow' | 'exclude'
+  combined: MultiplicityCombinedConfig
+  separate: MultiplicitySeparateEntry[]
+}
+
+export interface MultiplicityRuleConfig {
+  relations: MultiplicityRelationConfig[]
+  messageTemplate: string
 }
 
 export interface SyntaxRuleBase {

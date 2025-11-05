@@ -1,6 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { DiagramLanguage, DiagramElement, DiagramConnection, DiagramSyntax } from '@/model/DiagramLanguage'
+import type {
+  MultiplicitySyntaxRule,
+  MultiplicityRelationConfig,
+  MultiplicityRuleConfig,
+  MultiplicityRelationState,
+  MultiplicityCombinedConfig,
+  MultiplicitySeparateEntry
+} from '@/model/Syntax'
 
 export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   // State
@@ -59,6 +67,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
 
   const setCurrentLanguage = (language: DiagramLanguage | null) => {
     currentLanguage.value = language
+    if (language) {
+      ensureSingleMultiplicityRule(language)
+    }
   }
 
   const getLanguageById = (id: string): DiagramLanguage | undefined => {
@@ -124,36 +135,368 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   // Syntax-Management
   const addSyntaxToLanguage = (languageId: string, syntax: DiagramSyntax) => {
     const language = languages.value.find((lang) => lang.id === languageId)
-    if (language) {
-      language.syntax.push(syntax)
+    if (!language) return
+    if (syntax.ruleType === 'multiplicity') {
+      const existingIndex = language.syntax.findIndex((syn) => syn.ruleType === 'multiplicity')
+      if (existingIndex !== -1) {
+        language.syntax[existingIndex] = syntax
+      } else {
+        language.syntax.push(syntax)
+      }
+      ensureSingleMultiplicityRule(language)
+      return
     }
+
+    language.syntax.push(syntax)
   }
 
   const updateSyntaxInLanguage = (languageId: string, syntaxType: string, updates: Partial<DiagramSyntax>) => {
     const language = languages.value.find((lang) => lang.id === languageId)
-    if (language) {
-      const syntaxIndex = language.syntax.findIndex((syn) => syn.type === syntaxType)
-      if (syntaxIndex !== -1) {
-        language.syntax[syntaxIndex] = { ...language.syntax[syntaxIndex], ...updates }
+    if (!language) return
+
+    const syntaxIndex = language.syntax.findIndex((syn) => syn.type === syntaxType)
+    if (syntaxIndex === -1) return
+
+    const existing = language.syntax[syntaxIndex]
+
+    if (existing.ruleType === 'multiplicity') {
+      const multiplicity = existing as MultiplicitySyntaxRule
+
+      if (updates.label !== undefined) multiplicity.label = updates.label
+      if (updates.description !== undefined) multiplicity.description = updates.description
+      if (updates.type !== undefined) multiplicity.type = updates.type
+
+      if (updates.config) {
+        const cfg = updates.config as Partial<MultiplicityRuleConfig>
+        if (cfg.relations) {
+          multiplicity.config.relations = cfg.relations
+        }
+        if (cfg.messageTemplate !== undefined) {
+          multiplicity.config.messageTemplate = cfg.messageTemplate ?? ''
+        }
       }
+
+      ensureSingleMultiplicityRule(language)
+      return
     }
+
+    language.syntax[syntaxIndex] = { ...existing, ...updates }
   }
 
   const removeSyntaxFromLanguage = (languageId: string, syntaxType: string) => {
     const language = languages.value.find((lang) => lang.id === languageId)
-    if (language) {
-      const syntaxIndex = language.syntax.findIndex((syn) => syn.type === syntaxType)
-      if (syntaxIndex !== -1) {
-        language.syntax.splice(syntaxIndex, 1)
-      }
-    }
+    if (!language) return
+
+    const syntaxIndex = language.syntax.findIndex((syn) => syn.type === syntaxType)
+    if (syntaxIndex === -1) return
+
+    language.syntax.splice(syntaxIndex, 1)
   }
 
   // Hilfsfunktion für ID-Generierung
   const generateId = (): string => {
     return 'id_' + Math.random().toString(36).substring(2, 9)
   }
+  const relationKey = (sourceType: string, targetType: string): string => `${sourceType}::${targetType}`
 
+  const createCombinedConfig = (): MultiplicityCombinedConfig => ({
+    connectionTypes: [],
+    min: 0,
+    max: null
+  })
+
+  const createRelationConfig = (
+    sourceType: string,
+    targetType: string,
+    state: MultiplicityRelationState = 'allowed'
+  ): MultiplicityRelationConfig => ({
+    sourceType,
+    targetType,
+    state,
+    mode: 'combined',
+    scope: 'aggregate',
+    connectionMode: 'allow',
+    combined: createCombinedConfig(),
+    separate: []
+  })
+
+  const normalizeNumber = (value: unknown, allowUnlimited = false): number | null => {
+    if (value === null || value === undefined) return allowUnlimited ? null : 0
+    const numeric = Number(value)
+    if (!Number.isFinite(numeric)) return allowUnlimited ? null : 0
+    if (numeric < 0) return allowUnlimited ? null : 0
+    return Math.floor(numeric)
+  }
+
+  const normalizeCombinedConfig = (config?: Partial<MultiplicityCombinedConfig>): MultiplicityCombinedConfig => {
+    const combined = createCombinedConfig()
+    if (!config) return combined
+
+    if (Array.isArray(config.connectionTypes)) {
+      combined.connectionTypes = [...config.connectionTypes]
+    }
+
+    const min = normalizeNumber(config.min)
+    if (min !== null) {
+      combined.min = min
+    }
+
+    const max = normalizeNumber(config.max, true)
+    combined.max = max
+
+    return combined
+  }
+
+  const normalizeSeparateEntries = (entries?: Partial<MultiplicitySeparateEntry>[]): MultiplicitySeparateEntry[] => {
+    if (!Array.isArray(entries)) return []
+    return entries
+      .map((entry) => {
+        if (!entry) return null
+        const normalised: MultiplicitySeparateEntry = {
+          connectionType: typeof entry.connectionType === 'string' ? entry.connectionType : '',
+          min: normalizeNumber(entry.min) ?? 0,
+          max: normalizeNumber(entry.max, true)
+        }
+        return normalised
+      })
+      .filter((entry): entry is MultiplicitySeparateEntry => entry !== null)
+  }
+
+  const cloneCombinedConfig = (combined: MultiplicityCombinedConfig): MultiplicityCombinedConfig => ({
+    connectionTypes: [...combined.connectionTypes],
+    min: combined.min,
+    max: combined.max
+  })
+
+  const cloneSeparateEntries = (entries: MultiplicitySeparateEntry[]): MultiplicitySeparateEntry[] =>
+    entries.map((entry) => ({
+      connectionType: entry.connectionType,
+      min: entry.min,
+      max: entry.max
+    }))
+
+  const ensureRelationDefaults = (relation: MultiplicityRelationConfig) => {
+    relation.mode = relation.mode === 'separate' ? 'separate' : 'combined'
+    relation.scope = relation.scope === 'perConnection' ? 'perConnection' : 'aggregate'
+    relation.connectionMode = relation.connectionMode === 'exclude' ? 'exclude' : 'allow'
+    relation.combined = normalizeCombinedConfig(relation.combined)
+    relation.separate = normalizeSeparateEntries(relation.separate)
+  }
+
+  const mergeRelations = (
+    base: MultiplicityRelationConfig,
+    override: MultiplicityRelationConfig
+  ): MultiplicityRelationConfig => {
+    const merged: MultiplicityRelationConfig = {
+      sourceType: base.sourceType,
+      targetType: base.targetType,
+      state: override.state ?? base.state,
+      mode: override.mode ?? base.mode,
+      scope: override.scope ?? base.scope,
+      connectionMode: override.connectionMode ?? base.connectionMode,
+      combined: cloneCombinedConfig(base.combined),
+      separate: cloneSeparateEntries(base.separate)
+    }
+
+    ensureRelationDefaults(merged)
+    ensureRelationDefaults(override)
+
+    if (override.combined) {
+      merged.combined = cloneCombinedConfig(override.combined)
+    }
+    if (override.separate?.length) {
+      merged.separate = cloneSeparateEntries(override.separate)
+    }
+
+    return merged
+  }
+
+  const normalizeRelationConfig = (relation: any): MultiplicityRelationConfig | null => {
+    const sourceType = relation?.sourceType
+    const targetType = relation?.targetType
+    if (!sourceType || !targetType) return null
+
+    const result: MultiplicityRelationConfig = {
+      sourceType,
+      targetType,
+      state: relation?.state === 'forbidden' ? 'forbidden' : 'allowed',
+      mode: relation?.mode === 'separate' ? 'separate' : 'combined',
+      scope: relation?.scope === 'perConnection' ? 'perConnection' : 'aggregate',
+      connectionMode: relation?.connectionMode === 'exclude' ? 'exclude' : 'allow',
+      combined: normalizeCombinedConfig(relation?.combined),
+      separate: normalizeSeparateEntries(relation?.separate)
+    }
+
+    const legacyOutgoing = relation?.outgoing
+    if (legacyOutgoing) {
+      result.connectionMode = legacyOutgoing.connectionMode === 'exclude' ? 'exclude' : 'allow'
+      result.combined = normalizeCombinedConfig({
+        connectionTypes: legacyOutgoing.allowedConnectionTypes,
+        min: legacyOutgoing.min,
+        max: legacyOutgoing.max
+      })
+    }
+
+    if (result.mode === 'separate' && result.separate.length === 0 && result.combined.connectionTypes.length) {
+      result.separate = result.combined.connectionTypes.map((connectionType) => ({
+        connectionType,
+        min: result.combined.min,
+        max: result.combined.max
+      }))
+    }
+
+    ensureRelationDefaults(result)
+    return result
+  }
+
+  const normalizeMultiplicityRule = (rule: MultiplicitySyntaxRule) => {
+    const rawConfig: any = rule.config ?? {}
+    const relationsFromConfig: Array<MultiplicityRelationConfig | null> = Array.isArray(rawConfig.relations)
+      ? rawConfig.relations.map(normalizeRelationConfig)
+      : []
+
+    const legacyRelations: Array<MultiplicityRelationConfig | null> =
+      !relationsFromConfig.length && rawConfig && Array.isArray(rawConfig.targets) && rawConfig.sourceElementType
+        ? rawConfig.targets.map((target: any) =>
+            normalizeRelationConfig({
+              sourceType: rawConfig.sourceElementType,
+              targetType: target?.targetElementType,
+              state: 'allowed',
+              outgoing: target
+            })
+          )
+        : []
+
+    const combinedList = [...relationsFromConfig, ...legacyRelations]
+      .filter((relation): relation is MultiplicityRelationConfig => relation !== null)
+
+    const uniqueRelations = new Map<string, MultiplicityRelationConfig>()
+    for (const relation of combinedList) {
+      const key = relationKey(relation.sourceType, relation.targetType)
+      if (uniqueRelations.has(key)) {
+        uniqueRelations.set(key, mergeRelations(uniqueRelations.get(key)!, relation))
+      } else {
+        uniqueRelations.set(key, relation)
+      }
+    }
+
+    uniqueRelations.forEach(ensureRelationDefaults)
+
+    const fallbackTemplate = (() => {
+      if (typeof rawConfig?.messageTemplate === 'string') return rawConfig.messageTemplate
+      if (typeof rawConfig?.defaultCountError === 'string') return rawConfig.defaultCountError
+      if (typeof rawConfig?.defaultTypeError === 'string') return rawConfig.defaultTypeError
+      return ''
+    })()
+
+    rule.config = {
+      relations: Array.from(uniqueRelations.values()),
+      messageTemplate: fallbackTemplate
+    }
+  }
+
+  const ensureSingleMultiplicityRule = (language: DiagramLanguage): MultiplicitySyntaxRule => {
+    const multiplicityRules = language.syntax.filter(
+      (syn): syn is MultiplicitySyntaxRule => syn.ruleType === 'multiplicity'
+    )
+
+    if (multiplicityRules.length === 0) {
+      const newRule: MultiplicitySyntaxRule = {
+        type: 'multiplicity',
+        label: 'Multiplicity',
+        ruleType: 'multiplicity',
+        description: '',
+        config: {
+          relations: [],
+          messageTemplate: ''
+        }
+      }
+      language.syntax.push(newRule)
+      return newRule
+    }
+
+    const primary = multiplicityRules[0]
+    normalizeMultiplicityRule(primary)
+
+    for (let i = 1; i < multiplicityRules.length; i += 1) {
+      const duplicate = multiplicityRules[i]
+      normalizeMultiplicityRule(duplicate)
+      for (const relation of duplicate.config.relations) {
+        const key = relationKey(relation.sourceType, relation.targetType)
+        const existing = primary.config.relations.find(
+          (entry) => relationKey(entry.sourceType, entry.targetType) === key
+        )
+        if (existing) {
+          const merged = mergeRelations(existing, relation)
+          Object.assign(existing, merged)
+        } else {
+          primary.config.relations.push({
+            sourceType: relation.sourceType,
+            targetType: relation.targetType,
+            state: relation.state,
+            mode: relation.mode,
+            scope: relation.scope,
+            connectionMode: relation.connectionMode,
+            combined: cloneCombinedConfig(relation.combined),
+            separate: cloneSeparateEntries(relation.separate)
+          })
+        }
+      }
+    }
+
+    for (let i = language.syntax.length - 1; i >= 0; i -= 1) {
+      const entry = language.syntax[i]
+      if (entry.ruleType === 'multiplicity' && entry !== primary) {
+        language.syntax.splice(i, 1)
+      }
+    }
+
+    if (!primary.type) {
+      primary.type = 'multiplicity'
+    }
+
+    primary.config.relations.forEach(ensureRelationDefaults)
+    return primary
+  }
+  const getMultiplicityRuleForLanguage = (languageId: string): MultiplicitySyntaxRule | undefined => {
+    const language = getLanguageById(languageId)
+    if (!language) return undefined
+    return ensureSingleMultiplicityRule(language)
+  }
+
+  const findRelationIndex = (rule: MultiplicitySyntaxRule, sourceType: string, targetType: string): number => {
+    const key = relationKey(sourceType, targetType)
+    return rule.config.relations.findIndex((relation) => relationKey(relation.sourceType, relation.targetType) === key)
+  }
+
+  const setMultiplicityRelationState = (
+    languageId: string,
+    sourceType: string,
+    targetType: string,
+    state: MultiplicityRelationState | 'unset'
+  ) => {
+    const rule = getMultiplicityRuleForLanguage(languageId)
+    if (!rule) return
+
+    const index = findRelationIndex(rule, sourceType, targetType)
+
+    if (state === 'unset') {
+      if (index !== -1) {
+        rule.config.relations.splice(index, 1)
+      }
+      return
+    }
+
+    if (index === -1) {
+      const relation = createRelationConfig(sourceType, targetType, state)
+      ensureRelationDefaults(relation)
+      rule.config.relations.push(relation)
+    } else {
+      const relation = rule.config.relations[index]
+      relation.state = state
+      ensureRelationDefaults(relation)
+    }
+  }
   // Beispielsprache erstellen
   const createExampleLanguage = (): DiagramLanguage => {
     return {
@@ -719,21 +1062,42 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       ],
       syntax: [
         {
-          type: 'uml-class-interface-multiplicity',
-          label: 'Klassen & Interfaces',
+          type: 'uml-class-multiplicity',
+          label: 'Klassen-Verbindungsregeln',
           ruleType: 'multiplicity',
-          description: 'Klassen dürfen höchstens zwei direkte Verbindungen zu Interfaces besitzen.',
+          description: 'Definiert erlaubte Verbindungen für Klassen: max. 1 Interface, max. 1 Notiz, unbegrenzt andere Klassen.',
           config: {
-            source: true,
-            type: 'uml-class',
-            attr: null,
-            value: null,
-            min: 0,
-            max: 2,
-            validNeighbors: ['uml-interface'],
-            countError: 'Klassen dürfen höchstens zwei Interface-Verbindungen haben.',
-            typeError: 'Klassen dürfen hier nur Interfaces verbinden.',
-            validNeighborsAllowed: true
+            relations: [
+              {
+                sourceType: 'uml-class',
+                targetType: 'uml-interface',
+                state: 'allowed',
+                mode: 'combined',
+                scope: 'aggregate',
+                connectionMode: 'allow',
+                combined: {
+                  connectionTypes: [],
+                  min: 0,
+                  max: 1
+                },
+                separate: []
+              },
+              {
+                sourceType: 'uml-class',
+                targetType: 'uml-class',
+                state: 'allowed',
+                mode: 'combined',
+                scope: 'aggregate',
+                connectionMode: 'allow',
+                combined: {
+                  connectionTypes: [],
+                  min: 0,
+                  max: null
+                },
+                separate: []
+              }
+            ],
+            messageTemplate: ''
           }
         }
       ]
@@ -766,8 +1130,13 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     addSyntaxToLanguage,
     updateSyntaxInLanguage,
     removeSyntaxFromLanguage,
+    getMultiplicityRuleForLanguage,
+    setMultiplicityRelationState,
 
     // Initialization
     initializeWithExampleData
   }
 })
+
+
+

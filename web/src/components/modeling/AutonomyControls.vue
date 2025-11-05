@@ -2,16 +2,16 @@
   <div class="autonomy-section">
     <v-btn-group>
       <v-btn density="compact" variant="tonal" :color="mode === 'manual' ? 'primary' : undefined" @click="emit('update:mode', 'manual')">
-        <v-icon>mdi-hand-back-left</v-icon>
-        Manuell
+        <v-icon class="icon-only">mdi-hand-back-left</v-icon>
+        <span class="btn-text">Manuell</span>
       </v-btn>
       <v-btn density="compact" variant="tonal" :color="mode === 'assisted' ? 'primary' : undefined" @click="emit('update:mode', 'assisted')">
-        <v-icon>mdi-hand-pointing-up</v-icon>
-        Assistiert
+        <v-icon class="icon-only">mdi-hand-pointing-up</v-icon>
+        <span class="btn-text">Assistiert</span>
       </v-btn>
       <v-btn density="compact" variant="tonal" :color="mode === 'strict' ? 'primary' : undefined" @click="emit('update:mode', 'strict')">
-        <v-icon>mdi-shield-lock</v-icon>
-        Strikt
+        <v-icon class="icon-only">mdi-shield-lock</v-icon>
+        <span class="btn-text">Strikt</span>
       </v-btn>
     </v-btn-group>
   </div>
@@ -37,5 +37,27 @@ const emit = defineEmits<{
   margin-left: auto;
   display: flex;
   align-items: center;
+}
+
+/* Responsiv: Bei schmalen Ansichten margin entfernen */
+@media (max-width: 900px) {
+  .autonomy-section {
+    margin-left: 0;
+  }
+
+  /* Text bei sehr schmalen Ansichten ausblenden */
+  .btn-text {
+    display: inline;
+  }
+}
+
+@media (max-width: 600px) {
+  .btn-text {
+    display: none;
+  }
+
+  .icon-only {
+    margin-right: 0 !important;
+  }
 }
 </style>

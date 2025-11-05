@@ -2,14 +2,14 @@
   <v-container fluid class="pa-2 editor-surface">
     <v-row no-gutters class="editor-row">
       <!-- Liste der Verbindungen (links) -->
-      <v-col cols="4" class="pr-2 editor-col">
+      <v-col cols="3" class="pr-2 editor-col">
         <div class="scroll-column">
           <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-index="selectedConnectionIndex" empty-text="Keine Verbindungen definiert" title-field="type" subtitle-field="label" icon-field="listIcon" color-field="listColor" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
         </div>
       </v-col>
 
       <!-- Editor (mitte) -->
-      <v-col cols="4" class="px-1 editor-col">
+      <v-col cols="5" class="px-1 editor-col">
         <div class="scroll-column">
           <BasicEditorForm type="connection" :selected-item="selectedConnection">
             <ConnectionEditorForm v-if="selectedConnection" v-model:preview-mode="previewMode" :selected-connection="selectedConnection" @update="updateAll" />
