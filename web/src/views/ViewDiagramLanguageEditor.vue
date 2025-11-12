@@ -16,6 +16,7 @@
           <v-btn value="elements" prepend-icon="mdi-shape"> Elemente </v-btn>
           <v-btn value="connections" prepend-icon="mdi-connection"> Verbindungen </v-btn>
           <v-btn value="syntax" prepend-icon="mdi-code-braces"> Syntax </v-btn>
+          <v-btn value="feedback" prepend-icon="mdi-comment-check"> Feedback </v-btn>
           <v-btn value="settings" prepend-icon="mdi-cog"> Globale Einstellungen </v-btn>
         </v-btn-toggle>
       </v-card-title>
@@ -38,6 +39,11 @@
         <SyntaxEditor />
       </div>
 
+      <!-- Feedback Editor -->
+      <div v-show="activeEditor === 'feedback'" class="editor-panel">
+        <FeedbackEditor />
+      </div>
+
       <!-- Globale Einstellungen -->
       <div v-show="activeEditor === 'settings'" class="editor-panel">
         <GlobalSettingsEditor />
@@ -53,6 +59,7 @@ import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import ElementEditor from '@/components/modeling/ElementEditor.vue'
 import ConnectionEditor from '@/components/modeling/ConnectionEditor.vue'
 import SyntaxEditor from '@/components/modeling/SyntaxEditor.vue'
+import FeedbackEditor from '@/components/modeling/FeedbackEditor.vue'
 import GlobalSettingsEditor from '@/components/modeling/GlobalSettingsEditor.vue'
 
 // Props für die Route-Parameter
@@ -65,7 +72,7 @@ const route = useRoute()
 const { languages, currentLanguage, setCurrentLanguage, initializeWithExampleData } = useDiagramLanguages()
 
 // Active Editor State
-const activeEditor = ref<'elements' | 'connections' | 'syntax' | 'settings'>('elements')
+const activeEditor = ref<'elements' | 'connections' | 'syntax' | 'feedback' | 'settings'>('elements')
 
 // Sprachen-ID aus Route laden
 const loadLanguageFromRoute = () => {

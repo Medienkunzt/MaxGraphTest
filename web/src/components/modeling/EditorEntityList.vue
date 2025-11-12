@@ -2,7 +2,7 @@
   <v-card>
     <v-card-title class="d-flex align-center justify-space-between py-2">
       <span class="text-h6">{{ title }}</span>
-      <v-btn color="primary" variant="tonal" size="small" prepend-icon="mdi-plus" @click="$emit('add')">
+      <v-btn v-if="showAddButton" color="primary" variant="tonal" size="small" prepend-icon="mdi-plus" @click="$emit('add')">
         {{ addButtonText }}
       </v-btn>
     </v-card-title>
@@ -26,7 +26,7 @@
             {{ item.severity }}
           </v-chip>
 
-          <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click.stop="$emit('delete', index)" />
+          <v-btn v-if="showDeleteButton" icon="mdi-delete" variant="text" size="small" color="error" @click.stop="$emit('delete', index)" />
         </template>
       </v-list-item>
     </v-list>
@@ -56,6 +56,8 @@ interface Props {
   showSeverityChip?: boolean
   iconMap?: Record<string, string>
   colorMap?: Record<string, string>
+  showAddButton?: boolean
+  showDeleteButton?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -66,7 +68,9 @@ const props = withDefaults(defineProps<Props>(), {
   colorField: 'type',
   showSeverityChip: false,
   iconMap: () => ({}),
-  colorMap: () => ({})
+  colorMap: () => ({}),
+  showAddButton: true,
+  showDeleteButton: true
 })
 
 defineEmits<{
@@ -104,7 +108,7 @@ const getItemColor = (item: EntityItem) => {
     }
     return colorValue
   }
-  
+
   return 'grey'
 }
 

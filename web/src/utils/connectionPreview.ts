@@ -1,4 +1,4 @@
-import { Graph, Point } from '@maxgraph/core'
+import { Graph, Point, Cell } from '@maxgraph/core'
 import type { CellStyle } from '@maxgraph/core'
 import type { DiagramConnection } from '@/model/Connection'
 import { applyConnectionAdditionalLabels } from './connectionLabelHelpers'
@@ -30,9 +30,10 @@ export const clearConnectionPreview = (graph: Graph): void => {
   graph.removeCells(graph.getChildCells())
 }
 
-export const renderSimpleConnectionPreview = (graph: Graph, connection: DiagramConnection): void => {
+export const renderSimpleConnectionPreview = (graph: Graph, connection: DiagramConnection): Cell | null => {
   clearConnectionPreview(graph)
   const parent = graph.getDefaultParent()
+  let createdEdge: Cell | null = null
 
   graph.getDataModel().beginUpdate()
   try {
@@ -65,6 +66,7 @@ export const renderSimpleConnectionPreview = (graph: Graph, connection: DiagramC
       value: connection.defaultLabel ?? '',
       style
     })
+    createdEdge = edge ?? null
 
     applyLabelOffset(edge, connection.labelOffset)
     applyPoints(edge, connection.points)
@@ -75,10 +77,7 @@ export const renderSimpleConnectionPreview = (graph: Graph, connection: DiagramC
     graph.getDataModel().endUpdate()
   }
 
-  // // Fit the preview using the composable
-  // graph.fit(10)
-  // graph.view.validate()
-  // graph.refresh()
+  return createdEdge
 }
 
 const createActorVertex = (graph: Graph, parent: any, { x, y, label, fill }: { x: number; y: number; label: string; fill: string }) => {

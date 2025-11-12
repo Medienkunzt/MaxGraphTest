@@ -1,14 +1,40 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { DiagramLanguage, DiagramElement, DiagramConnection, DiagramSyntax } from '@/model/DiagramLanguage'
-import type {
-  MultiplicitySyntaxRule,
-  MultiplicityRelationConfig,
-  MultiplicityRuleConfig,
-  MultiplicityRelationState,
-  MultiplicityCombinedConfig,
-  MultiplicitySeparateEntry
-} from '@/model/Syntax'
+import type { DiagramFeedbackConfig, FeedbackTargetOverlays, FeedbackTargetType } from '@/model/Feedback'
+import type { MultiplicitySyntaxRule, MultiplicityRelationConfig, MultiplicityRuleConfig, MultiplicityRelationState, MultiplicityCombinedConfig, MultiplicitySeparateEntry } from '@/model/Syntax'
+import { createEmptyFeedbackConfig, ensureFeedbackTargets, createDefaultTargetOverlays } from '@/utils/feedbackConfig'
+
+const ensureFeedbackForLanguage = (language: DiagramLanguage): DiagramFeedbackConfig => {
+  if (!language.feedback) {
+    language.feedback = createEmptyFeedbackConfig()
+  }
+
+  ensureFeedbackTargets(
+    language.feedback,
+    'element',
+    language.elements.map((el) => el.type)
+  )
+  ensureFeedbackTargets(
+    language.feedback,
+    'connection',
+    language.connections.map((conn) => conn.type)
+  )
+
+  return language.feedback
+}
+
+const applyFeedbackEntry = (language: DiagramLanguage, targetType: FeedbackTargetType, targetKey: string, overlays: FeedbackTargetOverlays | null) => {
+  const feedback = ensureFeedbackForLanguage(language)
+  const container = targetType === 'element' ? feedback.elements : feedback.connections
+  container[targetKey] = createDefaultTargetOverlays(overlays ?? undefined)
+}
+
+const removeFeedbackEntry = (language: DiagramLanguage, targetType: FeedbackTargetType, targetKey: string) => {
+  if (!language.feedback) return
+  const container = targetType === 'element' ? language.feedback.elements : language.feedback.connections
+  delete container[targetKey]
+}
 
 export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   // State
@@ -19,6 +45,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   const initializeWithExampleData = () => {
     if (languages.value.length === 0) {
       const exampleLanguage = createExampleLanguage()
+      ensureFeedbackForLanguage(exampleLanguage)
       languages.value.push(exampleLanguage)
     }
   }
@@ -31,9 +58,11 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       tags: tags || [],
       elements: [],
       connections: [],
-      syntax: []
+      syntax: [],
+      feedback: createEmptyFeedbackConfig()
     }
 
+    ensureFeedbackForLanguage(newLanguage)
     languages.value.push(newLanguage)
     return newLanguage
   }
@@ -69,6 +98,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     currentLanguage.value = language
     if (language) {
       ensureSingleMultiplicityRule(language)
+      ensureFeedbackForLanguage(language)
     }
   }
 
@@ -81,6 +111,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (language) {
       language.elements.push(element)
+      ensureFeedbackForLanguage(language)
     }
   }
 
@@ -90,6 +121,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       const elementIndex = language.elements.findIndex((elem) => elem.type === elementType)
       if (elementIndex !== -1) {
         language.elements[elementIndex] = { ...language.elements[elementIndex], ...updates }
+        ensureFeedbackForLanguage(language)
       }
     }
   }
@@ -100,6 +132,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       const elementIndex = language.elements.findIndex((elem) => elem.type === elementType)
       if (elementIndex !== -1) {
         language.elements.splice(elementIndex, 1)
+        removeFeedbackEntry(language, 'element', elementType)
       }
     }
   }
@@ -109,6 +142,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (language) {
       language.connections.push(connection)
+      ensureFeedbackForLanguage(language)
     }
   }
 
@@ -118,6 +152,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       const connectionIndex = language.connections.findIndex((conn) => conn.type === connectionType)
       if (connectionIndex !== -1) {
         language.connections[connectionIndex] = { ...language.connections[connectionIndex], ...updates }
+        ensureFeedbackForLanguage(language)
       }
     }
   }
@@ -128,7 +163,15 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       const connectionIndex = language.connections.findIndex((conn) => conn.type === connectionType)
       if (connectionIndex !== -1) {
         language.connections.splice(connectionIndex, 1)
+        removeFeedbackEntry(language, 'connection', connectionType)
       }
+    }
+  }
+
+  const updateFeedbackEntryForLanguage = (languageId: string, targetType: FeedbackTargetType, targetKey: string, overlays: FeedbackTargetOverlays) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (language) {
+      applyFeedbackEntry(language, targetType, targetKey, overlays)
     }
   }
 
@@ -205,11 +248,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     max: null
   })
 
-  const createRelationConfig = (
-    sourceType: string,
-    targetType: string,
-    state: MultiplicityRelationState = 'allowed'
-  ): MultiplicityRelationConfig => ({
+  const createRelationConfig = (sourceType: string, targetType: string, state: MultiplicityRelationState = 'allowed'): MultiplicityRelationConfig => ({
     sourceType,
     targetType,
     state,
@@ -283,10 +322,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     relation.separate = normalizeSeparateEntries(relation.separate)
   }
 
-  const mergeRelations = (
-    base: MultiplicityRelationConfig,
-    override: MultiplicityRelationConfig
-  ): MultiplicityRelationConfig => {
+  const mergeRelations = (base: MultiplicityRelationConfig, override: MultiplicityRelationConfig): MultiplicityRelationConfig => {
     const merged: MultiplicityRelationConfig = {
       sourceType: base.sourceType,
       targetType: base.targetType,
@@ -351,9 +387,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
 
   const normalizeMultiplicityRule = (rule: MultiplicitySyntaxRule) => {
     const rawConfig: any = rule.config ?? {}
-    const relationsFromConfig: Array<MultiplicityRelationConfig | null> = Array.isArray(rawConfig.relations)
-      ? rawConfig.relations.map(normalizeRelationConfig)
-      : []
+    const relationsFromConfig: Array<MultiplicityRelationConfig | null> = Array.isArray(rawConfig.relations) ? rawConfig.relations.map(normalizeRelationConfig) : []
 
     const legacyRelations: Array<MultiplicityRelationConfig | null> =
       !relationsFromConfig.length && rawConfig && Array.isArray(rawConfig.targets) && rawConfig.sourceElementType
@@ -367,8 +401,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           )
         : []
 
-    const combinedList = [...relationsFromConfig, ...legacyRelations]
-      .filter((relation): relation is MultiplicityRelationConfig => relation !== null)
+    const combinedList = [...relationsFromConfig, ...legacyRelations].filter((relation): relation is MultiplicityRelationConfig => relation !== null)
 
     const uniqueRelations = new Map<string, MultiplicityRelationConfig>()
     for (const relation of combinedList) {
@@ -396,9 +429,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   }
 
   const ensureSingleMultiplicityRule = (language: DiagramLanguage): MultiplicitySyntaxRule => {
-    const multiplicityRules = language.syntax.filter(
-      (syn): syn is MultiplicitySyntaxRule => syn.ruleType === 'multiplicity'
-    )
+    const multiplicityRules = language.syntax.filter((syn): syn is MultiplicitySyntaxRule => syn.ruleType === 'multiplicity')
 
     if (multiplicityRules.length === 0) {
       const newRule: MultiplicitySyntaxRule = {
@@ -423,9 +454,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       normalizeMultiplicityRule(duplicate)
       for (const relation of duplicate.config.relations) {
         const key = relationKey(relation.sourceType, relation.targetType)
-        const existing = primary.config.relations.find(
-          (entry) => relationKey(entry.sourceType, entry.targetType) === key
-        )
+        const existing = primary.config.relations.find((entry) => relationKey(entry.sourceType, entry.targetType) === key)
         if (existing) {
           const merged = mergeRelations(existing, relation)
           Object.assign(existing, merged)
@@ -469,12 +498,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     return rule.config.relations.findIndex((relation) => relationKey(relation.sourceType, relation.targetType) === key)
   }
 
-  const setMultiplicityRelationState = (
-    languageId: string,
-    sourceType: string,
-    targetType: string,
-    state: MultiplicityRelationState | 'unset'
-  ) => {
+  const setMultiplicityRelationState = (languageId: string, sourceType: string, targetType: string, state: MultiplicityRelationState | 'unset') => {
     const rule = getMultiplicityRuleForLanguage(languageId)
     if (!rule) return
 
@@ -499,7 +523,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   }
   // Beispielsprache erstellen
   const createExampleLanguage = (): DiagramLanguage => {
-    return {
+    const example: DiagramLanguage = {
       id: 'uml-class-diagram',
       name: 'UML Klassendiagramm',
       tags: ['UML', 'Objektorientiert', 'Software-Architektur'],
@@ -1100,8 +1124,12 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             messageTemplate: ''
           }
         }
-      ]
+      ],
+      feedback: createEmptyFeedbackConfig()
     }
+
+    ensureFeedbackForLanguage(example)
+    return example
   }
 
   return {
@@ -1125,6 +1153,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     addConnectionToLanguage,
     updateConnectionInLanguage,
     removeConnectionFromLanguage,
+    updateFeedbackEntryForLanguage,
 
     // Syntax actions
     addSyntaxToLanguage,
@@ -1137,6 +1166,3 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     initializeWithExampleData
   }
 })
-
-
-

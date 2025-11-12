@@ -22,7 +22,7 @@
 
 <script setup lang="ts">
 interface Props {
-  type: 'element' | 'connection' | 'syntax'
+  type: 'element' | 'connection' | 'syntax' | 'feedback'
   selectedItem?: any
 }
 
@@ -42,6 +42,8 @@ const getEmptyIcon = (): string => {
       return 'mdi-connection'
     case 'syntax':
       return 'mdi-code-tags'
+    case 'feedback':
+      return 'mdi-comment-check-outline'
     default:
       return 'mdi-help'
   }
@@ -55,6 +57,8 @@ const getEmptyMessage = (): string => {
       return 'Wählen Sie eine Verbindung aus der Liste aus'
     case 'syntax':
       return 'Wählen Sie eine Syntax-Regel aus der Liste aus'
+    case 'feedback':
+      return 'Wählen Sie ein Feedback-Ziel aus der Liste aus'
     default:
       return 'Wählen Sie einen Eintrag aus der Liste aus'
   }

@@ -39,3 +39,11 @@ npm run test:unit
 ```sh
 npm run lint
 ```
+
+## Todos
+
+- [ ] Use images as Elements
+- [ ] Fix Vertical Swimlane alignment
+- [ ] Test AutoLayouts
+- [ ] Add Element Alignment options
+- [ ] Global Settings: HandleConfig.fillColor/strokeColor for custom selection styles
