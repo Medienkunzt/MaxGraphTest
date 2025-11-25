@@ -38,17 +38,26 @@
       </div>
 
       <!-- Graph Container -->
-      <div ref="graphContainer" class="graph-container">
-        <!-- Separater Grid Container -->
-        <div class="grid-container">
-          <canvas ref="canvasGrid" class="grid-canvas"></canvas>
+      <div ref="graphWrapper" class="graph-wrapper">
+        <div ref="graphContainer" class="graph-container">
+          <!-- Separater Grid Container -->
+          <div class="grid-container">
+            <canvas ref="canvasGrid" class="grid-canvas"></canvas>
+          </div>
+
+          <!-- Graph Controls Component -->
+          <GraphControls :can-undo="canUndo" :can-redo="canRedo" @undo="undoGraph" @redo="redoGraph" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
+
+          <!-- Graph Settings Component -->
+          <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" @update:use-grid-for-panning="updateUseGridForPanning" />
         </div>
 
-        <!-- Graph Controls Component -->
-        <GraphControls :can-undo="canUndo" :can-redo="canRedo" @undo="undoGraph" @redo="redoGraph" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
-
-        <!-- Graph Settings Component -->
-        <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" @update:use-grid-for-panning="updateUseGridForPanning" />
+        <v-tooltip v-if="overlayTooltip.anchor" :model-value="overlayTooltip.visible" location="top" :open-on-hover="false" transition="scale-transition" @update:model-value="(value) => (overlayTooltip.visible = value)">
+          <template #activator="{ props }">
+            <div v-bind="props" class="canvas-tooltip-anchor" :style="overlayTooltipAnchorStyle"></div>
+          </template>
+          {{ overlayTooltip.text }}
+        </v-tooltip>
       </div>
     </v-card-text>
   </v-card>
@@ -56,12 +65,13 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
 import { useZoomOperations } from '@/composables/useZoomOperations'
 import { useGridSettings } from '@/composables/useGridSettings'
+import { useCanvasOverlays } from '@/composables/useCanvasOverlays'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { setupToolbar, createDefaultShapes, buildShapesFromElements } from '@/utils/setupToolbar'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
@@ -84,6 +94,7 @@ import img_rhombus from '@/assets/images/rhombus.gif'
 import img_triangle from '@/assets/images/triangle.gif'
 import img_cloud from '@/assets/images/cloud.gif'
 import img_elementPlaceholder from '@/assets/images/rectangle.gif'
+import type { FeedbackCanvasOverlayEntry } from '@/model/Feedback'
 
 class MyCustomCellEditorHandler extends CellEditorHandler {
   // Custom CellEditorHandler - kann später erweitert werden
@@ -108,6 +119,8 @@ class MyCustomCellEditorHandler extends CellEditorHandler {
 class MyCustomGraph extends Graph {
   constructor(container: HTMLElement, model?: GraphDataModel, plugins?: GraphPluginConstructor[]) {
     super(container, model, plugins)
+    this.overlayAddedCallback = undefined
+    this.overlayRemovedCallback = undefined
 
     const originalIsCellFoldable = this.isCellFoldable.bind(this)
     this.isCellFoldable = (cell: Cell, collapse: boolean): boolean => {
@@ -142,6 +155,36 @@ class MyCustomGraph extends Graph {
     }
     return super.isCellEditable(cell)
   }
+
+  private overlayAddedCallback?: (cell: Cell, overlay: CellOverlay) => void
+  private overlayRemovedCallback?: (cell: Cell, overlay: CellOverlay) => void
+
+  setOverlayCallbacks(onAdd?: (cell: Cell, overlay: CellOverlay) => void, onRemove?: (cell: Cell, overlay: CellOverlay) => void) {
+    this.overlayAddedCallback = onAdd
+    this.overlayRemovedCallback = onRemove
+  }
+
+  override addCellOverlay = (cell: Cell, overlay: CellOverlay) => {
+    const result = super.addCellOverlay(cell, overlay)
+    this.overlayAddedCallback?.(cell, overlay)
+    return result
+  }
+
+  override removeCellOverlay = (cell: Cell, overlay: CellOverlay | null) => {
+    const removed = super.removeCellOverlay(cell, overlay)
+    const target = overlay ?? removed ?? null
+    if (target) {
+      this.overlayRemovedCallback?.(cell, target)
+    }
+    return removed
+  }
+
+  override removeCellOverlays = (cell: Cell) => {
+    const overlays = this.getCellOverlays(cell)
+    const removed = super.removeCellOverlays(cell)
+    overlays?.forEach((item) => this.overlayRemovedCallback?.(cell, item))
+    return removed
+  }
 }
 
 const props = withDefaults(
@@ -156,6 +199,7 @@ const props = withDefaults(
     autonomyMode?: AutonomyMode
     previewConnection?: DiagramConnection
     previewMode?: 'simple' | 'scenario' | 'routing'
+    overlays?: FeedbackCanvasOverlayEntry[]
   }>(),
   {
     allowEdit: true,
@@ -166,7 +210,8 @@ const props = withDefaults(
     languageSyntax: undefined,
     autonomyMode: 'manual',
     previewConnection: undefined,
-    previewMode: 'simple'
+    previewMode: 'simple',
+    overlays: () => []
   }
 )
 
@@ -186,15 +231,16 @@ const useGridForPanning = ref(true)
 const canUndo = ref(false)
 const canRedo = ref(false)
 
+const graphWrapper = ref<HTMLElement | null>(null)
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
 const toolbarContainer = ref<HTMLElement>()
-const graph = ref<Graph>()
+const graph = ref<MyCustomGraph>()
 const parent = ref<Cell>()
 const keyHandler = ref<KeyHandler>()
 const customConnectionHandler = ref<CustomConnectionHandler>()
 const selectedConnectionIndex = ref(0)
-const plugins = ref<GraphPluginConstructor[]>([MyCustomCellEditorHandler, CustomConnectionHandler as unknown as GraphPluginConstructor, PanningHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
+const plugins = ref<GraphPluginConstructor[]>([MyCustomCellEditorHandler, TooltipHandler, CustomConnectionHandler as unknown as GraphPluginConstructor, PanningHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
 const toolbarShapes = ref(
   createDefaultShapes({
     rectangle: img_rectangle,
@@ -206,19 +252,25 @@ const toolbarShapes = ref(
 )
 
 let undoManagerApi: UndoManagerApi | undefined
+const overlayEntries = computed(() => props.overlays ?? [])
+const { overlayTooltip, overlayTooltipAnchorStyle, registerGraph, cleanup: cleanupCanvasOverlays } = useCanvasOverlays(graphWrapper, overlayEntries)
 
 // Zentraler Validator für alle Diagramm-Regeln
 const diagramValidator = new DiagramValidator()
 
 const applyValidationRulesToGraph = () => {
-  const graphInstance = graph.value
-  if (!graphInstance) {
+  const currentGraph = graph.value
+  if (!currentGraph) {
     return
   }
 
-  // Graph aktualisieren
-  graphInstance.refresh()
-  graphInstance.view.validate()
+  const errors = diagramValidator.validateGraph(currentGraph)
+
+  // if (errors.length === 0) {
+  //   alert('V Keine Validierungsfehler gefunden!')
+  // } else {
+  //   alert('? Validierungsfehler:\n\n' + errors.join('\n'))
+  // }
 }
 
 const rebuildValidationRules = (rules?: DiagramSyntax[]) => {
@@ -341,6 +393,7 @@ onUnmounted(() => {
   undoManagerApi = undefined
   canUndo.value = false
   canRedo.value = false
+  cleanupCanvasOverlays()
 })
 
 // Watch für previewConnection (nur für Preview-Modus)
@@ -407,6 +460,7 @@ const initGraph = () => {
   } else {
     graph.value = new MyCustomGraph(graphContainer.value!, undefined, plugins.value)
   }
+  registerGraph(graph.value)
 
   // Hole den CustomConnectionHandler aus den registrierten Plugins
   const handler = graph.value?.getPlugin('ConnectionHandler')
@@ -429,6 +483,7 @@ const initGraph = () => {
   graph.value.setCellsCloneable(props.allowEdit)
   graph.value.setAllowNegativeCoordinates(false)
   graph.value.setHtmlLabels(true)
+  graph.value.border = 20
 
   undoManagerApi?.destroy()
   undoManagerApi = setupUndoManager(graph.value, applyUndoState)
@@ -635,6 +690,19 @@ defineExpose({
   border-radius: 4px;
   background-color: transparent;
   overflow: hidden;
+}
+
+.graph-wrapper {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 280px;
+}
+
+.canvas-tooltip-anchor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 5;
 }
 
 .grid-container {

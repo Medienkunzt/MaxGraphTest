@@ -24,6 +24,12 @@ export interface FeedbackOverlayConfig {
 
 export type FeedbackTargetOverlays = Record<FeedbackState, FeedbackOverlayConfig>
 
+export interface FeedbackCanvasOverlayEntry {
+  id?: string
+  cellId: string
+  config: FeedbackOverlayConfig
+}
+
 export type FeedbackTargetType = 'element' | 'connection'
 
 export interface DiagramFeedbackConfig {

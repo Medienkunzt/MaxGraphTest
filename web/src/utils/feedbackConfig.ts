@@ -31,12 +31,16 @@ export const normalizeFeedbackOverlay = (state: FeedbackState, overlay?: Partial
     ...overlay,
     image: {
       ...base.image,
-      ...overlay.image
+      ...(overlay.image ?? {})
     },
     offset: {
-      x: overlay.offset?.x ?? 0,
-      y: overlay.offset?.y ?? 0
-    }
+      x: overlay.offset?.x ?? base.offset?.x ?? 0,
+      y: overlay.offset?.y ?? base.offset?.y ?? 0
+    },
+    tooltip: overlay.tooltip ?? base.tooltip,
+    cursor: overlay.cursor ?? base.cursor,
+    align: overlay.align ?? base.align,
+    verticalAlign: overlay.verticalAlign ?? base.verticalAlign
   }
 }
 

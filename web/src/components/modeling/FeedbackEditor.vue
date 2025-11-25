@@ -50,7 +50,7 @@
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="languageSyntaxForCanvas" :show-toolbar="true" :allow-edit="true" :context-menu="true" />
+              <DrawingCanvas ref="drawingCanvasRef" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="languageSyntaxForCanvas" :show-toolbar="true" :allow-edit="true" :context-menu="true" :overlays="previewCanvasOverlays" />
             </div>
             <v-alert v-if="!selectedTargetSummary" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element oder eine Verbindung, um die Feedback-Position zu testen. </v-alert>
           </v-card-text>
@@ -63,7 +63,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import type { Cell } from '@maxgraph/core'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
 import BasicEditorForm from '@/components/modeling/form/BasicEditorForm.vue'
@@ -73,10 +72,9 @@ import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
 import { clearConnectionPreview, renderSimpleConnectionPreview } from '@/utils/connectionPreview'
 import type { DiagramElement, DiagramConnection } from '@/model/DiagramLanguage'
-import type { FeedbackState, FeedbackTargetOverlays } from '@/model/Feedback'
+import type { FeedbackCanvasOverlayEntry, FeedbackState, FeedbackTargetOverlays } from '@/model/Feedback'
 import { FEEDBACK_STATE_LABELS } from '@/model/Feedback'
 import { cloneFeedbackTargetOverlays } from '@/utils/feedbackConfig'
-import { createOverlayFromConfig } from '@/utils/feedbackOverlays'
 
 interface Props {
   languageId?: string
@@ -93,15 +91,27 @@ const drawingCanvasRef = ref()
 const selectedTargetIndex = ref<number>(-1)
 const selectedConfig = ref<FeedbackTargetOverlays | null>(null)
 const previewState = ref<FeedbackState>('correct')
-const previewCell = ref<Cell | null>(null)
+const previewCellId = ref<string | null>(null)
 
 const hydratingConfig = ref(false)
 let storeUpdateTimeout: ReturnType<typeof setTimeout> | null = null
-let previewUpdateTimeout: ReturnType<typeof setTimeout> | null = null
 
 const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
 const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
 const languageSyntaxForCanvas = computed(() => store.currentLanguage?.syntax ?? [])
+
+const previewCanvasOverlays = computed<FeedbackCanvasOverlayEntry[]>(() => {
+  if (!previewCellId.value || !selectedConfig.value) return []
+  const config = selectedConfig.value[previewState.value]
+  if (!config) return []
+  return [
+    {
+      id: `preview-${previewState.value}`,
+      cellId: previewCellId.value,
+      config
+    }
+  ]
+})
 
 interface FeedbackTargetItem {
   type: string
@@ -180,7 +190,7 @@ const selectTarget = (index: number) => {
   if (drawingCanvasRef.value?.clearCanvas) {
     drawingCanvasRef.value.clearCanvas()
   }
-  previewCell.value = null
+  previewCellId.value = null
   selectedTargetIndex.value = index
   triggerRenderPreview()
 }
@@ -193,17 +203,6 @@ const scheduleConfigUpdate = () => {
   storeUpdateTimeout = setTimeout(() => {
     persistSelectedConfig()
   }, 180)
-
-  schedulePreviewUpdate()
-}
-
-const schedulePreviewUpdate = () => {
-  if (previewUpdateTimeout) {
-    clearTimeout(previewUpdateTimeout)
-  }
-  previewUpdateTimeout = setTimeout(() => {
-    applyPreviewOverlay()
-  }, 120)
 }
 
 const persistSelectedConfig = () => {
@@ -214,6 +213,7 @@ const persistSelectedConfig = () => {
 const loadSelectedConfig = () => {
   if (!selectedTarget.value || !store.currentLanguage) {
     selectedConfig.value = null
+    previewCellId.value = null
     return
   }
 
@@ -225,7 +225,6 @@ const loadSelectedConfig = () => {
   selectedConfig.value = cloneFeedbackTargetOverlays(source ?? undefined)
   nextTick(() => {
     hydratingConfig.value = false
-    schedulePreviewUpdate()
   })
 }
 
@@ -235,7 +234,7 @@ const renderPreview = () => {
 
   canvas.clearCanvas()
   clearConnectionPreview(canvas.graph)
-  previewCell.value = null
+  previewCellId.value = null
 
   const target = selectedTarget.value
   const language = store.currentLanguage
@@ -248,31 +247,18 @@ const renderPreview = () => {
     graph.batchUpdate(() => {
       const created = createCellFromElement(element, 60, 40)
       addCellToGraph(graph, created, element as DiagramElement, graph.getDefaultParent())
-      previewCell.value = created
+      previewCellId.value = created.getId?.() ?? null
       graph.setSelectionCell(created)
     })
   } else {
     const connection = language.connections.find((conn) => conn.type === target.id)
     if (!connection) return
     const edge = renderSimpleConnectionPreview(canvas.graph, connection as DiagramConnection)
-    previewCell.value = edge ?? null
     if (edge) {
+      previewCellId.value = edge.getId?.() ?? null
       canvas.graph.setSelectionCell(edge)
     }
   }
-
-  schedulePreviewUpdate()
-}
-
-const applyPreviewOverlay = () => {
-  if (!selectedConfig.value || !previewCell.value || !drawingCanvasRef.value?.graph) return
-  const graph = drawingCanvasRef.value.graph
-  graph.removeCellOverlays(previewCell.value)
-  const overlayConfig = selectedConfig.value[previewState.value]
-  if (!overlayConfig) return
-  const overlay = createOverlayFromConfig(overlayConfig)
-  graph.addCellOverlay(previewCell.value, overlay)
-  graph.refresh()
 }
 
 const loadLanguageFromRoute = () => {
@@ -291,6 +277,7 @@ watch(
     if (targets.length === 0) {
       selectedTargetIndex.value = -1
       selectedConfig.value = null
+      previewCellId.value = null
       if (drawingCanvasRef.value?.clearCanvas) {
         drawingCanvasRef.value.clearCanvas()
       }
@@ -306,6 +293,7 @@ watch(
 
 watch(selectedTarget, () => {
   loadSelectedConfig()
+  previewCellId.value = null
   triggerRenderPreview()
 })
 
@@ -317,10 +305,6 @@ watch(
   },
   { deep: true }
 )
-
-watch(previewState, () => {
-  schedulePreviewUpdate()
-})
 
 onMounted(() => {
   loadLanguageFromRoute()
@@ -345,10 +329,6 @@ onUnmounted(() => {
   if (storeUpdateTimeout) {
     clearTimeout(storeUpdateTimeout)
     storeUpdateTimeout = null
-  }
-  if (previewUpdateTimeout) {
-    clearTimeout(previewUpdateTimeout)
-    previewUpdateTimeout = null
   }
   if (renderPreviewTimeout) {
     clearTimeout(renderPreviewTimeout)
