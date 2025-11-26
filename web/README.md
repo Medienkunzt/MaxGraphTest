@@ -47,3 +47,19 @@ npm run lint
 - [ ] Test AutoLayouts
 - [ ] Add Element Alignment options
 - [ ] Global Settings: HandleConfig.fillColor/strokeColor for custom selection styles
+- [ ] Window für Aufgabendesign
+- [ ] HTML-Labels for Elements + Text Formatting Editor
+
+RECT 0 0 1 1
+
+RECT 0 0 1 1
+MOVE 0 0.5
+LINE 0 0.5 0.2 0
+LINE 0 0.5 0.2 1
+
+RECT 0 0 1 1
+MOVE 1 0.5
+LINE 1 0.5 0.8 0
+LINE 1 0.5 0.8 1
+LINE 0 0.5 0.2 0
+LINE 0 0.5 0.2 1
