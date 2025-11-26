@@ -49,6 +49,13 @@ npm run lint
 - [ ] Global Settings: HandleConfig.fillColor/strokeColor for custom selection styles
 - [ ] Window für Aufgabendesign
 - [ ] HTML-Labels for Elements + Text Formatting Editor
+- [ ] Swimlane in container umbenennen
+- [ ] Standard Formen bekommen berechnete Ankerpunkte z.b. kreise
+- [ ] 10 gleichverteilte punkte automatisch erstellen
+- [ ] Schauen wie man in input und output connenctoren differenzieren kann
+- [ ] wenn objekt in minus x y dann canvas verschieben
+- [ ] copy paste support
+
 
 RECT 0 0 1 1
 
