@@ -44,9 +44,11 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   // Initialisierung mit Beispieldaten
   const initializeWithExampleData = () => {
     if (languages.value.length === 0) {
-      const exampleLanguage = createExampleLanguage()
-      ensureFeedbackForLanguage(exampleLanguage)
-      languages.value.push(exampleLanguage)
+      const exampleLanguages = createExampleLanguage()
+      exampleLanguages.forEach((language) => {
+        ensureFeedbackForLanguage(language)
+        languages.value.push(language)
+      })
     }
   }
 
@@ -522,7 +524,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     }
   }
   // Beispielsprache erstellen
-  const createExampleLanguage = (): DiagramLanguage => {
+  const createExampleLanguage = (): DiagramLanguage[] => {
     const example: DiagramLanguage = {
       id: 'uml-class-diagram',
       name: 'UML Klassendiagramm',
@@ -1129,7 +1131,1408 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     }
 
     ensureFeedbackForLanguage(example)
-    return example
+
+    const erm: DiagramLanguage = {
+      id: 'erm-diagram',
+      name: 'ERM (Entity-Relationship)',
+      tags: ['ERM', 'Datenmodellierung', 'Datenbanken'],
+      elements: [
+        {
+          type: 'erm-entity',
+          defaultLabel: 'Entitaet',
+          renderMode: 'predefined',
+          x: 60,
+          y: 60,
+          width: 160,
+          height: 60,
+          predefinedShape: 'rectangle',
+          style: {
+            strokeColor: '#1b5e20',
+            fillColor: '#e8f5e9',
+            strokeWidth: 2,
+            fontSize: 12,
+            fontColor: '#1b5e20',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'erm-weak-entity',
+          defaultLabel: 'SchwacheEntitaet',
+          renderMode: 'predefined',
+          x: 60,
+          y: 60,
+          width: 160,
+          height: 60,
+          predefinedShape: 'rectangle',
+          style: {
+            strokeColor: '#33691e',
+            fillColor: '#f1f8e9',
+            strokeWidth: 3,
+            fontSize: 12,
+            fontColor: '#33691e',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'erm-relationship',
+          defaultLabel: 'Beziehung',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 120,
+          height: 70,
+          predefinedShape: 'rhombus',
+          style: {
+            strokeColor: '#1565c0',
+            fillColor: '#e3f2fd',
+            strokeWidth: 2,
+            fontSize: 12,
+            fontColor: '#0d47a1',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'erm-identifying-relationship',
+          defaultLabel: 'Identifizierend',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 120,
+          height: 70,
+          predefinedShape: 'rhombus',
+          style: {
+            strokeColor: '#283593',
+            fillColor: '#e8eaf6',
+            strokeWidth: 3,
+            fontSize: 12,
+            fontColor: '#283593',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'erm-attribute',
+          defaultLabel: 'Attribut',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 130,
+          height: 50,
+          predefinedShape: 'ellipse',
+          style: {
+            strokeColor: '#6a1b9a',
+            fillColor: '#f3e5f5',
+            strokeWidth: 1,
+            fontSize: 11,
+            fontColor: '#4a148c',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'erm-multivalued-attribute',
+          defaultLabel: 'Mehrwertig',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 130,
+          height: 50,
+          predefinedShape: 'ellipse',
+          style: {
+            strokeColor: '#8e24aa',
+            fillColor: '#f3e5f5',
+            strokeWidth: 2,
+            fontSize: 11,
+            fontColor: '#4a148c',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'erm-key-attribute',
+          defaultLabel: '<<PK>> Attribut',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 140,
+          height: 50,
+          predefinedShape: 'ellipse',
+          style: {
+            strokeColor: '#4e342e',
+            fillColor: '#efebe9',
+            strokeWidth: 2,
+            fontSize: 11,
+            fontColor: '#3e2723',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        }
+      ],
+      connections: [
+        {
+          type: 'erm-relationship-link',
+          label: 'Beziehungs-Linie',
+          defaultLabel: '',
+          connectionType: 'relationship',
+          listIcon: 'mdi-vector-line',
+          listColor: 'blue',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#0d47a1',
+            strokeWidth: 1,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#0d47a1',
+            fontSize: 10
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'erm-attribute-link',
+          label: 'Attribut-Linie',
+          defaultLabel: '',
+          connectionType: 'attribute',
+          listIcon: 'mdi-dots-horizontal',
+          listColor: 'purple',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#6a1b9a',
+            strokeWidth: 1,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#6a1b9a',
+            fontSize: 10
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'erm-identifying-link',
+          label: 'Identifizierend',
+          defaultLabel: '',
+          connectionType: 'identifying',
+          listIcon: 'mdi-link-variant',
+          listColor: 'indigo',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#283593',
+            strokeWidth: 2,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#283593',
+            fontSize: 10
+          },
+          additionalLabels: []
+        }
+      ],
+      syntax: [],
+      feedback: createEmptyFeedbackConfig()
+    }
+
+    ensureFeedbackForLanguage(erm)
+
+    const circuit: DiagramLanguage = {
+      id: 'circuit-diagram',
+      name: 'Elektrotechnik & Schaltkreise',
+      tags: ['Schaltplan', 'Elektronik', 'Wires'],
+      elements: [
+        {
+          type: 'circuit-junction',
+          defaultLabel: '',
+          renderMode: 'predefined',
+          x: 60,
+          y: 60,
+          width: 16,
+          height: 16,
+          predefinedShape: 'ellipse',
+          style: {
+            strokeColor: '#263238',
+            fillColor: '#263238',
+            strokeWidth: 1,
+            fontSize: 9,
+            fontColor: '#263238',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: false,
+          movable: true,
+          allowLabelEdit: false
+        },
+        {
+          type: 'circuit-resistor',
+          defaultLabel: 'R',
+          renderMode: 'canvas2d',
+          x: 80,
+          y: 80,
+          width: 120,
+          height: 30,
+          canvas: 'MOVE 0 0.5\nLINE 0.15 0.5\nLINE 0.25 0\nLINE 0.35 1\nLINE 0.45 0\nLINE 0.55 1\nLINE 0.65 0\nLINE 0.75 1\nLINE 0.85 0.5\nLINE 1 0.5',
+          style: {
+            strokeColor: '#000000',
+            fillColor: 'transparent',
+            strokeWidth: 2,
+            fontSize: 11,
+            fontColor: '#000000',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'bottom'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'circuit-capacitor',
+          defaultLabel: 'C',
+          renderMode: 'canvas2d',
+          x: 80,
+          y: 80,
+          width: 90,
+          height: 30,
+          canvas: 'MOVE 0 0.5\nLINE 0.4 0.5\nMOVE 0.45 0.2\nLINE 0.45 0.8\nMOVE 0.55 0.2\nLINE 0.55 0.8\nMOVE 0.6 0.5\nLINE 1 0.5',
+          style: {
+            strokeColor: '#000000',
+            fillColor: 'transparent',
+            strokeWidth: 2,
+            fontSize: 11,
+            fontColor: '#000000',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'bottom'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'circuit-ground',
+          defaultLabel: 'GND',
+          renderMode: 'canvas2d',
+          x: 80,
+          y: 80,
+          width: 60,
+          height: 40,
+          canvas: 'MOVE 0.5 0\nLINE 0.5 0.45\nMOVE 0.2 0.45\nLINE 0.8 0.45\nMOVE 0.28 0.6\nLINE 0.72 0.6\nMOVE 0.36 0.75\nLINE 0.64 0.75',
+          style: {
+            strokeColor: '#000000',
+            fillColor: 'transparent',
+            strokeWidth: 2,
+            fontSize: 10,
+            fontColor: '#000000',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'bottom'
+          },
+          anchorPoints: [{ x: 0.5, y: 0 }],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'circuit-controller',
+          defaultLabel: 'Controller',
+          renderMode: 'swimlane',
+          x: 100,
+          y: 100,
+          width: 320,
+          height: 220,
+          style: {
+            strokeColor: '#263238',
+            fillColor: '#f5f5f5',
+            strokeWidth: 2,
+            fontSize: 12,
+            fontColor: '#263238',
+            fontFamily: 'Arial',
+            align: 'left',
+            verticalAlign: 'top',
+            startSize: 26,
+            horizontal: true,
+            labelBackgroundColor: '#ffffff',
+            childSpacing: 6,
+            childSpacingX: 8,
+            autoFitWidth: false,
+            autoStackY: false,
+            autoResize: false
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [
+            {
+              type: 'circuit-controller-header',
+              defaultLabel: 'MCU-01',
+              renderMode: 'predefined',
+              predefinedShape: 'rectangle',
+              style: {
+                strokeColor: '#37474f',
+                fillColor: '#eceff1',
+                strokeWidth: 1,
+                fontSize: 11,
+                fontColor: '#263238',
+                fontFamily: 'Arial',
+                align: 'left',
+                verticalAlign: 'middle'
+              },
+              position: { x: 0.04, y: 0.08, width: 0.92, height: 0.16, relative: true },
+              children: [],
+              connectable: false,
+              allowLabelEdit: true
+            },
+            {
+              type: 'circuit-controller-core',
+              defaultLabel: 'Core',
+              renderMode: 'predefined',
+              predefinedShape: 'rectangle',
+              style: {
+                strokeColor: '#546e7a',
+                fillColor: '#fafafa',
+                strokeWidth: 1,
+                fontSize: 10,
+                fontColor: '#37474f',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 0.3, y: 0.32, width: 0.4, height: 0.36, relative: true },
+              children: [],
+              connectable: false,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-port-d0',
+              defaultLabel: 'D0',
+              renderMode: 'predefined',
+              predefinedShape: 'ellipse',
+              style: {
+                strokeColor: '#1b5e20',
+                fillColor: '#c8e6c9',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#1b5e20',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 0, y: 0.26, width: 0.08, height: 0.12, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-port-d1',
+              defaultLabel: 'D1',
+              renderMode: 'predefined',
+              predefinedShape: 'ellipse',
+              style: {
+                strokeColor: '#1b5e20',
+                fillColor: '#c8e6c9',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#1b5e20',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 0, y: 0.44, width: 0.08, height: 0.12, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-port-a0',
+              defaultLabel: 'A0',
+              renderMode: 'predefined',
+              predefinedShape: 'ellipse',
+              style: {
+                strokeColor: '#0d47a1',
+                fillColor: '#bbdefb',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#0d47a1',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 0.92, y: 0.26, width: 0.08, height: 0.12, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-port-a1',
+              defaultLabel: 'A1',
+              renderMode: 'predefined',
+              predefinedShape: 'ellipse',
+              style: {
+                strokeColor: '#0d47a1',
+                fillColor: '#bbdefb',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#0d47a1',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 0.92, y: 0.44, width: 0.08, height: 0.12, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-port-gnd',
+              defaultLabel: 'GND',
+              renderMode: 'predefined',
+              predefinedShape: 'rectangle',
+              style: {
+                strokeColor: '#37474f',
+                fillColor: '#eeeeee',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#37474f',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 0.3, y: 0.82, width: 0.18, height: 0.1, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-port-vcc',
+              defaultLabel: 'VCC',
+              renderMode: 'predefined',
+              predefinedShape: 'rectangle',
+              style: {
+                strokeColor: '#b71c1c',
+                fillColor: '#ffcdd2',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#b71c1c',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 0.52, y: 0.82, width: 0.18, height: 0.1, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            }
+          ],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true,
+          collapsible: true,
+          collapsed: {
+            width: 220,
+            height: 80,
+            label: 'Controller',
+            style: {
+              shape: 'rectangle',
+              strokeColor: '#263238',
+              fillColor: '#e0e0e0',
+              strokeWidth: 2,
+              fontSize: 11,
+              fontColor: '#263238',
+              fontFamily: 'Arial',
+              align: 'center',
+              verticalAlign: 'middle'
+            }
+          }
+        },
+        {
+          type: 'circuit-connector',
+          defaultLabel: 'J',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 60,
+          height: 60,
+          predefinedShape: 'rectangle',
+          style: {
+            strokeColor: '#263238',
+            fillColor: '#eceff1',
+            strokeWidth: 2,
+            fontSize: 11,
+            fontColor: '#263238',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        }
+      ],
+      connections: [
+        {
+          type: 'circuit-wire',
+          label: 'Wire',
+          defaultLabel: '',
+          connectionType: 'wire',
+          listIcon: 'mdi-vector-line',
+          listColor: 'black',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#000000',
+            strokeWidth: 2,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#000000',
+            fontSize: 9
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'circuit-bus',
+          label: 'Bus',
+          defaultLabel: '',
+          connectionType: 'bus',
+          listIcon: 'mdi-minus',
+          listColor: 'grey',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#455a64',
+            strokeWidth: 4,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#455a64',
+            fontSize: 9
+          },
+          additionalLabels: []
+        }
+      ],
+      syntax: [],
+      feedback: createEmptyFeedbackConfig()
+    }
+
+    ensureFeedbackForLanguage(circuit)
+
+    const bpmn: DiagramLanguage = {
+      id: 'bpmn-diagram',
+      name: 'BPMN',
+      tags: ['BPMN', 'Prozessmodellierung'],
+      elements: [
+        {
+          type: 'bpmn-pool',
+          defaultLabel: 'Pool',
+          renderMode: 'swimlane',
+          x: 60,
+          y: 60,
+          width: 520,
+          height: 260,
+          style: {
+            strokeColor: '#263238',
+            fillColor: '#eceff1',
+            strokeWidth: 2,
+            fontSize: 12,
+            fontColor: '#263238',
+            fontFamily: 'Arial',
+            align: 'left',
+            verticalAlign: 'top',
+            startSize: 28,
+            horizontal: true,
+            labelBackgroundColor: '#ffffff',
+            childSpacing: 8,
+            childSpacingX: 12,
+            autoFitWidth: false,
+            autoStackY: false,
+            autoResize: false
+          },
+          anchorPoints: [],
+          children: [
+            {
+              type: 'bpmn-lane-1',
+              defaultLabel: 'Lane 1',
+              renderMode: 'predefined',
+              predefinedShape: 'rectangle',
+              style: {
+                strokeColor: '#90a4ae',
+                fillColor: '#f5f5f5',
+                strokeWidth: 1,
+                fontSize: 11,
+                fontColor: '#455a64',
+                fontFamily: 'Arial',
+                align: 'left',
+                verticalAlign: 'top'
+              },
+              position: { x: 0.03, y: 0.14, width: 0.94, height: 0.38, relative: true },
+              children: [],
+              connectable: false,
+              allowLabelEdit: true
+            },
+            {
+              type: 'bpmn-lane-2',
+              defaultLabel: 'Lane 2',
+              renderMode: 'predefined',
+              predefinedShape: 'rectangle',
+              style: {
+                strokeColor: '#90a4ae',
+                fillColor: '#fafafa',
+                strokeWidth: 1,
+                fontSize: 11,
+                fontColor: '#455a64',
+                fontFamily: 'Arial',
+                align: 'left',
+                verticalAlign: 'top'
+              },
+              position: { x: 0.03, y: 0.54, width: 0.94, height: 0.38, relative: true },
+              children: [],
+              connectable: false,
+              allowLabelEdit: true
+            }
+          ],
+          connectable: false,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true,
+          collapsible: true,
+          collapsed: {
+            width: 300,
+            height: 80,
+            label: 'Pool',
+            style: {
+              shape: 'rectangle',
+              strokeColor: '#263238',
+              fillColor: '#cfd8dc',
+              strokeWidth: 2,
+              fontSize: 11,
+              fontColor: '#263238',
+              fontFamily: 'Arial',
+              align: 'left',
+              verticalAlign: 'middle'
+            }
+          }
+        },
+        {
+          type: 'bpmn-task',
+          defaultLabel: 'Task',
+          renderMode: 'predefined',
+          x: 120,
+          y: 120,
+          width: 140,
+          height: 70,
+          predefinedShape: 'rectangle',
+          style: {
+            strokeColor: '#1e88e5',
+            fillColor: '#e3f2fd',
+            strokeWidth: 2,
+            fontSize: 12,
+            fontColor: '#0d47a1',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'bpmn-event-start',
+          defaultLabel: 'Start',
+          renderMode: 'predefined',
+          x: 120,
+          y: 120,
+          width: 50,
+          height: 50,
+          predefinedShape: 'ellipse',
+          style: {
+            strokeColor: '#2e7d32',
+            fillColor: '#e8f5e9',
+            strokeWidth: 2,
+            fontSize: 10,
+            fontColor: '#1b5e20',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: false,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'bpmn-event-end',
+          defaultLabel: 'Ende',
+          renderMode: 'predefined',
+          x: 120,
+          y: 120,
+          width: 50,
+          height: 50,
+          predefinedShape: 'ellipse',
+          style: {
+            strokeColor: '#c62828',
+            fillColor: '#ffebee',
+            strokeWidth: 3,
+            fontSize: 10,
+            fontColor: '#b71c1c',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: false,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'bpmn-gateway',
+          defaultLabel: 'Gateway',
+          renderMode: 'predefined',
+          x: 120,
+          y: 120,
+          width: 70,
+          height: 70,
+          predefinedShape: 'rhombus',
+          style: {
+            strokeColor: '#f9a825',
+            fillColor: '#fff8e1',
+            strokeWidth: 2,
+            fontSize: 10,
+            fontColor: '#f57f17',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'bpmn-data-object',
+          defaultLabel: 'Datenobjekt',
+          renderMode: 'predefined',
+          x: 120,
+          y: 120,
+          width: 110,
+          height: 70,
+          predefinedShape: 'rectangle',
+          style: {
+            strokeColor: '#6d4c41',
+            fillColor: '#efebe9',
+            strokeWidth: 1,
+            fontSize: 10,
+            fontColor: '#4e342e',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 0 },
+            { x: 0.5, y: 1 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        }
+      ],
+      connections: [
+        {
+          type: 'bpmn-sequence-flow',
+          label: 'Sequence Flow',
+          defaultLabel: '',
+          connectionType: 'sequence',
+          listIcon: 'mdi-arrow-right',
+          listColor: 'blue',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#1e88e5',
+            strokeWidth: 2,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'classic',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#1e88e5',
+            fontSize: 10
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'bpmn-message-flow',
+          label: 'Message Flow',
+          defaultLabel: '',
+          connectionType: 'message',
+          listIcon: 'mdi-arrow-right-thin',
+          listColor: 'teal',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#00897b',
+            strokeWidth: 1,
+            strokeOpacity: 100,
+            dashed: true,
+            dashPattern: '6 4',
+            startArrow: 'none',
+            endArrow: 'open',
+            startFill: true,
+            endFill: false,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#00897b',
+            fontSize: 10
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'bpmn-association',
+          label: 'Association',
+          defaultLabel: '',
+          connectionType: 'association',
+          listIcon: 'mdi-dots-horizontal',
+          listColor: 'grey',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#9e9e9e',
+            strokeWidth: 1,
+            strokeOpacity: 100,
+            dashed: true,
+            dashPattern: '4 4',
+            startArrow: 'none',
+            endArrow: 'open',
+            startFill: true,
+            endFill: false,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#9e9e9e',
+            fontSize: 9
+          },
+          additionalLabels: []
+        }
+      ],
+      syntax: [],
+      feedback: createEmptyFeedbackConfig()
+    }
+
+    ensureFeedbackForLanguage(bpmn)
+
+    const molecule: DiagramLanguage = {
+      id: 'molecule-structure',
+      name: 'Molekuelstrukturen',
+      tags: ['Chemie', 'Molekuel', 'Strukturformel'],
+      elements: [
+        {
+          type: 'mol-atom-label',
+          defaultLabel: 'C',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 24,
+          height: 24,
+          predefinedShape: 'label',
+          style: {
+            strokeColor: 'transparent',
+            fillColor: '#ffffff',
+            strokeWidth: 0,
+            fontSize: 12,
+            fontColor: '#263238',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0.5, y: 0 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 1 },
+            { x: 0, y: 0.5 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'mol-atom-hetero',
+          defaultLabel: 'O',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 26,
+          height: 24,
+          predefinedShape: 'label',
+          style: {
+            strokeColor: 'transparent',
+            fillColor: '#ffffff',
+            strokeWidth: 0,
+            fontSize: 12,
+            fontColor: '#b71c1c',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0.5, y: 0 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 1 },
+            { x: 0, y: 0.5 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'mol-h',
+          defaultLabel: 'H',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 22,
+          height: 22,
+          predefinedShape: 'label',
+          style: {
+            strokeColor: 'transparent',
+            fillColor: '#ffffff',
+            strokeWidth: 0,
+            fontSize: 11,
+            fontColor: '#455a64',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0.5, y: 0 },
+            { x: 1, y: 0.5 },
+            { x: 0.5, y: 1 },
+            { x: 0, y: 0.5 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'mol-charge',
+          defaultLabel: '+',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 18,
+          height: 18,
+          predefinedShape: 'label',
+          style: {
+            strokeColor: 'transparent',
+            fillColor: 'transparent',
+            strokeWidth: 0,
+            fontSize: 10,
+            fontColor: '#b71c1c',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [],
+          children: [],
+          connectable: false,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'mol-text-label',
+          defaultLabel: 'Kommentar',
+          renderMode: 'predefined',
+          x: 80,
+          y: 80,
+          width: 120,
+          height: 24,
+          predefinedShape: 'label',
+          style: {
+            strokeColor: 'transparent',
+            fillColor: 'transparent',
+            strokeWidth: 0,
+            fontSize: 10,
+            fontColor: '#263238',
+            fontFamily: 'Courier New',
+            align: 'left',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [],
+          children: [],
+          connectable: false,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
+          type: 'mol-ring-6',
+          defaultLabel: '',
+          renderMode: 'canvas2d',
+          x: 80,
+          y: 80,
+          width: 120,
+          height: 110,
+          canvas: 'MOVE 0.5 0\nLINE 1 0.25\nLINE 1 0.75\nLINE 0.5 1\nLINE 0 0.75\nLINE 0 0.25\nCLOSE',
+          style: {
+            strokeColor: '#263238',
+            fillColor: 'transparent',
+            strokeWidth: 2,
+            fontSize: 10,
+            fontColor: '#263238',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle'
+          },
+          anchorPoints: [
+            { x: 0.5, y: 0 },
+            { x: 1, y: 0.25 },
+            { x: 1, y: 0.75 },
+            { x: 0.5, y: 1 },
+            { x: 0, y: 0.75 },
+            { x: 0, y: 0.25 }
+          ],
+          children: [],
+          connectable: true,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: false
+        }
+      ],
+      connections: [
+        {
+          type: 'mol-bond-single',
+          label: 'Einfachbindung',
+          defaultLabel: '',
+          connectionType: 'single',
+          listIcon: 'mdi-vector-line',
+          listColor: 'black',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#263238',
+            strokeWidth: 1,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#263238',
+            fontSize: 9
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'mol-bond-double',
+          label: 'Doppelbindung',
+          defaultLabel: '',
+          connectionType: 'double',
+          listIcon: 'mdi-pause',
+          listColor: 'grey',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#263238',
+            strokeWidth: 3,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#263238',
+            fontSize: 9
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'mol-bond-triple',
+          label: 'Dreifachbindung',
+          defaultLabel: '',
+          connectionType: 'triple',
+          listIcon: 'mdi-equal',
+          listColor: 'grey',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#263238',
+            strokeWidth: 5,
+            strokeOpacity: 100,
+            dashed: false,
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#263238',
+            fontSize: 9
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'mol-bond-dashed',
+          label: 'Gestrichelt',
+          defaultLabel: '',
+          connectionType: 'dashed',
+          listIcon: 'mdi-dots-horizontal',
+          listColor: 'grey',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#455a64',
+            strokeWidth: 1,
+            strokeOpacity: 100,
+            dashed: true,
+            dashPattern: '4 4',
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#455a64',
+            fontSize: 9
+          },
+          additionalLabels: []
+        },
+        {
+          type: 'mol-bond-aromatic',
+          label: 'Aromatisch',
+          defaultLabel: '',
+          connectionType: 'aromatic',
+          listIcon: 'mdi-minus',
+          listColor: 'grey',
+          connectable: true,
+          style: {
+            shape: 'connector',
+            strokeColor: '#424242',
+            strokeWidth: 1,
+            strokeOpacity: 100,
+            dashed: true,
+            dashPattern: '1 3',
+            startArrow: 'none',
+            endArrow: 'none',
+            startFill: true,
+            endFill: true,
+            align: 'center',
+            verticalAlign: 'middle',
+            labelPosition: 'center',
+            fontColor: '#424242',
+            fontSize: 9
+          },
+          additionalLabels: []
+        }
+      ],
+      syntax: [],
+      feedback: createEmptyFeedbackConfig()
+    }
+
+    ensureFeedbackForLanguage(molecule)
+    return [example, erm, circuit, bpmn, molecule]
   }
 
   return {
