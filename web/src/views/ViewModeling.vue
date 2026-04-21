@@ -21,7 +21,7 @@
     <v-row class="flex-grow-1">
       <v-col cols="12" class="canvas-column">
         <div class="canvas-wrapper">
-          <DrawingCanvas :model="model" :language-elements="activeLanguage?.elements" :language-connections="activeLanguage?.connections" :language-syntax="activeLanguage?.syntax" />
+          <DrawingCanvas :model="model" :languages="languages" :language-connections="activeLanguage?.connections" :language-syntax="activeLanguage?.syntax" />
         </div>
       </v-col>
     </v-row>
@@ -88,9 +88,10 @@ onMounted(() => {
 
 <style scoped>
 .modeling-view {
-  height: calc(100vh - 120px);
+  height: calc(100vh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .header-row {
@@ -100,11 +101,14 @@ onMounted(() => {
 .modeling-view .v-row.flex-grow-1 {
   flex: 1;
   min-height: 0;
+  flex-wrap: nowrap;
+  align-items: stretch;
 }
 
 .canvas-column {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0;
   min-height: 0;
 }
 

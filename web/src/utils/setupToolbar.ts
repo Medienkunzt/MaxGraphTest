@@ -72,7 +72,7 @@ const resolveEffectiveParent = (graph: Graph, defaultParent: Cell, dropTarget: C
   return defaultParent
 }
 
-const ensureGraphDropHandlers = (graph: Graph, parent: Ref<Cell | undefined>, shapes: ShapeConfig[]) => {
+export function ensureGraphDropHandlers(graph: Graph, parent: Ref<Cell | undefined>, shapes: ShapeConfig[]) {
   const graphContainer = graph.container as HTMLElement & {
     __mxToolbarDropContext?: ToolbarDropContext
   }

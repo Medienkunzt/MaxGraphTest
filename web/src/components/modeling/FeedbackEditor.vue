@@ -50,7 +50,7 @@
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="languageSyntaxForCanvas" :show-toolbar="true" :allow-edit="true" :context-menu="true" :overlays="previewCanvasOverlays" />
+              <DrawingCanvas ref="drawingCanvasRef" :show-elements="false" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="languageSyntaxForCanvas" :show-toolbar="true" :allow-edit="true" :context-menu="true" :overlays="previewCanvasOverlays" />
             </div>
             <v-alert v-if="!selectedTargetSummary" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element oder eine Verbindung, um die Feedback-Position zu testen. </v-alert>
           </v-card-text>
@@ -392,5 +392,3 @@ watch(
   overflow: hidden;
 }
 </style>
-
-

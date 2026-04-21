@@ -3,9 +3,6 @@
     <v-card-text class="pa-1 canvas-content">
       <!-- Erweiterte Toolbar -->
       <div v-if="props.showToolbar" class="toolbar-actions mb-2">
-        <!-- MaxGraph Toolbar Container -->
-        <div ref="toolbarContainer" class="maxgraph-toolbar mr-3"></div>
-
         <!-- Vue Action Buttons -->
         <v-btn-group size="small" density="compact" class="mr-2">
           <v-btn title="Alles auswählen (Strg+A)" @click="selectAll">
@@ -37,28 +34,35 @@
         <AutonomyControls :mode="autonomyMode" @update:mode="$emit('update:autonomyMode', $event)" />
       </div>
 
-      <!-- Graph Container -->
-      <div ref="graphWrapper" class="graph-wrapper">
-        <div ref="graphContainer" class="graph-container">
-          <!-- Separater Grid Container -->
-          <div class="grid-container">
-            <canvas ref="canvasGrid" class="grid-canvas"></canvas>
+      <!-- Canvas Area: Sidebar + Graph -->
+      <div class="canvas-area">
+        <!-- Elements Sidebar -->
+        <ElementsSidebar v-if="props.showElements !== false && props.showToolbar && sidebarLanguages.length > 0" :languages="sidebarLanguages" />
+
+        <!-- Graph Container -->
+        <div ref="graphWrapper" class="graph-wrapper">
+          <div ref="graphContainer" class="graph-container">
+            <!-- Separater Grid Container -->
+            <div class="grid-container">
+              <canvas ref="canvasGrid" class="grid-canvas"></canvas>
+            </div>
+
+            <!-- Graph Controls Component -->
+            <GraphControls :can-undo="canUndo" :can-redo="canRedo" @undo="undoGraph" @redo="redoGraph" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
+
+            <!-- Graph Settings Component -->
+            <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" @update:use-grid-for-panning="updateUseGridForPanning" />
           </div>
 
-          <!-- Graph Controls Component -->
-          <GraphControls :can-undo="canUndo" :can-redo="canRedo" @undo="undoGraph" @redo="redoGraph" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
-
-          <!-- Graph Settings Component -->
-          <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" @update:use-grid-for-panning="updateUseGridForPanning" />
+          <v-tooltip v-if="overlayTooltip.anchor" :model-value="overlayTooltip.visible" location="top" :open-on-hover="false" transition="scale-transition" @update:model-value="(value) => (overlayTooltip.visible = value)">
+            <template #activator="{ props }">
+              <div v-bind="props" class="canvas-tooltip-anchor" :style="overlayTooltipAnchorStyle"></div>
+            </template>
+            {{ overlayTooltip.text }}
+          </v-tooltip>
         </div>
-
-        <v-tooltip v-if="overlayTooltip.anchor" :model-value="overlayTooltip.visible" location="top" :open-on-hover="false" transition="scale-transition" @update:model-value="(value) => (overlayTooltip.visible = value)">
-          <template #activator="{ props }">
-            <div v-bind="props" class="canvas-tooltip-anchor" :style="overlayTooltipAnchorStyle"></div>
-          </template>
-          {{ overlayTooltip.text }}
-        </v-tooltip>
       </div>
+      <!-- /canvas-area -->
     </v-card-text>
   </v-card>
 </template>
@@ -73,7 +77,7 @@ import { useZoomOperations } from '@/composables/useZoomOperations'
 import { useGridSettings } from '@/composables/useGridSettings'
 import { useCanvasOverlays } from '@/composables/useCanvasOverlays'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
-import { setupToolbar, createDefaultShapes, buildShapesFromElements } from '@/utils/setupToolbar'
+import { createDefaultShapes, buildShapesFromElements, ensureGraphDropHandlers } from '@/utils/setupToolbar'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
 import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, renderRoutingConnectionPreview } from '@/utils/connectionPreview'
 import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
@@ -82,6 +86,8 @@ import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
 import AutonomyControls from './AutonomyControls.vue'
+import ElementsSidebar from './ElementsSidebar.vue'
+import type { SidebarLanguage } from './ElementsSidebar.vue'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
 import type { DiagramSyntax } from '@/model/Syntax'
@@ -192,10 +198,13 @@ const props = withDefaults(
     model?: GraphDataModel
     allowEdit?: boolean
     showToolbar?: boolean
+    showElements?: boolean
     contextMenu?: boolean
+    languageName?: string
     languageElements?: DiagramElement[]
     languageConnections?: DiagramConnection[]
     languageSyntax?: DiagramSyntax[]
+    languages?: SidebarLanguage[]
     autonomyMode?: AutonomyMode
     previewConnection?: DiagramConnection
     previewMode?: 'simple' | 'scenario' | 'routing'
@@ -204,10 +213,13 @@ const props = withDefaults(
   {
     allowEdit: true,
     showToolbar: true,
+    showElements: true,
     contextMenu: false,
+    languageName: undefined,
     languageElements: undefined,
     languageConnections: undefined,
     languageSyntax: undefined,
+    languages: undefined,
     autonomyMode: 'manual',
     previewConnection: undefined,
     previewMode: 'simple',
@@ -234,7 +246,6 @@ const canRedo = ref(false)
 const graphWrapper = ref<HTMLElement | null>(null)
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
-const toolbarContainer = ref<HTMLElement>()
 // shallowRef verhindert, dass Vue die Graph-Instanz in einen reactive()-Proxy einwickelt.
 // Vue's deep reactive Proxy würde Cell-Objekte als Proxy zurückgeben, deren Identität
 // von den originalen Cell-Objekten abweicht. maxGraph speichert CellStates in einer
@@ -331,6 +342,17 @@ const redoGraph = () => {
   graph.value.view.validate()
   emitUpdatedModel()
 }
+
+// Compute the list of sidebar language sections
+const sidebarLanguages = computed<SidebarLanguage[]>(() => {
+  if (props.languages && props.languages.length > 0) {
+    return props.languages
+  }
+  if (props.languageElements && props.languageElements.length > 0) {
+    return [{ id: '_default', name: props.languageName || 'Elemente', elements: props.languageElements }]
+  }
+  return []
+})
 
 // Computed für Verbindungen
 const languageConnections = computed(() => props.languageConnections ?? [])
@@ -611,8 +633,8 @@ const initGraph = () => {
 }
 
 const buildLanguageShapes = computed(() => {
-  const elements = props.languageElements
-  if (!elements || elements.length === 0) {
+  const allElements = sidebarLanguages.value.flatMap((l) => l.elements)
+  if (allElements.length === 0) {
     return createDefaultShapes({
       rectangle: img_rectangle,
       ellipse: img_ellipse,
@@ -621,22 +643,20 @@ const buildLanguageShapes = computed(() => {
       cloud: img_cloud
     })
   }
-
-  return buildShapesFromElements(elements, img_elementPlaceholder)
+  return buildShapesFromElements(allElements, img_elementPlaceholder)
 })
 
 const initializeToolbar = () => {
-  if (!props.showToolbar || !toolbarContainer.value || !graph.value) {
+  if (!graph.value) {
     return
   }
 
-  toolbarContainer.value.innerHTML = ''
   toolbarShapes.value = buildLanguageShapes.value
-  setupToolbar(graph, toolbarContainer, parent, true, toolbarShapes.value)
+  ensureGraphDropHandlers(graph.value, parent, toolbarShapes.value)
 }
 
 watch(
-  () => props.languageElements,
+  () => [props.languageElements, props.languages],
   () => {
     nextTick(() => {
       setTimeout(() => initializeToolbar(), 50)
@@ -703,7 +723,16 @@ defineExpose({
   width: 100%;
   height: 100%;
   flex: 1;
+  min-width: 0;
   min-height: 0;
+}
+
+.canvas-area {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .canvas-tooltip-anchor {
@@ -749,20 +778,7 @@ defineExpose({
 }
 
 .maxgraph-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding-right: 8px;
-  margin-right: 0;
-  border-right: 1px solid #ddd;
-}
-
-/* Responsiv: Border bei schmalen Ansichten entfernen */
-@media (max-width: 900px) {
-  .maxgraph-toolbar {
-    border-right: none;
-    padding-right: 0;
-  }
+  display: none;
 }
 
 /* Validierungs-Button */

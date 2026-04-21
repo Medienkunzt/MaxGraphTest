@@ -55,6 +55,7 @@ npm run lint
 - [ ] Schauen wie man in input und output connenctoren differenzieren kann
 - [ ] wenn objekt in minus x y dann canvas verschieben
 - [ ] copy paste support
+- [ ] Syntax Regeln für container (z.b. welche elemente dürfen rein, welche nicht)
 
 
 RECT 0 0 1 1
