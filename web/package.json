@@ -11,7 +11,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@maxgraph/core": "0.20.0",
+    "@maxgraph/core": "0.23.0",
     "@mdi/font": "7.4.47",
     "@popperjs/core": "^2.11.8",
     "@types/webfontloader": "^1.6.38",

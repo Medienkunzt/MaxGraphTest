@@ -64,8 +64,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler } from '@maxgraph/core'
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler, FitPlugin } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -235,12 +235,18 @@ const graphWrapper = ref<HTMLElement | null>(null)
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
 const toolbarContainer = ref<HTMLElement>()
-const graph = ref<MyCustomGraph>()
-const parent = ref<Cell>()
-const keyHandler = ref<KeyHandler>()
-const customConnectionHandler = ref<CustomConnectionHandler>()
+// shallowRef verhindert, dass Vue die Graph-Instanz in einen reactive()-Proxy einwickelt.
+// Vue's deep reactive Proxy würde Cell-Objekte als Proxy zurückgeben, deren Identität
+// von den originalen Cell-Objekten abweicht. maxGraph speichert CellStates in einer
+// Map<Cell, CellState> mit originalen Cell-Referenzen als Schlüssel.
+// Map.get(proxiedCell) schlägt fehl (proxy !== original), dadurch werden States nicht
+// entfernt und SVG-Knoten bleiben als Geister-Elemente im DOM.
+const graph = shallowRef<MyCustomGraph>()
+const parent = shallowRef<Cell>()
+const keyHandler = shallowRef<KeyHandler>()
+const customConnectionHandler = shallowRef<CustomConnectionHandler>()
 const selectedConnectionIndex = ref(0)
-const plugins = ref<GraphPluginConstructor[]>([MyCustomCellEditorHandler, TooltipHandler, CustomConnectionHandler as unknown as GraphPluginConstructor, PanningHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler])
+const plugins = ref<GraphPluginConstructor[]>([MyCustomCellEditorHandler, TooltipHandler, CustomConnectionHandler as unknown as GraphPluginConstructor, PanningHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler, FitPlugin])
 const toolbarShapes = ref(
   createDefaultShapes({
     rectangle: img_rectangle,

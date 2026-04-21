@@ -1,5 +1,6 @@
 import { nextTick, type Ref } from 'vue'
 import type { Graph } from '@maxgraph/core'
+import { FitPlugin } from '@maxgraph/core'
 
 /**
  * Composable für Zoom- und Fit-Operationen
@@ -46,12 +47,12 @@ export function useZoomOperations(graph: Ref<Graph | undefined>) {
 
   /**
    * Passt den Graph an die Fenstergröße an
-   * Verwendet die direkte fit() Methode (MaxGraph 0.20.0)
+   * Verwendet FitPlugin (seit MaxGraph 0.21.0)
    */
   const fitToWindow = () => {
     if (!graph.value) return
 
-    graph.value.fit()
+    graph.value.getPlugin<FitPlugin>(FitPlugin.pluginId)?.fit()
 
     // Explizite View-Validierung nach Fit
     nextTick(() => {

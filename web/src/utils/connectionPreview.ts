@@ -1,4 +1,4 @@
-import { Graph, Point, Cell } from '@maxgraph/core'
+import { Graph, Point, Cell, FitPlugin } from '@maxgraph/core'
 import type { CellStyle } from '@maxgraph/core'
 import type { DiagramConnection } from '@/model/Connection'
 import { applyConnectionAdditionalLabels } from './connectionLabelHelpers'
@@ -240,7 +240,7 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
   }
 
   // Fit the entire scenario to the visible area
-  graph.fit(10)
+  graph.getPlugin<FitPlugin>(FitPlugin.pluginId)?.fit({ border: 10 })
   graph.view.validate()
   graph.refresh()
 }
@@ -541,7 +541,7 @@ export const renderRoutingConnectionPreview = (graph: Graph, connection: Diagram
   }
 
   // Fit the entire layout to the visible area
-  graph.fit(10)
+  graph.getPlugin<FitPlugin>(FitPlugin.pluginId)?.fit({ border: 10 })
   graph.view.validate()
   graph.refresh()
 }
