@@ -1,6 +1,5 @@
 <template>
   <div class="elements-sidebar" :style="{ width: sidebarWidth + 'px', minWidth: sidebarWidth + 'px' }">
-    <!-- Top bar: search + view mode toggles -->
     <div class="sidebar-topbar">
       <div class="search-wrapper">
         <v-icon class="search-icon" size="13">mdi-magnify</v-icon>
@@ -61,11 +60,6 @@
         </div>
       </template>
     </div>
-
-    <!-- Resize handle -->
-    <div class="resize-handle" title="Breite anpassen" @mousedown.prevent="startResize">
-      <v-icon size="12">mdi-drag-vertical</v-icon>
-    </div>
   </div>
 </template>
 
@@ -85,15 +79,11 @@ type ViewMode = 'list' | 'preview' | 'tile'
 const props = withDefaults(
   defineProps<{
     languages?: SidebarLanguage[]
+    sidebarWidth?: number
   }>(),
-  { languages: () => [] }
+  { languages: () => [], sidebarWidth: 210 }
 )
 
-const DEFAULT_WIDTH = 210
-const MIN_WIDTH = Math.round(DEFAULT_WIDTH / 2) // 105
-const MAX_WIDTH = Math.round(DEFAULT_WIDTH * 1.5) // 315
-
-const sidebarWidth = ref(DEFAULT_WIDTH)
 const searchQuery = ref('')
 const viewMode = ref<ViewMode>('preview')
 const showLabels = ref(true)
@@ -140,8 +130,8 @@ const elementClass = computed(() => ({
 }))
 
 const previewW = computed(() => {
-  if (viewMode.value === 'tile') return Math.round((sidebarWidth.value - 22) / 2 - 10)
-  return sidebarWidth.value - 24
+  if (viewMode.value === 'tile') return Math.round((props.sidebarWidth - 22) / 2 - 10)
+  return props.sidebarWidth - 24
 })
 const previewH = computed(() => (viewMode.value === 'tile' ? 44 : 56))
 
@@ -153,67 +143,18 @@ const onDragStart = (event: DragEvent, element: DiagramElement) => {
   event.dataTransfer.setData('text/plain', element.type)
   event.dataTransfer.effectAllowed = 'copy'
 }
-
-// ── Resize logic ─────────────────────────────────────────
-const startResize = (event: MouseEvent) => {
-  const startX = event.clientX
-  const startWidth = sidebarWidth.value
-
-  const onMove = (e: MouseEvent) => {
-    const delta = e.clientX - startX
-    const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth + delta))
-    sidebarWidth.value = newWidth
-  }
-
-  const onUp = () => {
-    document.removeEventListener('mousemove', onMove)
-    document.removeEventListener('mouseup', onUp)
-    document.body.style.cursor = ''
-    document.body.style.userSelect = ''
-  }
-
-  document.body.style.cursor = 'col-resize'
-  document.body.style.userSelect = 'none'
-  document.addEventListener('mousemove', onMove)
-  document.addEventListener('mouseup', onUp)
-}
 </script>
 
 <style scoped>
-/* ── Sidebar shell ───────────────────────────────────── */
+/* ── Sidebar content ─────────────────────────────────── */
 .elements-sidebar {
-  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #ffffff;
-  border-right: 1px solid rgba(var(--v-theme-outline), 0.14);
+  min-width: 0;
+  background: transparent;
   overflow: hidden;
   user-select: none;
-  flex-shrink: 0;
-}
-
-/* ── Resize handle ───────────────────────────────────── */
-.resize-handle {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 6px;
-  height: 100%;
-  cursor: col-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(var(--v-theme-on-surface), 0.2);
-  transition:
-    background 0.15s,
-    color 0.15s;
-  z-index: 10;
-}
-
-.resize-handle:hover {
-  background: rgba(var(--v-theme-primary), 0.1);
-  color: rgba(var(--v-theme-primary), 0.7);
 }
 
 /* ── Top bar ─────────────────────────────────────────── */

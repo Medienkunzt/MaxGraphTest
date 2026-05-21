@@ -37,7 +37,7 @@
       <!-- Canvas Area: Sidebar + Graph -->
       <div class="canvas-area">
         <!-- Elements Sidebar -->
-        <ElementsSidebar v-if="props.showElements !== false && props.showToolbar && sidebarLanguages.length > 0" :languages="sidebarLanguages" />
+        <SidebarContainer v-if="props.showElements !== false && props.showToolbar && sidebarLanguages.length > 0" :languages="sidebarLanguages" />
 
         <!-- Graph Container -->
         <div ref="graphWrapper" class="graph-wrapper">
@@ -55,8 +55,8 @@
           </div>
 
           <v-tooltip v-if="overlayTooltip.anchor" :model-value="overlayTooltip.visible" location="top" :open-on-hover="false" transition="scale-transition" @update:model-value="(value) => (overlayTooltip.visible = value)">
-            <template #activator="{ props }">
-              <div v-bind="props" class="canvas-tooltip-anchor" :style="overlayTooltipAnchorStyle"></div>
+            <template #activator="{ props: activatorProps }">
+              <div v-bind="activatorProps" class="canvas-tooltip-anchor" :style="overlayTooltipAnchorStyle"></div>
             </template>
             {{ overlayTooltip.text }}
           </v-tooltip>
@@ -86,7 +86,7 @@ import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
 import AutonomyControls from './AutonomyControls.vue'
-import ElementsSidebar from './ElementsSidebar.vue'
+import SidebarContainer from './SidebarContainer.vue'
 import type { SidebarLanguage } from './ElementsSidebar.vue'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
