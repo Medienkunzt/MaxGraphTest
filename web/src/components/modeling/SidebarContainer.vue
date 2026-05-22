@@ -11,6 +11,7 @@
 
     <div class="sidebar-body">
       <ElementsSidebar v-if="activeTab === 'elements'" :languages="languages" :sidebar-width="sidebarWidth" />
+      <SidebarSync v-else-if="activeTab === 'sync'" />
       <SidebarPersistence v-else />
     </div>
 
@@ -24,8 +25,9 @@
 import { ref } from 'vue'
 import ElementsSidebar, { type SidebarLanguage } from './ElementsSidebar.vue'
 import SidebarPersistence from './SidebarPersistence.vue'
+import SidebarSync from './SidebarSync.vue'
 
-type SidebarTab = 'elements' | 'persistence'
+type SidebarTab = 'elements' | 'persistence' | 'sync'
 
 defineProps<{
   languages?: SidebarLanguage[]
@@ -33,7 +35,8 @@ defineProps<{
 
 const tabs: { value: SidebarTab; icon: string; label: string }[] = [
   { value: 'elements', icon: 'mdi-shape-outline', label: 'Elemente' },
-  { value: 'persistence', icon: 'mdi-database-outline', label: 'Persistenz' }
+  { value: 'persistence', icon: 'mdi-database-outline', label: 'Persistenz' },
+  { value: 'sync', icon: 'mdi-sync', label: 'Sync' }
 ]
 
 const DEFAULT_WIDTH = 210

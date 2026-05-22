@@ -64,15 +64,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { detectFormat, exportModelAsJson, exportModelAsXml, importModelFromJson, importModelFromXml, saveTextFile } from '@/utils/modelPersistence'
 import { useGraphContext } from '@/composables/useGraphContext'
 import type { ExportFormat, ImportFormat } from '@/enums/ModelPersistenceFormat'
 
 type DialogMode = 'download' | 'upload'
 
-const { graph: graphRef } = useGraphContext()
-const graph = computed(() => graphRef.value)
+const { graph } = useGraphContext()
 
 const isDialogOpen = ref(false)
 const dialogMode = ref<DialogMode>('download')
@@ -158,12 +157,14 @@ const importModel = async () => {
       importModelFromJson(currentGraph, text)
     }
 
-    // Verhindert inkonsistente Vorschauzustände im ConnectionHandler nach Model-Replacement.
+    // Nach dem Import: Handler-Zustände zurücksetzen und View neu aufbauen,
+    // damit keine veralteten MouseMove-States oder CellStates verbleiben.
     const connectionHandler = currentGraph.getPlugin('ConnectionHandler') as { reset?: () => void } | null
     connectionHandler?.reset?.()
     currentGraph.clearSelection()
     currentGraph.refresh()
     currentGraph.view.validate()
+
     closeDialog()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Import fehlgeschlagen.'

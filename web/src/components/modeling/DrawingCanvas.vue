@@ -281,7 +281,7 @@ const applyValidationRulesToGraph = () => {
     return
   }
 
-  const errors = diagramValidator.validateGraph(currentGraph)
+  // const errors = diagramValidator.validateGraph(currentGraph)
 
   // if (errors.length === 0) {
   //   alert('V Keine Validierungsfehler gefunden!')
@@ -403,6 +403,13 @@ onMounted(() => {
     const currentGraph = graph.value
     if (currentGraph?.getDataModel().updateLevel && currentGraph.getDataModel().updateLevel > 0) {
       return
+    }
+
+    // Nach einem Import ersetzt ModelCodec.decodeRoot() den gesamten Zellbaum via setRoot().
+    // parent.value synchron halten, damit Drop-Handler die aktuelle Default-Parent-Zelle verwenden.
+    const freshParent = currentGraph?.getDefaultParent()
+    if (freshParent && freshParent !== parent.value) {
+      parent.value = freshParent
     }
 
     currentGraph?.refresh()

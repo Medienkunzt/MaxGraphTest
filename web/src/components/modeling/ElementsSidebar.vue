@@ -262,10 +262,27 @@ const onDragStart = (event: DragEvent, element: DiagramElement) => {
 .sidebar-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: scroll;
   overflow-x: hidden;
   background: #ffffff;
-  padding-right: 4px; /* room for resize handle */
+  padding-right: 0; /* scrollbar sits inside the padding box */
+}
+
+.sidebar-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-body::-webkit-scrollbar-thumb {
+  background: rgba(var(--v-theme-on-surface), 0.18);
+  border-radius: 3px;
+}
+
+.sidebar-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--v-theme-on-surface), 0.35);
 }
 
 /* ── Section ─────────────────────────────────────────── */
