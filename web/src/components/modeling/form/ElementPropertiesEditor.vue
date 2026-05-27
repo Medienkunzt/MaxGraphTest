@@ -284,10 +284,15 @@ const shapeTypes = [
 ]
 
 const predefinedShapes = [
+  { label: 'Rechteck', value: 'rectangle' },
+  { label: 'Ellipse', value: 'ellipse' },
+  { label: 'Raute', value: 'rhombus' },
+  { label: 'Label', value: 'label' },
+  { label: 'Wolke', value: 'cloud' },
+  { label: 'Akteur', value: 'actor' },
   { label: 'Zylinder', value: 'cylinder' },
   { label: 'Hexagon', value: 'hexagon' },
-  { label: 'Trapez', value: 'trapezoid' },
-  { label: 'Parallelogram', value: 'parallelogram' },
+  { label: 'Doppelte Ellipse', value: 'doubleEllipse' },
   { label: 'Dreieck', value: 'triangle' }
 ]
 
