@@ -64,6 +64,29 @@
             </template>
             {{ overlayTooltip.text }}
           </v-tooltip>
+
+          <div class="shortcut-help-anchor">
+            <v-tooltip location="left" transition="scale-transition">
+              <template #activator="{ props: activatorProps }">
+                <v-btn v-bind="activatorProps" icon size="small" color="primary" variant="flat" class="shortcut-help-btn" aria-label="Tastenkürzel anzeigen">
+                  <v-icon size="18">mdi-information-outline</v-icon>
+                </v-btn>
+              </template>
+
+              <div class="shortcut-tooltip-content">
+                <div><strong>Tastenkürzel</strong></div>
+                <div>Strg+A: Alles auswählen</div>
+                <div>Strg+C: Kopieren</div>
+                <div>Strg+V: Einfügen</div>
+                <div>Strg+D: Duplizieren</div>
+                <div>Strg+Z: Rückgängig</div>
+                <div>Strg+Y: Wiederholen</div>
+                <div>Entf: Löschen</div>
+                <div>Esc: Auswahl aufheben</div>
+                <div>Mausrad im Canvas: Zoom in/out</div>
+              </div>
+            </v-tooltip>
+          </div>
         </div>
       </div>
       <!-- /canvas-area -->
@@ -73,7 +96,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler, FitPlugin } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler, FitPlugin, Clipboard } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -273,6 +296,9 @@ const toolbarShapes = ref(
 )
 
 let undoManagerApi: UndoManagerApi | undefined
+let graphContainerKeydownHandler: ((evt: KeyboardEvent) => void) | undefined
+let documentKeydownHandler: ((evt: KeyboardEvent) => void) | undefined
+let graphContainerWheelHandler: ((evt: WheelEvent) => void) | undefined
 const overlayEntries = computed(() => props.overlays ?? [])
 const { overlayTooltip, overlayTooltipAnchorStyle, registerGraph, cleanup: cleanupCanvasOverlays } = useCanvasOverlays(graphWrapper, overlayEntries)
 
@@ -334,6 +360,27 @@ const undoGraph = () => {
   graph.value.refresh()
   graph.value.view.validate()
   emitUpdatedModel()
+}
+
+const copySelected = () => {
+  if (!graph.value || graph.value.isSelectionEmpty()) {
+    return
+  }
+
+  Clipboard.copy(graph.value)
+}
+
+const pasteFromClipboard = () => {
+  if (!graph.value) {
+    return
+  }
+
+  const pastedCells = Clipboard.paste(graph.value)
+  if (pastedCells && pastedCells.length > 0) {
+    graph.value.refresh()
+    graph.value.view.validate()
+    emitUpdatedModel()
+  }
 }
 
 const redoGraph = () => {
@@ -428,6 +475,20 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (graphContainer.value && graphContainerKeydownHandler) {
+    graphContainer.value.removeEventListener('keydown', graphContainerKeydownHandler)
+  }
+  graphContainerKeydownHandler = undefined
+  if (graphContainer.value && graphContainerWheelHandler) {
+    graphContainer.value.removeEventListener('wheel', graphContainerWheelHandler)
+  }
+  graphContainerWheelHandler = undefined
+  if (documentKeydownHandler) {
+    document.removeEventListener('keydown', documentKeydownHandler)
+  }
+  documentKeydownHandler = undefined
+  ;(keyHandler.value as any)?.destroy?.()
+  keyHandler.value = undefined
   undoManagerApi?.destroy()
   undoManagerApi = undefined
   canUndo.value = false
@@ -615,9 +676,58 @@ const initGraph = () => {
 
   // Initialisiere KeyHandler (nicht als Plugin, sondern separat wie in den Beispielen)
   keyHandler.value = new KeyHandler(graph.value)
+  keyHandler.value.bindControlKey(65, () => selectAll())
+  keyHandler.value.bindControlKey(67, () => copySelected())
+  keyHandler.value.bindControlKey(86, () => pasteFromClipboard())
+  keyHandler.value.bindControlKey(68, () => duplicateSelected())
   keyHandler.value.bindControlKey(90, () => undoGraph())
   keyHandler.value.bindControlKey(89, () => redoGraph())
+  keyHandler.value.bindKey(27, () => clearSelection())
+  keyHandler.value.bindKey(46, () => deleteSelected())
   ;(keyHandler.value as any)?.bindControlShiftKey?.(90, () => redoGraph())
+
+  // Escape zusätzlich direkt am Container behandeln, da KeyHandler Escape intern speziell verarbeitet.
+  if (graphContainer.value) {
+    graphContainerKeydownHandler = (evt: KeyboardEvent) => {
+      if (evt.key === 'Escape') {
+        clearSelection()
+      }
+    }
+    graphContainer.value.addEventListener('keydown', graphContainerKeydownHandler)
+
+    graphContainerWheelHandler = (evt: WheelEvent) => {
+      if (!graph.value || !graph.value.isEnabled()) {
+        return
+      }
+
+      evt.preventDefault()
+      if (evt.deltaY < 0) {
+        zoomIn()
+      } else if (evt.deltaY > 0) {
+        zoomOut()
+      }
+    }
+    graphContainer.value.addEventListener('wheel', graphContainerWheelHandler, { passive: false })
+  }
+
+  documentKeydownHandler = (evt: KeyboardEvent) => {
+    if (evt.key !== 'Escape') {
+      return
+    }
+
+    if (!graph.value || !graph.value.isEnabled() || graph.value.isEditing()) {
+      return
+    }
+
+    const target = evt.target as HTMLElement | null
+    if (target?.closest('input, textarea, select, [contenteditable="true"]')) {
+      return
+    }
+
+    clearSelection()
+    evt.preventDefault()
+  }
+  document.addEventListener('keydown', documentKeydownHandler)
 
   // Swimlane-Unterstützung aktivieren
   setupSwimlaneSupport(graph.value)
@@ -750,6 +860,26 @@ defineExpose({
   position: absolute;
   pointer-events: none;
   z-index: 5;
+}
+
+.shortcut-help-anchor {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 8;
+}
+
+.shortcut-help-btn {
+  min-width: 30px !important;
+  width: 30px;
+  height: 30px;
+}
+
+.shortcut-tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
 }
 
 .grid-container {
