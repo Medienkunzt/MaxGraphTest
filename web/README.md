@@ -54,7 +54,6 @@ npm run lint
 - [ ] 10 gleichverteilte punkte automatisch erstellen
 - [ ] Schauen wie man in input und output connenctoren differenzieren kann
 - [ ] wenn objekt in minus x y dann canvas verschieben
-- [ ] copy paste support
 - [ ] Syntax Regeln für container (z.b. welche elemente dürfen rein, welche nicht)
 
 

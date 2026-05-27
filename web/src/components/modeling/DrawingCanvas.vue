@@ -23,6 +23,32 @@
             </v-btn>
           </v-btn-group>
 
+          <!-- Alignment Horizontal -->
+          <v-btn-group size="small" density="compact" class="mr-2">
+            <v-btn title="Linksbündig ausrichten" @click="alignLeft">
+              <v-icon>mdi-format-horizontal-align-left</v-icon>
+            </v-btn>
+            <v-btn title="Horizontal zentrieren" @click="alignCenterH">
+              <v-icon>mdi-format-horizontal-align-center</v-icon>
+            </v-btn>
+            <v-btn title="Rechtsbündig ausrichten" @click="alignRight">
+              <v-icon>mdi-format-horizontal-align-right</v-icon>
+            </v-btn>
+          </v-btn-group>
+
+          <!-- Alignment Vertikal -->
+          <v-btn-group size="small" density="compact" class="mr-2">
+            <v-btn title="Oben ausrichten" @click="alignTop">
+              <v-icon>mdi-format-vertical-align-top</v-icon>
+            </v-btn>
+            <v-btn title="Vertikal zentrieren" @click="alignMiddleV">
+              <v-icon>mdi-format-vertical-align-center</v-icon>
+            </v-btn>
+            <v-btn title="Unten ausrichten" @click="alignBottom">
+              <v-icon>mdi-format-vertical-align-bottom</v-icon>
+            </v-btn>
+          </v-btn-group>
+
           <!-- Validation Button -->
           <v-btn v-if="hasValidationRules" size="small" density="compact" color="primary" class="validation-btn" title="Diagramm validieren" @click="manualValidate">
             <v-icon start class="validation-icon">mdi-check-circle</v-icon>
@@ -109,6 +135,7 @@ import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
 import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, renderRoutingConnectionPreview } from '@/utils/connectionPreview'
 import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
 import { setupUndoManager, type UndoManagerApi, type UndoManagerState } from '@/utils/setupUndoManager'
+import { alignHorizontal, alignVertical } from '@/utils/alignCells'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
@@ -345,6 +372,14 @@ provideGraphContext({
 const { deleteSelected, duplicateSelected, selectAll, clearSelection } = useGraphOperations(graph, parent)
 const { zoomIn, zoomOut, fitToWindow } = useZoomOperations(graph)
 const { updateGridSize, updateSnapToGrid, updateTolerance, updateUseGridForPanning, toggleGrid, forceGridRepaint } = useGridSettings(graph, gridSize, snapToGrid, tolerance, useGridForPanning)
+
+// Alignment-Hilfsfunktionen
+const alignLeft = () => graph.value && alignHorizontal(graph.value, 'left')
+const alignCenterH = () => graph.value && alignHorizontal(graph.value, 'center')
+const alignRight = () => graph.value && alignHorizontal(graph.value, 'right')
+const alignTop = () => graph.value && alignVertical(graph.value, 'top')
+const alignMiddleV = () => graph.value && alignVertical(graph.value, 'middle')
+const alignBottom = () => graph.value && alignVertical(graph.value, 'bottom')
 
 const applyUndoState = (state: UndoManagerState) => {
   canUndo.value = state.canUndo
