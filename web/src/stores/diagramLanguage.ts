@@ -872,8 +872,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Vererbung',
           defaultLabel: '',
           connectionType: 'inheritance',
-          listIcon: 'mdi-triangle-outline',
-          listColor: 'green',
           connectable: true,
           style: {
             shape: 'connector',
@@ -899,8 +897,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Realisierung',
           defaultLabel: '',
           connectionType: 'realization',
-          listIcon: 'mdi-triangle',
-          listColor: 'teal',
           connectable: true,
           style: {
             shape: 'connector',
@@ -927,8 +923,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Assoziation',
           defaultLabel: '',
           connectionType: 'association',
-          listIcon: 'mdi-vector-line',
-          listColor: 'blue',
           connectable: true,
           style: {
             shape: 'connector',
@@ -954,8 +948,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Gerichtete Assoziation',
           defaultLabel: '',
           connectionType: 'directed-association',
-          listIcon: 'mdi-arrow-right-thin',
-          listColor: 'indigo',
           connectable: true,
           style: {
             shape: 'connector',
@@ -981,8 +973,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Aggregation',
           defaultLabel: '',
           connectionType: 'aggregation',
-          listIcon: 'mdi-rhombus-outline',
-          listColor: 'orange',
           connectable: true,
           style: {
             shape: 'connector',
@@ -1008,8 +998,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Komposition',
           defaultLabel: '',
           connectionType: 'composition',
-          listIcon: 'mdi-rhombus',
-          listColor: 'red',
           connectable: true,
           style: {
             shape: 'connector',
@@ -1035,8 +1023,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Abhängigkeit',
           defaultLabel: '<<use>>',
           connectionType: 'dependency',
-          listIcon: 'mdi-dots-horizontal',
-          listColor: 'purple',
           connectable: true,
           style: {
             shape: 'connector',
@@ -1063,8 +1049,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Notiz-Verbindung',
           defaultLabel: '',
           connectionType: 'note',
-          listIcon: 'mdi-note-outline',
-          listColor: 'grey',
           connectable: false,
           style: {
             shape: 'connector',
@@ -1361,8 +1345,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Beziehungs-Linie',
           defaultLabel: '',
           connectionType: 'relationship',
-          listIcon: 'mdi-vector-line',
-          listColor: 'blue',
           connectable: true,
           style: {
             shape: 'connector',
@@ -1387,8 +1369,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Attribut-Linie',
           defaultLabel: '',
           connectionType: 'attribute',
-          listIcon: 'mdi-dots-horizontal',
-          listColor: 'purple',
           connectable: true,
           style: {
             shape: 'connector',
@@ -1413,8 +1393,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Identifizierend',
           defaultLabel: '',
           connectionType: 'identifying',
-          listIcon: 'mdi-link-variant',
-          listColor: 'indigo',
           connectable: true,
           style: {
             shape: 'connector',
@@ -1815,8 +1793,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Wire',
           defaultLabel: '',
           connectionType: 'wire',
-          listIcon: 'mdi-vector-line',
-          listColor: 'black',
           connectable: true,
           style: {
             shape: 'connector',
@@ -1841,8 +1817,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Bus',
           defaultLabel: '',
           connectionType: 'bus',
-          listIcon: 'mdi-minus',
-          listColor: 'grey',
           connectable: true,
           style: {
             shape: 'connector',
@@ -2127,8 +2101,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Sequence Flow',
           defaultLabel: '',
           connectionType: 'sequence',
-          listIcon: 'mdi-arrow-right',
-          listColor: 'blue',
           connectable: true,
           style: {
             shape: 'connector',
@@ -2153,8 +2125,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Message Flow',
           defaultLabel: '',
           connectionType: 'message',
-          listIcon: 'mdi-arrow-right-thin',
-          listColor: 'teal',
           connectable: true,
           style: {
             shape: 'connector',
@@ -2180,8 +2150,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Association',
           defaultLabel: '',
           connectionType: 'association',
-          listIcon: 'mdi-dots-horizontal',
-          listColor: 'grey',
           connectable: true,
           style: {
             shape: 'connector',
@@ -2399,8 +2367,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Einfachbindung',
           defaultLabel: '',
           connectionType: 'single',
-          listIcon: 'mdi-vector-line',
-          listColor: 'black',
           connectable: true,
           style: {
             shape: 'connector',
@@ -2425,8 +2391,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Doppelbindung',
           defaultLabel: '',
           connectionType: 'double',
-          listIcon: 'mdi-pause',
-          listColor: 'grey',
           connectable: true,
           style: {
             shape: 'connector',
@@ -2451,8 +2415,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Dreifachbindung',
           defaultLabel: '',
           connectionType: 'triple',
-          listIcon: 'mdi-equal',
-          listColor: 'grey',
           connectable: true,
           style: {
             shape: 'connector',
@@ -2477,8 +2439,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Gestrichelt',
           defaultLabel: '',
           connectionType: 'dashed',
-          listIcon: 'mdi-dots-horizontal',
-          listColor: 'grey',
           connectable: true,
           style: {
             shape: 'connector',
@@ -2504,8 +2464,6 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           label: 'Aromatisch',
           defaultLabel: '',
           connectionType: 'aromatic',
-          listIcon: 'mdi-minus',
-          listColor: 'grey',
           connectable: true,
           style: {
             shape: 'connector',

@@ -4,7 +4,7 @@
       <v-list-item v-bind="itemProps">
         <template #title>
           <div class="preview-item">
-            <DiagramPreviewItem :connection="getConnectionByType(item.raw as string)" :width="200" :height="30" />
+            <ConnectionPreviewItem :connection="getConnectionByType(item.raw as string)" :width="200" :height="30" />
             <span class="preview-item__label">{{ formatConnectionLabel(item.raw as string) }}</span>
           </div>
         </template>
@@ -12,7 +12,7 @@
     </template>
     <template #selection="{ item }">
       <div :class="multiple ? 'preview-item' : 'entry-selection'">
-        <DiagramPreviewItem :connection="getConnectionByType(item.raw as string)" :width="200" :height="multiple ? 30 : 40" />
+        <ConnectionPreviewItem :connection="getConnectionByType(item.raw as string)" :width="200" :height="multiple ? 30 : 40" />
         <span :class="multiple ? 'preview-item__label' : 'ml-2'">{{ formatConnectionLabel(item.raw as string) }}</span>
       </div>
     </template>
@@ -23,7 +23,7 @@
 import { computed } from 'vue'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
-import DiagramPreviewItem from '@/components/modeling/DiagramPreviewItem.vue'
+import ConnectionPreviewItem from '@/components/modeling/ConnectionPreviewItem.vue'
 
 interface Props {
   modelValue: string | string[]

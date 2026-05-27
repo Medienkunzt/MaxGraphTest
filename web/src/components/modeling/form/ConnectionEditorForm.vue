@@ -4,42 +4,6 @@
     <v-text-field v-model="connection.label" label="Name" variant="outlined" density="compact" class="mb-3" hint="Bezeichner der Verbindung in der Sprachen-Definition." persistent-hint @input="triggerUpdate" />
     <v-text-field v-model="connection.type" label="Verbindungstyp" variant="outlined" density="compact" class="mb-4" hint="Technischer Typ fuer Import und Regeln." persistent-hint @input="triggerUpdate" />
 
-    <!-- Listenanzeige -->
-    <section class="mb-4">
-      <div class="d-flex align-center justify-space-between mb-2">
-        <span class="section-label">Listenanzeige</span>
-      </div>
-      <v-select v-model="connection.listIcon" :items="iconOptions" item-title="label" item-value="value" label="Icon" variant="outlined" density="compact" class="mb-3" @update:model-value="triggerUpdate">
-        <template #prepend-inner>
-          <v-icon :color="connection.listColor || 'primary'">
-            {{ connection.listIcon || 'mdi-vector-line' }}
-          </v-icon>
-        </template>
-        <template #item="{ item, props }">
-          <v-list-item v-bind="props">
-            <template #prepend>
-              <v-icon :color="connection.listColor || 'primary'">{{ item.value }}</v-icon>
-            </template>
-            <v-list-item-title>{{ item.label }}</v-list-item-title>
-          </v-list-item>
-        </template>
-      </v-select>
-
-      <v-select v-model="connection.listColor" :items="colorOptions" item-title="label" item-value="value" label="Farbe" variant="outlined" density="compact" class="mb-1" @update:model-value="triggerUpdate">
-        <template #prepend-inner>
-          <v-icon :color="connection.listColor || 'primary'"> mdi-circle </v-icon>
-        </template>
-        <template #item="{ item, props }">
-          <v-list-item v-bind="props">
-            <template #prepend>
-              <v-icon :color="item.value">mdi-circle</v-icon>
-            </template>
-            <v-list-item-title>{{ item.label }}</v-list-item-title>
-          </v-list-item>
-        </template>
-      </v-select>
-    </section>
-
     <!-- Einstellungsumfang -->
     <section class="mb-4">
       <div class="d-flex align-center justify-space-between mb-2">
@@ -170,29 +134,6 @@ const emit = defineEmits<{
 }>()
 
 const connection = computed(() => props.selectedConnection)
-
-const iconOptions = [
-  { label: 'Linie', value: 'mdi-vector-line' },
-  { label: 'Pfeil ausgefuellt', value: 'mdi-arrow-right-bold' },
-  { label: 'Pfeil umrissen', value: 'mdi-arrow-right-thin' },
-  { label: 'Dreieck', value: 'mdi-triangle-outline' },
-  { label: 'Raute', value: 'mdi-rhombus-outline' },
-  { label: 'Komposition', value: 'mdi-rhombus' },
-  { label: 'Punktiert', value: 'mdi-dots-horizontal' },
-  { label: 'Notiz', value: 'mdi-note-outline' }
-]
-
-const colorOptions = [
-  { label: 'Blau', value: 'blue' },
-  { label: 'Gruen', value: 'green' },
-  { label: 'Rot', value: 'red' },
-  { label: 'Orange', value: 'orange' },
-  { label: 'Violett', value: 'purple' },
-  { label: 'Tuerkis', value: 'teal' },
-  { label: 'Indigo', value: 'indigo' },
-  { label: 'Grau', value: 'grey' },
-  { label: 'Schwarz', value: 'black' }
-]
 
 const triggerUpdate = () => {
   emit('update')

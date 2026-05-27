@@ -4,7 +4,7 @@
       <!-- Liste der Verbindungen (links) -->
       <v-col cols="3" class="pr-2 editor-col">
         <div class="scroll-column">
-          <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-index="selectedConnectionIndex" empty-text="Keine Verbindungen definiert" title-field="type" subtitle-field="label" icon-field="listIcon" color-field="listColor" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
+          <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-index="selectedConnectionIndex" empty-text="Keine Verbindungen definiert" title-field="type" subtitle-field="label" :show-prepend-icon="false" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
         </div>
       </v-col>
 
@@ -97,8 +97,6 @@ const addNewConnection = () => {
     label: 'Neue Verbindung',
     defaultLabel: '',
     connectionType: 'association',
-    listIcon: 'mdi-vector-line',
-    listColor: 'blue',
     style: {
       shape: 'connector',
       strokeColor: '#000000',

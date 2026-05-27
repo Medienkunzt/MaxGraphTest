@@ -3,35 +3,39 @@
     <v-card-text class="pa-1 canvas-content">
       <!-- Erweiterte Toolbar -->
       <div v-if="props.showToolbar" class="toolbar-actions mb-2">
-        <!-- Vue Action Buttons -->
-        <v-btn-group size="small" density="compact" class="mr-2">
-          <v-btn title="Alles auswählen (Strg+A)" @click="selectAll">
-            <v-icon>mdi-select-all</v-icon>
-          </v-btn>
-          <v-btn title="Auswahl aufheben (Esc)" @click="clearSelection">
-            <v-icon>mdi-selection-off</v-icon>
-          </v-btn>
-        </v-btn-group>
+        <div class="toolbar-primary-row">
+          <!-- Vue Action Buttons -->
+          <v-btn-group size="small" density="compact" class="mr-2">
+            <v-btn title="Alles auswählen (Strg+A)" @click="selectAll">
+              <v-icon>mdi-select-all</v-icon>
+            </v-btn>
+            <v-btn title="Auswahl aufheben (Esc)" @click="clearSelection">
+              <v-icon>mdi-selection-off</v-icon>
+            </v-btn>
+          </v-btn-group>
 
-        <v-btn-group size="small" density="compact">
-          <v-btn title="Löschen (Entf)" @click="deleteSelected">
-            <v-icon>mdi-delete</v-icon>
+          <v-btn-group size="small" density="compact">
+            <v-btn title="Löschen (Entf)" @click="deleteSelected">
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+            <v-btn title="Duplizieren (Strg+D)" @click="duplicateSelected">
+              <v-icon>mdi-content-duplicate</v-icon>
+            </v-btn>
+          </v-btn-group>
+
+          <!-- Validation Button -->
+          <v-btn v-if="hasValidationRules" size="small" density="compact" color="primary" class="validation-btn" title="Diagramm validieren" @click="manualValidate">
+            <v-icon start class="validation-icon">mdi-check-circle</v-icon>
+            <span class="validation-text">Validieren</span>
           </v-btn>
-          <v-btn title="Duplizieren (Strg+D)" @click="duplicateSelected">
-            <v-icon>mdi-content-duplicate</v-icon>
-          </v-btn>
-        </v-btn-group>
 
-        <!-- Connection Toolbar -->
-        <ConnectionToolbar v-if="languageConnections.length > 0" v-model="selectedConnectionIndex" :connections="languageConnections" @select="onConnectionSelected" />
+          <AutonomyControls :mode="autonomyMode" @update:mode="$emit('update:autonomyMode', $event)" />
+        </div>
 
-        <!-- Validation Button -->
-        <v-btn v-if="hasValidationRules" size="small" density="compact" color="primary" class="validation-btn" title="Diagramm validieren" @click="manualValidate">
-          <v-icon start class="validation-icon">mdi-check-circle</v-icon>
-          <span class="validation-text">Validieren</span>
-        </v-btn>
-
-        <AutonomyControls :mode="autonomyMode" @update:mode="$emit('update:autonomyMode', $event)" />
+        <!-- Connection Toolbar (immer zweite Zeile) -->
+        <div v-if="languageConnections.length > 0" class="toolbar-connections-row">
+          <ConnectionToolbar v-model="selectedConnectionIndex" :connections="languageConnections" @select="onConnectionSelected" />
+        </div>
       </div>
 
       <!-- Canvas Area: Sidebar + Graph -->
@@ -773,8 +777,8 @@ defineExpose({
 
 .toolbar-actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   min-height: 40px;
   background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
   border: 1px solid #ddd;
@@ -782,6 +786,18 @@ defineExpose({
   padding: 4px 8px;
   gap: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toolbar-primary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-connections-row {
+  width: 100%;
+  min-width: 0;
 }
 
 .maxgraph-toolbar {

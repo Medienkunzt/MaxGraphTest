@@ -23,8 +23,6 @@ export interface DiagramConnection {
   defaultLabel?: string // Optionales Standard-Label fuer neue Instanzen im Graph
   connectionType?: string // Semantischer Typ (z.B. "inheritance", "association")
   style: CellStyle
-  listIcon?: string // Icon fuer die Anzeige in der Editor-Liste
-  listColor?: string // Farbe fuer die Anzeige in der Editor-Liste
   connectable?: boolean
   labelOffset?: {
     x?: number

@@ -11,7 +11,7 @@
 
     <v-list density="compact">
       <v-list-item v-for="(item, index) in items" :key="index" :active="selectedIndex === index" class="cursor-pointer" @click="$emit('select', index)">
-        <template #prepend>
+        <template v-if="showPrependIcon" #prepend>
           <v-icon :color="getItemColor(item)" size="small">
             {{ getItemIcon(item) }}
           </v-icon>
@@ -58,6 +58,7 @@ interface Props {
   colorMap?: Record<string, string>
   showAddButton?: boolean
   showDeleteButton?: boolean
+  showPrependIcon?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -70,7 +71,8 @@ const props = withDefaults(defineProps<Props>(), {
   iconMap: () => ({}),
   colorMap: () => ({}),
   showAddButton: true,
-  showDeleteButton: true
+  showDeleteButton: true,
+  showPrependIcon: true
 })
 
 defineEmits<{

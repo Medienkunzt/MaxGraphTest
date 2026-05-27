@@ -1,18 +1,18 @@
 <template>
-  <div class="diagram-preview" :style="previewBoxStyle">
-    <div ref="containerRef" class="diagram-preview__canvas"></div>
+  <div class="connection-preview" :style="previewBoxStyle">
+    <div ref="containerRef" class="connection-preview__canvas"></div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch, nextTick, computed } from 'vue'
 import { Graph } from '@maxgraph/core'
-import type { DiagramElement } from '@/model/DiagramLanguage'
-import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
+import type { DiagramConnection } from '@/model/DiagramLanguage'
+import { renderSimpleConnectionPreview } from '@/utils/connectionPreview'
 import { createPreviewGraph, destroyPreviewGraph, fitPreviewGraph } from '@/utils/previewGraph'
 
 interface Props {
-  element?: DiagramElement
+  connection?: DiagramConnection
   width?: number
   height?: number
   size?: number
@@ -33,28 +33,11 @@ const renderGraph = async () => {
     graph = destroyPreviewGraph(graph)
   }
 
-  if (!props.element) return
+  if (!props.connection) return
 
-  const container = containerRef.value
-  graph = createPreviewGraph(container)
-  const g = graph
-
-  const parent = g.getDefaultParent()
-
-  const model = g.getDataModel()
-  model.beginUpdate()
-  try {
-    insertElementPreview(g, parent, props.element)
-  } finally {
-    model.endUpdate()
-  }
-
-  fitPreviewGraph(g)
-}
-
-const insertElementPreview = (graph: Graph, parent: any, element: DiagramElement) => {
-  const cell = createCellFromElement(element, 0, 0)
-  addCellToGraph(graph, cell, element, parent)
+  graph = createPreviewGraph(containerRef.value)
+  renderSimpleConnectionPreview(graph, props.connection)
+  fitPreviewGraph(graph)
 }
 
 onMounted(() => {
@@ -62,7 +45,7 @@ onMounted(() => {
 })
 
 watch(
-  () => [props.element, previewSize.value],
+  () => [props.connection, previewSize.value],
   () => {
     renderGraph()
   },
@@ -80,7 +63,7 @@ const previewBoxStyle = computed(() => ({
 </script>
 
 <style scoped>
-.diagram-preview {
+.connection-preview {
   position: relative;
   display: flex;
   align-items: center;
@@ -91,7 +74,7 @@ const previewBoxStyle = computed(() => ({
   border: 1px solid rgba(var(--v-theme-outline), 0.1);
 }
 
-.diagram-preview__canvas {
+.connection-preview__canvas {
   width: 100%;
   height: 100%;
 }
