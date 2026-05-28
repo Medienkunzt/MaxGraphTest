@@ -29,7 +29,7 @@ const elementOptions = computed(() => {
 
 const connectionOptions = computed(() => {
   const connections = store.currentLanguage?.connections || []
-  return connections.map((conn) => conn.type)
+  return [...new Set(connections.map((conn) => conn.connectionType || conn.type))]
 })
 
 const updateAll = () => {

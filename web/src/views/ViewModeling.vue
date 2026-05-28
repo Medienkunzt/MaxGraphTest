@@ -21,7 +21,7 @@
     <v-row class="flex-grow-1">
       <v-col cols="12" class="canvas-column">
         <div class="canvas-wrapper">
-          <DrawingCanvas :model="model" :languages="languages" :language-connections="activeLanguage?.connections" :language-syntax="activeLanguage?.syntax" />
+          <DrawingCanvas :model="model" :languages="languages" :language-connections="activeLanguage?.connections" :language-syntax="activeLanguage?.syntax" :autonomy-mode="autonomyMode" @update:autonomyMode="autonomyMode = $event" />
         </div>
       </v-col>
     </v-row>
@@ -34,6 +34,7 @@ import { storeToRefs } from 'pinia'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import type { GraphDataModel } from '@maxgraph/core'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
+import type { AutonomyMode } from '@/model/Autonomy'
 
 interface Props {
   languageId?: string
@@ -42,6 +43,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const model = ref<GraphDataModel>()
+const autonomyMode = ref<AutonomyMode>('manual')
 
 const diagramLanguageStore = useDiagramLanguageStore()
 const { languages, currentLanguage } = storeToRefs(diagramLanguageStore)

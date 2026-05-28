@@ -2,8 +2,10 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { DiagramLanguage, DiagramElement, DiagramConnection, DiagramSyntax } from '@/model/DiagramLanguage'
 import type { DiagramFeedbackConfig, FeedbackTargetOverlays, FeedbackTargetType } from '@/model/Feedback'
-import type { MultiplicitySyntaxRule, MultiplicityRelationConfig, MultiplicityRuleConfig, MultiplicityRelationState, MultiplicityRefinementConfig, MultiplicityCardinalityConfig } from '@/model/Syntax'
+import type { MultiplicityRule, MultiplicityRelation, MultiplicityConfig, MultiplicityRelationState, MultiplicityRefinement, MultiplicityCardinality } from '@/model/Syntax'
 import { createEmptyFeedbackConfig, ensureFeedbackTargets, createDefaultTargetOverlays } from '@/utils/feedbackConfig'
+
+const DEFAULT_MULTIPLICITY_MESSAGE_TEMPLATE = 'Die Beziehung {source} -> {target} mit Verbindungstyp {connection} verletzt die Kardinalitaet ({min}..{max}).'
 
 const ensureFeedbackForLanguage = (language: DiagramLanguage): DiagramFeedbackConfig => {
   if (!language.feedback) {
@@ -195,47 +197,21 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     language.syntax.push(syntax)
   }
 
-  const updateSyntaxInLanguage = (languageId: string, syntaxType: string, updates: Partial<DiagramSyntax>) => {
+  const updateSyntaxInLanguage = (languageId: string, updatedRule: MultiplicityRule) => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (!language) return
-
-    const syntaxIndex = language.syntax.findIndex((syn) => syn.type === syntaxType)
-    if (syntaxIndex === -1) return
-
-    const existing = language.syntax[syntaxIndex]
-
-    if (existing.ruleType === 'multiplicity') {
-      const multiplicity = existing as MultiplicitySyntaxRule
-
-      if (updates.label !== undefined) multiplicity.label = updates.label
-      if (updates.description !== undefined) multiplicity.description = updates.description
-      if (updates.type !== undefined) multiplicity.type = updates.type
-
-      if (updates.config) {
-        const cfg = updates.config as Partial<MultiplicityRuleConfig>
-        if (cfg.relations) {
-          multiplicity.config.relations = cfg.relations
-        }
-        if (cfg.messageTemplate !== undefined) {
-          multiplicity.config.messageTemplate = cfg.messageTemplate ?? ''
-        }
-      }
-
-      ensureSingleMultiplicityRule(language)
-      return
-    }
-
-    language.syntax[syntaxIndex] = { ...existing, ...updates }
+    const index = language.syntax.findIndex((syn) => syn.ruleType === 'multiplicity')
+    if (index === -1) return
+    language.syntax[index] = updatedRule
+    ensureSingleMultiplicityRule(language)
   }
 
-  const removeSyntaxFromLanguage = (languageId: string, syntaxType: string) => {
+  const removeSyntaxFromLanguage = (languageId: string) => {
     const language = languages.value.find((lang) => lang.id === languageId)
     if (!language) return
-
-    const syntaxIndex = language.syntax.findIndex((syn) => syn.type === syntaxType)
-    if (syntaxIndex === -1) return
-
-    language.syntax.splice(syntaxIndex, 1)
+    const index = language.syntax.findIndex((syn) => syn.ruleType === 'multiplicity')
+    if (index === -1) return
+    language.syntax.splice(index, 1)
   }
 
   // Hilfsfunktion für ID-Generierung
@@ -244,17 +220,17 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   }
   const relationKey = (sourceType: string, targetType: string): string => `${sourceType}::${targetType}`
 
-  const createCardinalityConfig = (): MultiplicityCardinalityConfig => ({
+  const createCardinalityConfig = (): MultiplicityCardinality => ({
     min: 0,
     max: null
   })
 
-  const createRefinementConfig = (): MultiplicityRefinementConfig => ({
+  const createRefinementConfig = (): MultiplicityRefinement => ({
     connectionTypes: [],
     cardinality: createCardinalityConfig()
   })
 
-  const createRelationConfig = (sourceType: string, targetType: string, state: MultiplicityRelationState = 'allowed'): MultiplicityRelationConfig => ({
+  const createRelationConfig = (sourceType: string, targetType: string, state: MultiplicityRelationState = 'allowed'): MultiplicityRelation => ({
     sourceType,
     targetType,
     state,
@@ -269,7 +245,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     return Math.floor(numeric)
   }
 
-  const normalizeRefinementConfig = (config?: Partial<MultiplicityRefinementConfig>): MultiplicityRefinementConfig => {
+  const normalizeRefinementConfig = (config?: Partial<MultiplicityRefinement>): MultiplicityRefinement => {
     const refinement = createRefinementConfig()
     if (!config) return refinement
 
@@ -286,20 +262,20 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     return refinement
   }
 
-  const cloneRefinementConfig = (combined: MultiplicityRefinementConfig): MultiplicityRefinementConfig => ({
-    connectionTypes: [...combined.connectionTypes],
+  const cloneRefinementConfig = (refinement: MultiplicityRefinement): MultiplicityRefinement => ({
+    connectionTypes: [...refinement.connectionTypes],
     cardinality: {
-      min: combined.cardinality.min,
-      max: combined.cardinality.max
+      min: refinement.cardinality.min,
+      max: refinement.cardinality.max
     }
   })
 
-  const ensureRelationDefaults = (relation: MultiplicityRelationConfig) => {
+  const ensureRelationDefaults = (relation: MultiplicityRelation) => {
     relation.refinement = normalizeRefinementConfig(relation.refinement)
   }
 
-  const mergeRelations = (base: MultiplicityRelationConfig, override: MultiplicityRelationConfig): MultiplicityRelationConfig => {
-    const merged: MultiplicityRelationConfig = {
+  const mergeRelations = (base: MultiplicityRelation, override: MultiplicityRelation): MultiplicityRelation => {
+    const merged: MultiplicityRelation = {
       sourceType: base.sourceType,
       targetType: base.targetType,
       state: override.state ?? base.state,
@@ -316,75 +292,30 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     return merged
   }
 
-  const normalizeRelationConfig = (relation: any): MultiplicityRelationConfig | null => {
-    const sourceType = relation?.sourceType
-    const targetType = relation?.targetType
+  const normalizeRelationConfig = (relation: unknown): MultiplicityRelation | null => {
+    if (!relation || typeof relation !== 'object') return null
+    const r = relation as Partial<MultiplicityRelation>
+    const sourceType = r.sourceType
+    const targetType = r.targetType
     if (!sourceType || !targetType) return null
 
-    const result: MultiplicityRelationConfig = {
+    const result: MultiplicityRelation = {
       sourceType,
       targetType,
-      state: relation?.state === 'forbidden' ? 'forbidden' : 'allowed',
-      refinement: normalizeRefinementConfig(relation?.refinement)
-    }
-
-    const legacyCombined = relation?.combined
-    if (legacyCombined) {
-      result.refinement = normalizeRefinementConfig({
-        connectionTypes: legacyCombined.connectionTypes,
-        cardinality: {
-          min: legacyCombined.min,
-          max: legacyCombined.max
-        }
-      })
-    }
-
-    if (Array.isArray(relation?.separate) && relation.separate.length > 0 && result.refinement.connectionTypes.length === 0) {
-      const first = relation.separate[0]
-      result.refinement = normalizeRefinementConfig({
-        connectionTypes: relation.separate.map((entry: any) => entry?.connectionType),
-        cardinality: {
-          min: first?.min,
-          max: first?.max
-        }
-      })
-    }
-
-    const legacyOutgoing = relation?.outgoing
-    if (legacyOutgoing) {
-      result.refinement = normalizeRefinementConfig({
-        connectionTypes: legacyOutgoing.allowedConnectionTypes,
-        cardinality: {
-          min: legacyOutgoing.min,
-          max: legacyOutgoing.max
-        }
-      })
+      state: r.state === 'forbidden' ? 'forbidden' : 'allowed',
+      refinement: normalizeRefinementConfig(r.refinement)
     }
 
     ensureRelationDefaults(result)
     return result
   }
 
-  const normalizeMultiplicityRule = (rule: MultiplicitySyntaxRule) => {
-    const rawConfig: any = rule.config ?? {}
-    const relationsFromConfig: Array<MultiplicityRelationConfig | null> = Array.isArray(rawConfig.relations) ? rawConfig.relations.map(normalizeRelationConfig) : []
+  const normalizeMultiplicityRule = (rule: MultiplicityRule) => {
+    const rawConfig = rule.config ?? ({} as Partial<MultiplicityConfig>)
+    const relations = Array.isArray(rawConfig.relations) ? rawConfig.relations.map(normalizeRelationConfig).filter((r): r is MultiplicityRelation => r !== null) : []
 
-    const legacyRelations: Array<MultiplicityRelationConfig | null> =
-      !relationsFromConfig.length && rawConfig && Array.isArray(rawConfig.targets) && rawConfig.sourceElementType
-        ? rawConfig.targets.map((target: any) =>
-            normalizeRelationConfig({
-              sourceType: rawConfig.sourceElementType,
-              targetType: target?.targetElementType,
-              state: 'allowed',
-              outgoing: target
-            })
-          )
-        : []
-
-    const combinedList = [...relationsFromConfig, ...legacyRelations].filter((relation): relation is MultiplicityRelationConfig => relation !== null)
-
-    const uniqueRelations = new Map<string, MultiplicityRelationConfig>()
-    for (const relation of combinedList) {
+    const uniqueRelations = new Map<string, MultiplicityRelation>()
+    for (const relation of relations) {
       const key = relationKey(relation.sourceType, relation.targetType)
       if (uniqueRelations.has(key)) {
         uniqueRelations.set(key, mergeRelations(uniqueRelations.get(key)!, relation))
@@ -395,31 +326,21 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
 
     uniqueRelations.forEach(ensureRelationDefaults)
 
-    const fallbackTemplate = (() => {
-      if (typeof rawConfig?.messageTemplate === 'string') return rawConfig.messageTemplate
-      if (typeof rawConfig?.defaultCountError === 'string') return rawConfig.defaultCountError
-      if (typeof rawConfig?.defaultTypeError === 'string') return rawConfig.defaultTypeError
-      return ''
-    })()
-
     rule.config = {
-      relations: Array.from(uniqueRelations.values()),
-      messageTemplate: fallbackTemplate
+      messageTemplate: typeof rawConfig.messageTemplate === 'string' ? rawConfig.messageTemplate : DEFAULT_MULTIPLICITY_MESSAGE_TEMPLATE,
+      relations: Array.from(uniqueRelations.values())
     }
   }
 
-  const ensureSingleMultiplicityRule = (language: DiagramLanguage): MultiplicitySyntaxRule => {
-    const multiplicityRules = language.syntax.filter((syn): syn is MultiplicitySyntaxRule => syn.ruleType === 'multiplicity')
+  const ensureSingleMultiplicityRule = (language: DiagramLanguage): MultiplicityRule => {
+    const multiplicityRules = language.syntax.filter((syn): syn is MultiplicityRule => syn.ruleType === 'multiplicity')
 
     if (multiplicityRules.length === 0) {
-      const newRule: MultiplicitySyntaxRule = {
-        type: 'multiplicity',
-        label: 'Multiplicity',
+      const newRule: MultiplicityRule = {
         ruleType: 'multiplicity',
-        description: '',
         config: {
-          relations: [],
-          messageTemplate: ''
+          messageTemplate: DEFAULT_MULTIPLICITY_MESSAGE_TEMPLATE,
+          relations: []
         }
       }
       language.syntax.push(newRule)
@@ -429,47 +350,22 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     const primary = multiplicityRules[0]
     normalizeMultiplicityRule(primary)
 
-    for (let i = 1; i < multiplicityRules.length; i += 1) {
-      const duplicate = multiplicityRules[i]
-      normalizeMultiplicityRule(duplicate)
-      for (const relation of duplicate.config.relations) {
-        const key = relationKey(relation.sourceType, relation.targetType)
-        const existing = primary.config.relations.find((entry) => relationKey(entry.sourceType, entry.targetType) === key)
-        if (existing) {
-          const merged = mergeRelations(existing, relation)
-          Object.assign(existing, merged)
-        } else {
-          primary.config.relations.push({
-            sourceType: relation.sourceType,
-            targetType: relation.targetType,
-            state: relation.state,
-            refinement: cloneRefinementConfig(relation.refinement)
-          })
-        }
-      }
-    }
-
+    // Duplikate entfernen (defensiv)
     for (let i = language.syntax.length - 1; i >= 0; i -= 1) {
-      const entry = language.syntax[i]
-      if (entry.ruleType === 'multiplicity' && entry !== primary) {
+      if (language.syntax[i].ruleType === 'multiplicity' && language.syntax[i] !== primary) {
         language.syntax.splice(i, 1)
       }
     }
 
-    if (!primary.type) {
-      primary.type = 'multiplicity'
-    }
-
-    primary.config.relations.forEach(ensureRelationDefaults)
     return primary
   }
-  const getMultiplicityRuleForLanguage = (languageId: string): MultiplicitySyntaxRule | undefined => {
+  const getMultiplicityRuleForLanguage = (languageId: string): MultiplicityRule | undefined => {
     const language = getLanguageById(languageId)
     if (!language) return undefined
     return ensureSingleMultiplicityRule(language)
   }
 
-  const findRelationIndex = (rule: MultiplicitySyntaxRule, sourceType: string, targetType: string): number => {
+  const findRelationIndex = (rule: MultiplicityRule, sourceType: string, targetType: string): number => {
     const key = relationKey(sourceType, targetType)
     return rule.config.relations.findIndex((relation) => relationKey(relation.sourceType, relation.targetType) === key)
   }
@@ -497,6 +393,65 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       ensureRelationDefaults(relation)
     }
   }
+
+  const UML_CLASS_MULTIPLICITY_RELATIONS: MultiplicityRelation[] = [
+    { sourceType: 'uml-class', targetType: 'uml-class', state: 'allowed', refinement: { connectionTypes: ['inheritance', 'association', 'directed-association', 'aggregation', 'composition', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-class', targetType: 'uml-abstract-class', state: 'allowed', refinement: { connectionTypes: ['inheritance', 'association', 'directed-association', 'aggregation', 'composition', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-class', targetType: 'uml-interface', state: 'allowed', refinement: { connectionTypes: ['realization', 'association', 'directed-association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-class', targetType: 'uml-enum', state: 'allowed', refinement: { connectionTypes: ['association', 'directed-association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-class', targetType: 'uml-note', state: 'allowed', refinement: { connectionTypes: ['note'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-class', targetType: 'uml-package', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-class', targetType: 'uml-text-label', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+
+    { sourceType: 'uml-abstract-class', targetType: 'uml-class', state: 'allowed', refinement: { connectionTypes: ['association', 'directed-association', 'aggregation', 'composition', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-abstract-class', targetType: 'uml-abstract-class', state: 'allowed', refinement: { connectionTypes: ['inheritance', 'association', 'directed-association', 'aggregation', 'composition', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-abstract-class', targetType: 'uml-interface', state: 'allowed', refinement: { connectionTypes: ['realization', 'association', 'directed-association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-abstract-class', targetType: 'uml-enum', state: 'allowed', refinement: { connectionTypes: ['association', 'directed-association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-abstract-class', targetType: 'uml-note', state: 'allowed', refinement: { connectionTypes: ['note'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-abstract-class', targetType: 'uml-package', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-abstract-class', targetType: 'uml-text-label', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+
+    { sourceType: 'uml-interface', targetType: 'uml-interface', state: 'allowed', refinement: { connectionTypes: ['inheritance', 'association', 'directed-association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-interface', targetType: 'uml-class', state: 'allowed', refinement: { connectionTypes: ['association', 'directed-association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-interface', targetType: 'uml-abstract-class', state: 'allowed', refinement: { connectionTypes: ['association', 'directed-association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-interface', targetType: 'uml-enum', state: 'allowed', refinement: { connectionTypes: ['dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-interface', targetType: 'uml-note', state: 'allowed', refinement: { connectionTypes: ['note'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-interface', targetType: 'uml-package', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-interface', targetType: 'uml-text-label', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+
+    { sourceType: 'uml-enum', targetType: 'uml-class', state: 'allowed', refinement: { connectionTypes: ['association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-enum', targetType: 'uml-abstract-class', state: 'allowed', refinement: { connectionTypes: ['association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-enum', targetType: 'uml-interface', state: 'allowed', refinement: { connectionTypes: ['dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-enum', targetType: 'uml-enum', state: 'allowed', refinement: { connectionTypes: ['association', 'dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-enum', targetType: 'uml-note', state: 'allowed', refinement: { connectionTypes: ['note'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-enum', targetType: 'uml-package', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-enum', targetType: 'uml-text-label', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+
+    { sourceType: 'uml-package', targetType: 'uml-package', state: 'allowed', refinement: { connectionTypes: ['dependency'], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-package', targetType: 'uml-class', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-package', targetType: 'uml-abstract-class', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-package', targetType: 'uml-interface', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-package', targetType: 'uml-enum', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-package', targetType: 'uml-note', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-package', targetType: 'uml-text-label', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+
+    { sourceType: 'uml-note', targetType: 'uml-class', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-note', targetType: 'uml-abstract-class', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-note', targetType: 'uml-interface', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-note', targetType: 'uml-enum', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-note', targetType: 'uml-package', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-note', targetType: 'uml-note', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-note', targetType: 'uml-text-label', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+
+    { sourceType: 'uml-text-label', targetType: 'uml-class', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-text-label', targetType: 'uml-abstract-class', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-text-label', targetType: 'uml-interface', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-text-label', targetType: 'uml-enum', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-text-label', targetType: 'uml-package', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-text-label', targetType: 'uml-note', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } },
+    { sourceType: 'uml-text-label', targetType: 'uml-text-label', state: 'forbidden', refinement: { connectionTypes: [], cardinality: { min: 0, max: null } } }
+  ]
+
   // Beispielsprache erstellen
   const createExampleLanguage = (): DiagramLanguage[] => {
     const example: DiagramLanguage = {
@@ -1046,42 +1001,10 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       ],
       syntax: [
         {
-          type: 'uml-class-multiplicity',
-          label: 'Klassen-Verbindungsregeln',
           ruleType: 'multiplicity',
-          description: 'Definiert erlaubte Verbindungen für Klassen: max. 1 Interface, max. 1 Notiz, unbegrenzt andere Klassen.',
           config: {
-            relations: [
-              {
-                sourceType: 'uml-class',
-                targetType: 'uml-interface',
-                state: 'allowed',
-                mode: 'combined',
-                scope: 'aggregate',
-                connectionMode: 'allow',
-                combined: {
-                  connectionTypes: [],
-                  min: 0,
-                  max: 1
-                },
-                separate: []
-              },
-              {
-                sourceType: 'uml-class',
-                targetType: 'uml-class',
-                state: 'allowed',
-                mode: 'combined',
-                scope: 'aggregate',
-                connectionMode: 'allow',
-                combined: {
-                  connectionTypes: [],
-                  min: 0,
-                  max: null
-                },
-                separate: []
-              }
-            ],
-            messageTemplate: ''
+            relations: UML_CLASS_MULTIPLICITY_RELATIONS,
+            messageTemplate: DEFAULT_MULTIPLICITY_MESSAGE_TEMPLATE
           }
         }
       ],

@@ -1,39 +1,31 @@
-export type SyntaxRuleType = 'multiplicity'
-
 export type MultiplicityRelationState = 'allowed' | 'forbidden'
 
-export interface MultiplicityCardinalityConfig {
+export interface MultiplicityCardinality {
   min: number
   max: number | null
 }
 
-export interface MultiplicityRefinementConfig {
+export interface MultiplicityRefinement {
+  /** Leeres Array = alle Verbindungstypen erlaubt */
   connectionTypes: string[]
-  cardinality: MultiplicityCardinalityConfig
+  cardinality: MultiplicityCardinality
 }
 
-export interface MultiplicityRelationConfig {
+export interface MultiplicityRelation {
   sourceType: string
   targetType: string
   state: MultiplicityRelationState
-  refinement: MultiplicityRefinementConfig
+  refinement: MultiplicityRefinement
 }
 
-export interface MultiplicityRuleConfig {
-  relations: MultiplicityRelationConfig[]
+export interface MultiplicityConfig {
   messageTemplate: string
+  relations: MultiplicityRelation[]
 }
 
-export interface SyntaxRuleBase {
-  type: string // Regel-Typ-Identifikator (z.B. "multiplicity-class-interface")
-  label: string // Anzeigename für UI (z.B. "Klassen & Interfaces")
-  ruleType: SyntaxRuleType // Art der Regel ("multiplicity", etc.)
-  description: string
-}
-
-export interface MultiplicitySyntaxRule extends SyntaxRuleBase {
+export interface MultiplicityRule {
   ruleType: 'multiplicity'
-  config: MultiplicityRuleConfig
+  config: MultiplicityConfig
 }
 
-export type DiagramSyntax = MultiplicitySyntaxRule
+export type DiagramSyntax = MultiplicityRule

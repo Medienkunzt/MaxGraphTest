@@ -128,12 +128,12 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
-import type { MultiplicityRuleConfig, MultiplicityRelationConfig, MultiplicityRelationState } from '@/model/Syntax'
+import type { MultiplicityConfig, MultiplicityRelation, MultiplicityRelationState } from '@/model/Syntax'
 
 type RelationState = MultiplicityRelationState | 'unset'
 
 interface Props {
-  config: MultiplicityRuleConfig
+  config: MultiplicityConfig
   elementOptions: string[]
   connectionOptions: string[]
 }
@@ -204,51 +204,16 @@ const cycleRelationState = (source: string, target: string) => {
   emitUpdate()
 }
 
-const ensureQuickMatrixDefaults = (relation: MultiplicityRelationConfig): boolean => {
-  let changed = false
+const usesAllConnectionTypes = (relation: MultiplicityRelation): boolean => relation.refinement.connectionTypes.length === 0
 
-  if (!relation.refinement || typeof relation.refinement !== 'object') {
-    relation.refinement = {
-      connectionTypes: [],
-      cardinality: { min: 0, max: null }
-    }
-    changed = true
-  }
+const isConnectionTypeSelected = (relation: MultiplicityRelation, connectionType: string): boolean => relation.refinement.connectionTypes.includes(connectionType)
 
-  if (!Array.isArray(relation.refinement.connectionTypes)) {
-    relation.refinement.connectionTypes = []
-    changed = true
-  }
-
-  if (!relation.refinement.cardinality || typeof relation.refinement.cardinality !== 'object') {
-    relation.refinement.cardinality = { min: 0, max: null }
-    changed = true
-  }
-
-  if (typeof relation.refinement.cardinality.min !== 'number' || relation.refinement.cardinality.min < 0) {
-    relation.refinement.cardinality.min = 0
-    changed = true
-  }
-
-  const max = relation.refinement.cardinality.max
-  if (max !== null && (typeof max !== 'number' || max < 0)) {
-    relation.refinement.cardinality.max = null
-    changed = true
-  }
-
-  return changed
-}
-
-const usesAllConnectionTypes = (relation: MultiplicityRelationConfig): boolean => relation.refinement.connectionTypes.length === 0
-
-const isConnectionTypeSelected = (relation: MultiplicityRelationConfig, connectionType: string): boolean => relation.refinement.connectionTypes.includes(connectionType)
-
-const setAllConnectionTypes = (relation: MultiplicityRelationConfig) => {
+const setAllConnectionTypes = (relation: MultiplicityRelation) => {
   relation.refinement.connectionTypes = []
   emitUpdate()
 }
 
-const toggleConnectionType = (relation: MultiplicityRelationConfig, connectionType: string) => {
+const toggleConnectionType = (relation: MultiplicityRelation, connectionType: string) => {
   if (usesAllConnectionTypes(relation)) {
     relation.refinement.connectionTypes = [connectionType]
     emitUpdate()
@@ -265,7 +230,7 @@ const toggleConnectionType = (relation: MultiplicityRelationConfig, connectionTy
   emitUpdate()
 }
 
-const connectionTypeCellClass = (relation: MultiplicityRelationConfig, connectionType: string): string => {
+const connectionTypeCellClass = (relation: MultiplicityRelation, connectionType: string): string => {
   if (connectionType === '__all__') {
     return usesAllConnectionTypes(relation) ? 'matrix-button--allowed' : 'matrix-button--unset'
   }
@@ -277,25 +242,25 @@ const connectionTypeCellClass = (relation: MultiplicityRelationConfig, connectio
   return isConnectionTypeSelected(relation, connectionType) ? 'matrix-button--allowed' : 'matrix-button--unset'
 }
 
-const connectionTypeCellIcon = (relation: MultiplicityRelationConfig, connectionType: string): string => {
+const connectionTypeCellIcon = (relation: MultiplicityRelation, connectionType: string): string => {
   if (usesAllConnectionTypes(relation)) return 'mdi-check-all'
   return isConnectionTypeSelected(relation, connectionType) ? 'mdi-check' : 'mdi-minus'
 }
 
-const isCardinalityPresetSelected = (relation: MultiplicityRelationConfig, preset: CardinalityPreset): boolean => relation.refinement.cardinality.min === preset.min && relation.refinement.cardinality.max === preset.max
+const isCardinalityPresetSelected = (relation: MultiplicityRelation, preset: CardinalityPreset): boolean => relation.refinement.cardinality.min === preset.min && relation.refinement.cardinality.max === preset.max
 
-const selectedCardinalityPresetId = (relation: MultiplicityRelationConfig): string => {
+const selectedCardinalityPresetId = (relation: MultiplicityRelation): string => {
   const preset = cardinalityPresets.find((entry) => isCardinalityPresetSelected(relation, entry))
   return preset?.id ?? '0..*'
 }
 
-const setCardinalityPreset = (relation: MultiplicityRelationConfig, preset: CardinalityPreset) => {
+const setCardinalityPreset = (relation: MultiplicityRelation, preset: CardinalityPreset) => {
   relation.refinement.cardinality.min = preset.min
   relation.refinement.cardinality.max = preset.max
   emitUpdate()
 }
 
-const setCardinalityPresetById = (relation: MultiplicityRelationConfig, presetId: string) => {
+const setCardinalityPresetById = (relation: MultiplicityRelation, presetId: string) => {
   const preset = cardinalityPresets.find((entry) => entry.id === presetId)
   if (!preset) return
   setCardinalityPreset(relation, preset)
@@ -317,22 +282,6 @@ const sortedRelations = computed(() => {
 })
 
 const allowedRelations = computed(() => sortedRelations.value.filter((relation) => relation.state === 'allowed'))
-
-watch(
-  allowedRelations,
-  (relations) => {
-    let changed = false
-    for (const relation of relations) {
-      if (ensureQuickMatrixDefaults(relation)) {
-        changed = true
-      }
-    }
-    if (changed) {
-      emitUpdate()
-    }
-  },
-  { immediate: true }
-)
 
 watch(
   () => props.config.messageTemplate,

@@ -55,7 +55,7 @@
             <span class="validation-text">Validieren</span>
           </v-btn>
 
-          <AutonomyControls :mode="autonomyMode" @update:mode="$emit('update:autonomyMode', $event)" />
+          <AutonomyControls :mode="autonomyMode" @update:mode="updateAutonomyMode" />
         </div>
 
         <!-- Connection Toolbar (immer zweite Zeile) -->
@@ -117,6 +117,23 @@
       </div>
       <!-- /canvas-area -->
     </v-card-text>
+
+    <v-dialog v-model="strictValidationDialogVisible" max-width="640">
+      <v-card>
+        <v-card-title>Validierungsfehler</v-card-title>
+        <v-card-text>
+          <ul class="strict-validation-errors">
+            <li v-for="(message, index) in strictValidationMessages" :key="`strict-validation-${index}`">
+              {{ message }}
+            </li>
+          </ul>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="primary" variant="text" @click="strictValidationDialogVisible = false">Schließen</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-card>
 </template>
 
@@ -136,6 +153,7 @@ import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleCo
 import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
 import { setupUndoManager, type UndoManagerApi, type UndoManagerState } from '@/utils/setupUndoManager'
 import { alignHorizontal, alignVertical } from '@/utils/alignCells'
+import { clearValidationWarningOverlays, getGraphValidationMode, isValidationPassActive, setGraphValidationMode } from '@/utils/graphValidationRuntime'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
@@ -229,6 +247,15 @@ class MyCustomGraph extends Graph {
     return super.isCellEditable(cell)
   }
 
+  override getEdgeValidationError = (edge: Cell | null, source: Cell | null, target: Cell | null): string | null => {
+    const error = super.getEdgeValidationError(edge, source, target)
+    const mode = getGraphValidationMode(this)
+    if (mode === 'strict') {
+      return error
+    }
+    return isValidationPassActive(this) ? error : null
+  }
+
   private overlayAddedCallback?: (cell: Cell, overlay: CellOverlay) => void
   private overlayRemovedCallback?: (cell: Cell, overlay: CellOverlay) => void
 
@@ -299,7 +326,7 @@ const emit = defineEmits<{
   'update:autonomyMode': [AutonomyMode]
 }>()
 
-const autonomyMode = computed<AutonomyMode>(() => props.autonomyMode ?? 'manual')
+const autonomyMode = ref<AutonomyMode>(props.autonomyMode ?? 'manual')
 
 // Reaktive Variablen für Konfiguration
 const gridSize = ref(10)
@@ -344,20 +371,34 @@ const { overlayTooltip, overlayTooltipAnchorStyle, registerGraph, cleanup: clean
 
 // Zentraler Validator für alle Diagramm-Regeln
 const diagramValidator = new DiagramValidator()
+const strictValidationDialogVisible = ref(false)
+const strictValidationMessages = ref<string[]>([])
+
+const normalizeErrorLines = (rawMessage: string): string[] =>
+  rawMessage
+    .split('\n')
+    .map((line) => line.replace(/<[^>]*>/g, '').trim())
+    .filter((line) => line.length > 0)
+
+const openStrictValidationDialog = (messages: string[]) => {
+  if (messages.length === 0) return
+  strictValidationMessages.value = [...new Set(messages)]
+  strictValidationDialogVisible.value = true
+}
+
+const updateAutonomyMode = (mode: AutonomyMode) => {
+  autonomyMode.value = mode
+  emit('update:autonomyMode', mode)
+}
 
 const applyValidationRulesToGraph = () => {
   const currentGraph = graph.value
   if (!currentGraph) {
     return
   }
-
-  // const errors = diagramValidator.validateGraph(currentGraph)
-
-  // if (errors.length === 0) {
-  //   alert('V Keine Validierungsfehler gefunden!')
-  // } else {
-  //   alert('? Validierungsfehler:\n\n' + errors.join('\n'))
-  // }
+  diagramValidator.applyToGraph(currentGraph, {
+    liveValidation: autonomyMode.value !== 'manual'
+  })
 }
 
 const rebuildValidationRules = (rules?: DiagramSyntax[]) => {
@@ -478,7 +519,6 @@ const manualValidate = () => {
     return
   }
 
-  // TODO: Eigene Validierung implementieren
   const errors = diagramValidator.validateGraph(currentGraph)
 
   if (errors.length === 0) {
@@ -513,6 +553,13 @@ onMounted(() => {
 
     currentGraph?.refresh()
     currentGraph?.view.validate()
+
+    if (currentGraph && autonomyMode.value !== 'manual') {
+      diagramValidator.validateGraph(currentGraph)
+    } else if (currentGraph) {
+      clearValidationWarningOverlays(currentGraph)
+    }
+
     emitUpdatedModel()
   })
 
@@ -579,6 +626,30 @@ watch(
   { deep: true }
 )
 
+watch(
+  () => autonomyMode.value,
+  (mode) => {
+    if (graph.value) {
+      setGraphValidationMode(graph.value, mode)
+    }
+    if (mode === 'manual' && graph.value) {
+      clearValidationWarningOverlays(graph.value)
+    }
+    applyValidationRulesToGraph()
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.autonomyMode,
+  (mode) => {
+    if (!mode) return
+    if (mode !== autonomyMode.value) {
+      autonomyMode.value = mode
+    }
+  }
+)
+
 // Vorschau nur für eine Verbindung (nutzt zentrale Preview-Hilfen)
 function renderConnectionPreviewOnly(connection?: DiagramConnection | null) {
   const g = graph.value
@@ -609,6 +680,7 @@ const initGraph = () => {
     graph.value = new MyCustomGraph(graphContainer.value!, undefined, plugins.value)
   }
   registerGraph(graph.value)
+  applyValidationRulesToGraph()
 
   // Hole den CustomConnectionHandler aus den registrierten Plugins
   const handler = graph.value?.getPlugin('ConnectionHandler')
@@ -618,6 +690,14 @@ const initGraph = () => {
   if (customConnectionHandler.value && props.languageConnections && props.languageConnections.length > 0) {
     customConnectionHandler.value.setSelectedConnection(props.languageConnections[0])
     selectedConnectionIndex.value = 0
+  }
+  setGraphValidationMode(graph.value, autonomyMode.value)
+
+  graph.value.validationAlert = (message: string) => {
+    if (autonomyMode.value === 'strict') {
+      openStrictValidationDialog(normalizeErrorLines(message))
+      return
+    }
   }
 
   // Enable editing
@@ -1042,6 +1122,14 @@ defineExpose({
 .v-btn--active {
   background-color: #1976d2 !important;
   color: white !important;
+}
+
+.strict-validation-errors {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* Responsives Design für kleinere Bildschirme */

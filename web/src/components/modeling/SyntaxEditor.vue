@@ -76,10 +76,7 @@ const ensureMultiplicityRule = () => {
   if (selectedRule.value) return
 
   store.addSyntaxToLanguage(store.currentLanguage.id, {
-    type: 'multiplicity',
-    label: 'Multiplicity',
     ruleType: 'multiplicity',
-    description: '',
     config: {
       relations: [],
       messageTemplate: ''
@@ -102,10 +99,7 @@ const debouncedUpdate = () => {
 
 const debouncedStoreUpdate = () => {
   if (selectedRule.value && store.currentLanguage) {
-    const ruleType = selectedRule.value.type
-    if (ruleType) {
-      store.updateSyntaxInLanguage(store.currentLanguage.id, ruleType, selectedRule.value)
-    }
+    store.updateSyntaxInLanguage(store.currentLanguage.id, selectedRule.value)
   }
 }
 

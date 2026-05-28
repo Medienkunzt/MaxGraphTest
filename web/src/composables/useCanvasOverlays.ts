@@ -2,12 +2,14 @@ import { computed, reactive, ref, watch, type Ref } from 'vue'
 import type { Cell, CellOverlay } from '@maxgraph/core'
 import type { FeedbackCanvasOverlayEntry, FeedbackOverlayConfig, FeedbackOverlayOffset } from '@/model/Feedback'
 import { createOverlayFromConfig } from '@/utils/feedbackOverlays'
+import { isValidationWarningOverlay } from '@/utils/graphValidationRuntime'
 
 export interface OverlayAwareGraph {
   setOverlayCallbacks(onAdd?: (cell: Cell, overlay: CellOverlay) => void, onRemove?: (cell: Cell, overlay: CellOverlay) => void): void
   addCellOverlay(cell: Cell, overlay: CellOverlay): CellOverlay
   removeCellOverlay(cell: Cell, overlay: CellOverlay | null): CellOverlay | null
   removeCellOverlays(cell: Cell): CellOverlay[]
+  getWarningImage(): { src: string; width: number; height: number }
   getDataModel(): { getCell(id: string): Cell | null }
   view: { getState(cell: Cell): any }
 }
@@ -102,6 +104,10 @@ export const useCanvasOverlays = (wrapperRef: Ref<HTMLElement | null>, entriesRe
   }
 
   const attachOverlayTooltipHandlers = (cell: Cell, overlay: CellOverlay, attempt = 0) => {
+    if (graphRef.value && isValidationWarningOverlay(graphRef.value, overlay)) {
+      return
+    }
+
     const node = getOverlayNode(cell, overlay)
     if (!node) {
       if (attempt < 6) {
