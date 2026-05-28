@@ -1,15 +1,8 @@
 <template>
   <v-container fluid class="pa-2 editor-surface">
     <v-row no-gutters class="editor-row">
-      <!-- Syntax-Regeln Liste (links) -->
-      <v-col cols="3" class="pr-2 editor-col">
-        <div class="scroll-column">
-          <EditorEntityList title="Syntax-Regeln" add-button-text="Neue Regel" :items="syntaxRules" :selected-index="selectedRuleIndex" empty-text="Keine Syntax-Regeln definiert" :icon-map="ruleIconMap" :color-map="ruleColorMap" @add="addNewRule" @select="selectRule" @delete="deleteRule" />
-        </div>
-      </v-col>
-
-      <!-- Regel-Editor (mitte) -->
-      <v-col cols="5" class="px-1 editor-col">
+      <!-- Regel-Editor -->
+      <v-col cols="8" class="pr-2 editor-col">
         <div class="scroll-column">
           <BasicEditorForm type="syntax" :selected-item="selectedRule">
             <SyntaxEditorForm v-if="selectedRule" :selected-rule="selectedRule" @update="updateAll" />
@@ -46,7 +39,6 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import AutonomyModeToggle from '@/components/modeling/AutonomyModeToggle.vue'
-import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import type { GraphDataModel } from '@maxgraph/core'
 import SyntaxEditorForm from './form/SyntaxEditorForm.vue'
@@ -68,7 +60,6 @@ const store = useDiagramLanguageStore()
 const { languages, setCurrentLanguage } = useDiagramLanguages()
 
 // State
-const selectedRuleIndex = ref<number>(-1)
 const canvasModel = ref<GraphDataModel>()
 const drawingCanvasRef = ref()
 
@@ -76,28 +67,15 @@ const autonomyMode = ref<'manual' | 'assisted' | 'strict'>('manual')
 
 // Computed
 const syntaxRules = computed(() => store.currentLanguage?.syntax || [])
-const selectedRule = computed<DiagramSyntax | undefined>(() => {
-  if (selectedRuleIndex.value < 0) return undefined
-  return syntaxRules.value[selectedRuleIndex.value]
-})
+const selectedRule = computed<DiagramSyntax | undefined>(() => syntaxRules.value.find((rule) => rule.ruleType === 'multiplicity'))
 const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
 const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
 
-// Methods
-const selectRule = (ruleIndex: number) => {
-  selectedRuleIndex.value = ruleIndex
-}
-
-const addNewRule = () => {
+const ensureMultiplicityRule = () => {
   if (!store.currentLanguage) return
+  if (selectedRule.value) return
 
-  const existingIndex = syntaxRules.value.findIndex((rule) => rule.ruleType === 'multiplicity')
-  if (existingIndex !== -1) {
-    selectedRuleIndex.value = existingIndex
-    return
-  }
-
-  const newRule: DiagramSyntax = {
+  store.addSyntaxToLanguage(store.currentLanguage.id, {
     type: 'multiplicity',
     label: 'Multiplicity',
     ruleType: 'multiplicity',
@@ -106,30 +84,7 @@ const addNewRule = () => {
       relations: [],
       messageTemplate: ''
     }
-  }
-
-  store.addSyntaxToLanguage(store.currentLanguage.id, newRule)
-  const newIndex = syntaxRules.value.findIndex((rule) => rule.type === newRule.type)
-  selectedRuleIndex.value = newIndex !== -1 ? newIndex : syntaxRules.value.length - 1
-}
-
-const deleteRule = (ruleIndex: number) => {
-  if (!store.currentLanguage) return
-
-  const rule = syntaxRules.value[ruleIndex]
-  if (!rule) return
-
-  store.removeSyntaxFromLanguage(store.currentLanguage.id, rule.type)
-  selectedRuleIndex.value = -1
-}
-
-// Icon und Color Maps für EntityList
-const ruleIconMap = {
-  multiplicity: 'mdi-function-variant'
-}
-
-const ruleColorMap = {
-  multiplicity: 'blue'
+  })
 }
 
 // Update-Funktionen
@@ -176,6 +131,15 @@ const loadLanguageFromRoute = () => {
 
 // Watchers
 watch(
+  () => store.currentLanguage?.id,
+  () => {
+    ensureMultiplicityRule()
+    debouncedUpdate()
+  },
+  { immediate: true }
+)
+
+watch(
   selectedRule,
   () => {
     debouncedUpdate()
@@ -187,6 +151,7 @@ watch(
 onMounted(() => {
   // Route laden
   loadLanguageFromRoute()
+  ensureMultiplicityRule()
 
   // Canvas initialisieren mit mehreren Versuchen (wie im ElementEditor)
   const initializeCanvas = (attempts = 0) => {

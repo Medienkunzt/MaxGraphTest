@@ -2,29 +2,21 @@ export type SyntaxRuleType = 'multiplicity'
 
 export type MultiplicityRelationState = 'allowed' | 'forbidden'
 
-export type MultiplicityScope = 'aggregate' | 'perConnection'
-
-export interface MultiplicityCombinedConfig {
-  connectionTypes: string[]
+export interface MultiplicityCardinalityConfig {
   min: number
   max: number | null
 }
 
-export interface MultiplicitySeparateEntry {
-  connectionType: string
-  min: number
-  max: number | null
+export interface MultiplicityRefinementConfig {
+  connectionTypes: string[]
+  cardinality: MultiplicityCardinalityConfig
 }
 
 export interface MultiplicityRelationConfig {
   sourceType: string
   targetType: string
   state: MultiplicityRelationState
-  mode: 'combined' | 'separate'
-  scope: MultiplicityScope
-  connectionMode: 'allow' | 'exclude'
-  combined: MultiplicityCombinedConfig
-  separate: MultiplicitySeparateEntry[]
+  refinement: MultiplicityRefinementConfig
 }
 
 export interface MultiplicityRuleConfig {

@@ -6,6 +6,8 @@
         <span>Beziehungs-Matrix</span>
       </div>
 
+      <p class="text-body-2 text-medium-emphasis mb-3">Stufe 1 legt fest, welche Elementtypen überhaupt miteinander verbunden werden dürfen. Jede Zelle steuert den Zustand zwischen <strong>nicht definiert</strong>, <strong>erlaubt</strong> und <strong>verboten</strong>.</p>
+
       <v-alert v-if="elementOptions.length === 0" type="info" variant="tonal" class="mt-3"> Fügen Sie zunächst Elemente hinzu, um Beziehungsregeln zu definieren. </v-alert>
 
       <v-sheet v-else class="matrix-wrapper elevation-1 mt-3 rounded-lg bg-white" border>
@@ -50,105 +52,57 @@
       <p v-if="elementOptions.length" class="text-body-2 text-medium-emphasis mt-2">Klicken Sie auf eine Zelle, um zwischen <strong>nicht definiert</strong>, <strong>erlaubt</strong> und <strong>verboten</strong> zu wechseln.</p>
     </section>
 
-    <section>
-      <div class="d-flex align-center font-weight-semibold text-h6 mb-3">
-        <v-icon color="primary" class="mr-2">mdi-format-list-bulleted</v-icon>
-        <span>Konfigurierte Beziehungen</span>
+    <section class="d-flex flex-column ga-3 refinement-section">
+      <div class="d-flex align-center font-weight-semibold text-h6 mb-0">
+        <v-icon color="primary" class="mr-2">mdi-link-variant</v-icon>
+        <span>Verfeinerung erlaubter Beziehungen</span>
       </div>
 
-      <v-alert v-if="sortedRelations.length === 0" type="info" variant="tonal" class="mt-3"> Definieren Sie erlaubte oder verbotene Beziehungen über die Matrix, um Details zu konfigurieren. </v-alert>
+      <v-alert v-if="allowedRelations.length === 0" type="info" variant="tonal" class="mt-3"> Markieren Sie in der Matrix mindestens eine Beziehung als <strong>erlaubt</strong>, um Verbindungstypen und Kardinalitäten zu konfigurieren. </v-alert>
 
-      <v-expansion-panels v-else v-model="expandedKey" accordion class="mt-3">
-        <v-expansion-panel v-for="relation in sortedRelations" :key="relationKey(relation.sourceType, relation.targetType)" :value="relationKey(relation.sourceType, relation.targetType)" class="rounded-lg bg-white mb-3" border>
-          <v-expansion-panel-title class="pr-3">
-            <div class="d-flex align-center ga-3 font-weight-semibold">
-              <v-chip size="small" :color="relation.state === 'allowed' ? 'primary' : 'error'" variant="tonal">
-                {{ relation.state === 'allowed' ? 'Erlaubt' : 'Verboten' }}
-              </v-chip>
-              <span>{{ relation.sourceType }} → {{ relation.targetType }}</span>
-            </div>
-
-            <template #append>
-              <div class="d-flex ga-2 flex-wrap">
-                <v-btn size="small" variant="text" color="success" :disabled="relation.state === 'allowed' || !languageId" @click.stop="setRelationState(relation, 'allowed')"> <v-icon icon="mdi-check-circle-outline" class="mr-1" /> Erlauben </v-btn>
-                <v-btn size="small" variant="text" color="error" :disabled="relation.state === 'forbidden' || !languageId" @click.stop="setRelationState(relation, 'forbidden')"> <v-icon icon="mdi-close-circle-outline" class="mr-1" /> Verbieten </v-btn>
-                <v-btn size="small" variant="text" color="default" :disabled="!languageId" @click.stop="setRelationState(relation, 'unset')"> <v-icon icon="mdi-delete-outline" class="mr-1" /> Entfernen </v-btn>
-              </div>
-            </template>
-          </v-expansion-panel-title>
-
-          <v-expansion-panel-text>
-            <v-sheet v-if="relation.state === 'allowed'" class="pa-4 rounded-lg bg-white d-flex flex-column ga-4" border>
-              <div class="d-flex align-center ga-3">
-                <span class="font-weight-semibold" style="min-width: 160px">Verbindungen</span>
-                <v-btn-toggle :model-value="relation.connectionMode" density="compact" mandatory :disabled="!languageId" @update:model-value="(mode: string) => setConnectionMode(relation, mode as 'allow' | 'exclude')">
-                  <v-btn value="allow" size="small" class="font-weight-semibold text-none rounded-pill mode-btn mode-btn--allow">Erlauben</v-btn>
-                  <v-btn value="exclude" size="small" class="font-weight-semibold text-none rounded-pill mode-btn mode-btn--exclude">Ausschließen</v-btn>
-                </v-btn-toggle>
-              </div>
-
-              <div class="d-flex align-center ga-3">
-                <span class="font-weight-semibold" style="min-width: 160px">Konfigurationsmodus</span>
-                <v-btn-toggle :model-value="relation.mode" density="compact" mandatory :disabled="!languageId" @update:model-value="(mode: string) => setMode(relation, mode as 'combined' | 'separate')">
-                  <v-btn value="combined" size="small" class="font-weight-semibold text-none rounded-pill mode-btn mode-btn--combined">Gemeinsam</v-btn>
-                  <v-btn value="separate" size="small" class="font-weight-semibold text-none rounded-pill mode-btn mode-btn--separate">Getrennt</v-btn>
-                </v-btn-toggle>
-              </div>
-
-              <div v-if="relation.mode === 'combined'" class="d-flex flex-column ga-4">
-                <div class="d-flex align-center ga-3" :class="{ 'opacity-50': isExcluded(relation) }">
-                  <span class="font-weight-semibold" style="min-width: 160px">Kardinalität bezieht sich auf</span>
-                  <v-btn-toggle :model-value="relation.scope" density="compact" mandatory :disabled="!languageId || isExcluded(relation)" @update:model-value="(value: string) => setScope(relation, value as MultiplicityScope)">
-                    <v-btn value="aggregate" size="small" class="font-weight-semibold text-none rounded-pill mode-btn mode-btn--scope-aggregate">Für Beziehung</v-btn>
-                    <v-btn value="perConnection" size="small" class="font-weight-semibold text-none rounded-pill mode-btn mode-btn--scope-per">Pro Kardinalität</v-btn>
+      <template v-else>
+        <p class="text-body-2 text-medium-emphasis mb-1"><strong>Alle</strong> = alle Verbindungstypen; gezielte Auswahl = nur markierte. Das Preset setzt Min/Max für den aktiven Bereich.</p>
+        <v-sheet class="matrix-wrapper elevation-1 rounded-lg bg-white" border>
+          <v-table density="compact" class="refinement-matrix">
+            <thead>
+              <tr>
+                <th class="refinement-corner">Beziehung</th>
+                <th class="refinement-kard-header">Kardinalität</th>
+                <th class="refinement-sep text-center">Alle</th>
+                <th v-for="connectionType in connectionOptions" :key="`type-head-${connectionType}`" class="text-center">
+                  {{ connectionType }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="relation in allowedRelations" :key="`refinement-${relationKey(relation.sourceType, relation.targetType)}`">
+                <th class="refinement-header">{{ relation.sourceType }} → {{ relation.targetType }}</th>
+                <td class="refinement-cell refinement-cell--cardinality">
+                  <v-btn-toggle density="compact" mandatory rounded="lg" :model-value="selectedCardinalityPresetId(relation)" :disabled="!languageId" @update:model-value="(id: string) => setCardinalityPresetById(relation, id)">
+                    <v-btn v-for="preset in cardinalityPresets" :key="`preset-${relationKey(relation.sourceType, relation.targetType)}-${preset.id}`" :value="preset.id" size="x-small" class="preset-btn">
+                      {{ preset.label }}
+                    </v-btn>
                   </v-btn-toggle>
-                </div>
-
-                <ConnectionTypeSelect :model-value="relation.combined.connectionTypes" :items="connectionOptions" label="Verbindungstypen" :multiple="true" hint="Leer lassen für alle Verbindungstypen" :disabled="!languageId" class-name="w-100" @update:model-value="(values: string | string[]) => setCombinedConnectionTypes(relation, values as string[])" />
-
-                <v-row :class="{ 'opacity-50': isExcluded(relation) }" dense>
-                  <v-col cols="12" md="6">
-                    <v-text-field :model-value="relation.combined.min" type="number" min="0" step="1" density="compact" variant="outlined" label="Minimum" prepend-inner-icon="mdi-numeric" :disabled="!languageId || isExcluded(relation)" @update:model-value="(value: string | number) => setCombinedMin(relation, value)" />
-                  </v-col>
-                  <v-col cols="12" md="6">
-                    <v-text-field :model-value="formatMaxValue(relation.combined.max)" type="number" min="-1" step="1" density="compact" variant="outlined" label="Maximum" prepend-inner-icon="mdi-numeric" hint="-1 für unbegrenzt" persistent-hint :disabled="!languageId || isExcluded(relation)" @update:model-value="(value: string | number | null | undefined) => setCombinedMax(relation, value)" />
-                  </v-col>
-                </v-row>
-              </div>
-
-              <div v-else class="d-flex flex-column ga-4">
-                <div class="d-flex flex-column ga-3">
-                  <div v-for="(entry, index) in relation.separate" :key="`${relationKey(relation.sourceType, relation.targetType)}-${index}`" class="d-flex flex-column ga-2">
-                    <div class="d-flex align-center ga-2">
-                      <ConnectionTypeSelect :model-value="entry.connectionType" :items="connectionOptions" label="Verbindungstyp" class-name="flex-1-1-100" :disabled="!languageId" @update:model-value="(value: string | string[]) => updateSeparateConnectionType(relation, index, value as string)" />
-                      <v-btn icon="mdi-delete" variant="text" size="small" color="error" :disabled="!languageId" @click="removeSeparateEntry(relation, index)" />
-                    </div>
-                    <v-row :class="{ 'opacity-50': isExcluded(relation) }" dense>
-                      <v-col cols="12" md="6">
-                        <v-text-field :model-value="entry.min" type="number" min="0" step="1" density="compact" variant="outlined" label="Min" prepend-inner-icon="mdi-numeric" :disabled="!languageId || isExcluded(relation)" @update:model-value="(value: string | number) => updateSeparateMin(relation, index, value)" />
-                      </v-col>
-                      <v-col cols="12" md="6">
-                        <v-text-field :model-value="formatMaxValue(entry.max)" type="number" min="-1" step="1" density="compact" variant="outlined" label="Max" prepend-inner-icon="mdi-numeric" hint="-1 für unbegrenzt" persistent-hint :disabled="!languageId || isExcluded(relation)" @update:model-value="(value: string | number | null | undefined) => updateSeparateMax(relation, index, value)" />
-                      </v-col>
-                    </v-row>
-                    <v-divider v-if="index < relation.separate.length - 1" :thickness="2" color="black" />
-                  </div>
-                </div>
-                <div class="d-flex ga-2 flex-wrap">
-                  <v-btn size="small" variant="tonal" color="primary" prepend-icon="mdi-plus" :disabled="!languageId" @click="addSeparateEntry(relation)"> Verbindung hinzufügen </v-btn>
-                  <v-btn size="small" variant="text" color="error" prepend-icon="mdi-delete" :disabled="!languageId || relation.separate.length === 0" @click="clearSeparateEntries(relation)"> Alle entfernen </v-btn>
-                </div>
-              </div>
-            </v-sheet>
-
-            <v-sheet v-else class="pa-4 rounded-lg bg-white" style="border: 1px solid rgba(var(--v-theme-error), 0.3)">
-              <v-alert type="error" variant="tonal" density="comfortable">
-                Verbindungen zwischen <strong>{{ relation.sourceType }}</strong> und <strong>{{ relation.targetType }}</strong> sind verboten.
-              </v-alert>
-            </v-sheet>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-      </v-expansion-panels>
+                </td>
+                <td class="refinement-cell refinement-sep text-center">
+                  <v-btn variant="elevated" class="matrix-button rounded-lg" :class="connectionTypeCellClass(relation, '__all__')" size="small" :disabled="!languageId" @click="setAllConnectionTypes(relation)">
+                    <v-icon size="16">mdi-select-all</v-icon>
+                  </v-btn>
+                </td>
+                <td v-for="connectionType in connectionOptions" :key="`type-cell-${relationKey(relation.sourceType, relation.targetType)}-${connectionType}`" class="refinement-cell text-center">
+                  <v-tooltip :text="`${relation.sourceType} → ${relation.targetType} (${connectionType})`" location="bottom">
+                    <template #activator="{ props: typeProps }">
+                      <v-btn v-bind="typeProps" variant="elevated" class="matrix-button rounded-lg" :class="connectionTypeCellClass(relation, connectionType)" size="small" :disabled="!languageId" @click="toggleConnectionType(relation, connectionType)">
+                        <v-icon size="16">{{ connectionTypeCellIcon(relation, connectionType) }}</v-icon>
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </v-sheet>
+      </template>
     </section>
 
     <section class="d-flex flex-column ga-3">
@@ -158,16 +112,23 @@
       </div>
       <v-textarea v-model="messageTemplate" rows="3" density="compact" variant="outlined" label="Template für dynamische Fehlermeldungen" auto-grow hint="Verwenden Sie Platzhalter wie {source}, {target}, {connection}, {min}, {max}" persistent-hint />
     </section>
+
+    <section class="d-flex flex-column ga-2">
+      <div class="d-flex align-center font-weight-semibold text-h6">
+        <v-icon color="primary" class="mr-2">mdi-code-json</v-icon>
+        <span>Syntax-Datenstruktur</span>
+      </div>
+      <v-sheet border rounded="lg" class="structure-preview">
+        <pre class="structure-preview__code">{{ uiStructureExampleJson }}</pre>
+      </v-sheet>
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, defineAsyncComponent } from 'vue'
+import { computed, watch } from 'vue'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
-import type { MultiplicityRuleConfig, MultiplicityRelationConfig, MultiplicityRelationState, MultiplicityScope } from '@/model/Syntax'
-
-// Wiederverwendbare Komponente für Connection Type Select
-const ConnectionTypeSelect = defineAsyncComponent(() => import('@/components/modeling/form/ConnectionTypeSelect.vue'))
+import type { MultiplicityRuleConfig, MultiplicityRelationConfig, MultiplicityRelationState } from '@/model/Syntax'
 
 type RelationState = MultiplicityRelationState | 'unset'
 
@@ -188,21 +149,23 @@ const languageId = computed(() => store.currentLanguage?.id ?? null)
 const elementOptions = computed(() => props.elementOptions)
 const connectionOptions = computed(() => props.connectionOptions)
 
-const expandedKey = ref<string | null>(null)
+const DEFAULT_MESSAGE_TEMPLATE = 'Die Beziehung {source} -> {target} mit Verbindungstyp {connection} verletzt die Kardinalitaet ({min}..{max}).'
 
 const relationKey = (source: string, target: string): string => `${source}::${target}`
 
-const sanitizeMin = (value: unknown): number => {
-  const numeric = Number(value)
-  return Number.isFinite(numeric) && numeric >= 0 ? Math.floor(numeric) : 0
+interface CardinalityPreset {
+  id: string
+  label: string
+  min: number
+  max: number | null
 }
 
-const sanitizeMax = (value: unknown): number | null => {
-  if (value === null || value === undefined || value === '') return null
-  const numeric = Number(value)
-  if (!Number.isFinite(numeric) || numeric < 0) return null
-  return Math.floor(numeric)
-}
+const cardinalityPresets: CardinalityPreset[] = [
+  { id: '0..1', label: '0..1', min: 0, max: 1 },
+  { id: '1..1', label: '1..1', min: 1, max: 1 },
+  { id: '0..*', label: '0..*', min: 0, max: null },
+  { id: '1..*', label: '1..*', min: 1, max: null }
+]
 
 const getRelationState = (source: string, target: string): RelationState => {
   const relation = props.config.relations.find((item) => item.sourceType === source && item.targetType === target)
@@ -238,106 +201,104 @@ const cycleRelationState = (source: string, target: string) => {
 
   store.setMultiplicityRelationState(languageId.value, source, target, next === 'unset' ? 'unset' : next)
 
-  if (next === 'allowed') {
-    expandedKey.value = relationKey(source, target)
-  }
-
-  if (next === 'unset' && expandedKey.value === relationKey(source, target)) {
-    expandedKey.value = null
-  }
-
   emitUpdate()
 }
 
-const setRelationState = (relation: MultiplicityRelationConfig, state: RelationState) => {
-  if (!languageId.value) return
-  store.setMultiplicityRelationState(languageId.value, relation.sourceType, relation.targetType, state === 'unset' ? 'unset' : state)
-  if (state === 'allowed') {
-    expandedKey.value = relationKey(relation.sourceType, relation.targetType)
-  } else if (state === 'unset' && expandedKey.value === relationKey(relation.sourceType, relation.targetType)) {
-    expandedKey.value = null
-  }
-  emitUpdate()
-}
+const ensureQuickMatrixDefaults = (relation: MultiplicityRelationConfig): boolean => {
+  let changed = false
 
-const isExcluded = (relation: MultiplicityRelationConfig): boolean => relation.connectionMode === 'exclude'
-
-const setConnectionMode = (relation: MultiplicityRelationConfig, mode: 'allow' | 'exclude') => {
-  relation.connectionMode = mode
-  emitUpdate()
-}
-
-const setMode = (relation: MultiplicityRelationConfig, mode: 'combined' | 'separate') => {
-  if (relation.mode === mode) return
-  relation.mode = mode
-  if (mode === 'combined' && relation.combined.connectionTypes.length === 0 && relation.separate.length) {
-    relation.combined.connectionTypes = relation.separate.map((entry) => entry.connectionType).filter((entry) => entry)
-    if (relation.separate.length > 0) {
-      relation.combined.min = relation.separate[0].min
-      relation.combined.max = relation.separate[0].max
+  if (!relation.refinement || typeof relation.refinement !== 'object') {
+    relation.refinement = {
+      connectionTypes: [],
+      cardinality: { min: 0, max: null }
     }
+    changed = true
   }
-  if (mode === 'separate' && relation.separate.length === 0 && relation.combined.connectionTypes.length) {
-    relation.separate = relation.combined.connectionTypes.map((connectionType) => ({
-      connectionType,
-      min: relation.combined.min,
-      max: relation.combined.max
-    }))
+
+  if (!Array.isArray(relation.refinement.connectionTypes)) {
+    relation.refinement.connectionTypes = []
+    changed = true
   }
+
+  if (!relation.refinement.cardinality || typeof relation.refinement.cardinality !== 'object') {
+    relation.refinement.cardinality = { min: 0, max: null }
+    changed = true
+  }
+
+  if (typeof relation.refinement.cardinality.min !== 'number' || relation.refinement.cardinality.min < 0) {
+    relation.refinement.cardinality.min = 0
+    changed = true
+  }
+
+  const max = relation.refinement.cardinality.max
+  if (max !== null && (typeof max !== 'number' || max < 0)) {
+    relation.refinement.cardinality.max = null
+    changed = true
+  }
+
+  return changed
+}
+
+const usesAllConnectionTypes = (relation: MultiplicityRelationConfig): boolean => relation.refinement.connectionTypes.length === 0
+
+const isConnectionTypeSelected = (relation: MultiplicityRelationConfig, connectionType: string): boolean => relation.refinement.connectionTypes.includes(connectionType)
+
+const setAllConnectionTypes = (relation: MultiplicityRelationConfig) => {
+  relation.refinement.connectionTypes = []
   emitUpdate()
 }
 
-const setScope = (relation: MultiplicityRelationConfig, scope: MultiplicityScope) => {
-  relation.scope = scope
+const toggleConnectionType = (relation: MultiplicityRelationConfig, connectionType: string) => {
+  if (usesAllConnectionTypes(relation)) {
+    relation.refinement.connectionTypes = [connectionType]
+    emitUpdate()
+    return
+  }
+
+  if (isConnectionTypeSelected(relation, connectionType)) {
+    relation.refinement.connectionTypes = relation.refinement.connectionTypes.filter((entry) => entry !== connectionType)
+  } else {
+    relation.refinement.connectionTypes = [...relation.refinement.connectionTypes, connectionType]
+  }
+
+  relation.refinement.connectionTypes = [...new Set(relation.refinement.connectionTypes)]
   emitUpdate()
 }
 
-const setCombinedConnectionTypes = (relation: MultiplicityRelationConfig, values: string[]) => {
-  relation.combined.connectionTypes = Array.isArray(values) ? [...values] : []
+const connectionTypeCellClass = (relation: MultiplicityRelationConfig, connectionType: string): string => {
+  if (connectionType === '__all__') {
+    return usesAllConnectionTypes(relation) ? 'matrix-button--allowed' : 'matrix-button--unset'
+  }
+
+  if (usesAllConnectionTypes(relation)) {
+    return 'matrix-button--all'
+  }
+
+  return isConnectionTypeSelected(relation, connectionType) ? 'matrix-button--allowed' : 'matrix-button--unset'
+}
+
+const connectionTypeCellIcon = (relation: MultiplicityRelationConfig, connectionType: string): string => {
+  if (usesAllConnectionTypes(relation)) return 'mdi-check-all'
+  return isConnectionTypeSelected(relation, connectionType) ? 'mdi-check' : 'mdi-minus'
+}
+
+const isCardinalityPresetSelected = (relation: MultiplicityRelationConfig, preset: CardinalityPreset): boolean => relation.refinement.cardinality.min === preset.min && relation.refinement.cardinality.max === preset.max
+
+const selectedCardinalityPresetId = (relation: MultiplicityRelationConfig): string => {
+  const preset = cardinalityPresets.find((entry) => isCardinalityPresetSelected(relation, entry))
+  return preset?.id ?? '0..*'
+}
+
+const setCardinalityPreset = (relation: MultiplicityRelationConfig, preset: CardinalityPreset) => {
+  relation.refinement.cardinality.min = preset.min
+  relation.refinement.cardinality.max = preset.max
   emitUpdate()
 }
 
-const setCombinedMin = (relation: MultiplicityRelationConfig, value: string | number) => {
-  relation.combined.min = sanitizeMin(value)
-  emitUpdate()
-}
-
-const setCombinedMax = (relation: MultiplicityRelationConfig, value: string | number | null | undefined) => {
-  relation.combined.max = sanitizeMax(value)
-  emitUpdate()
-}
-
-const addSeparateEntry = (relation: MultiplicityRelationConfig) => {
-  relation.separate.push({ connectionType: '', min: 0, max: null })
-  emitUpdate()
-}
-
-const removeSeparateEntry = (relation: MultiplicityRelationConfig, index: number) => {
-  relation.separate.splice(index, 1)
-  emitUpdate()
-}
-
-const updateSeparateConnectionType = (relation: MultiplicityRelationConfig, index: number, value: string) => {
-  if (!relation.separate[index]) return
-  relation.separate[index].connectionType = value
-  emitUpdate()
-}
-
-const updateSeparateMin = (relation: MultiplicityRelationConfig, index: number, value: string | number) => {
-  if (!relation.separate[index]) return
-  relation.separate[index].min = sanitizeMin(value)
-  emitUpdate()
-}
-
-const updateSeparateMax = (relation: MultiplicityRelationConfig, index: number, value: string | number | null | undefined) => {
-  if (!relation.separate[index]) return
-  relation.separate[index].max = sanitizeMax(value)
-  emitUpdate()
-}
-
-const clearSeparateEntries = (relation: MultiplicityRelationConfig) => {
-  relation.separate = []
-  emitUpdate()
+const setCardinalityPresetById = (relation: MultiplicityRelationConfig, presetId: string) => {
+  const preset = cardinalityPresets.find((entry) => entry.id === presetId)
+  if (!preset) return
+  setCardinalityPreset(relation, preset)
 }
 
 const sortedRelations = computed(() => {
@@ -355,17 +316,34 @@ const sortedRelations = computed(() => {
   return relations
 })
 
+const allowedRelations = computed(() => sortedRelations.value.filter((relation) => relation.state === 'allowed'))
+
 watch(
-  sortedRelations,
+  allowedRelations,
   (relations) => {
-    if (!relations.length) {
-      expandedKey.value = null
+    let changed = false
+    for (const relation of relations) {
+      if (ensureQuickMatrixDefaults(relation)) {
+        changed = true
+      }
+    }
+    if (changed) {
+      emitUpdate()
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.config.messageTemplate,
+  (template) => {
+    if ((template ?? '').trim().length > 0) {
       return
     }
-    if (!expandedKey.value || !relations.some((relation) => relationKey(relation.sourceType, relation.targetType) === expandedKey.value)) {
-      const first = relations[0]
-      expandedKey.value = relationKey(first.sourceType, first.targetType)
-    }
+
+    const newConfig = { ...props.config, messageTemplate: DEFAULT_MESSAGE_TEMPLATE }
+    Object.assign(props.config, newConfig)
+    emitUpdate()
   },
   { immediate: true }
 )
@@ -379,14 +357,46 @@ const messageTemplate = computed({
   }
 })
 
-const formatMaxValue = (value: number | null): number => (value === null ? -1 : value)
+const uiStructureExample = computed(() => ({
+  ruleType: 'multiplicity',
+  config: {
+    messageTemplate: props.config.messageTemplate,
+    relations: props.config.relations.map((relation) => ({
+      sourceType: relation.sourceType,
+      targetType: relation.targetType,
+      state: relation.state,
+      refinement: {
+        connectionTypes: relation.refinement.connectionTypes,
+        cardinality: {
+          min: relation.refinement.cardinality.min,
+          max: relation.refinement.cardinality.max
+        }
+      }
+    }))
+  }
+}))
+
+const uiStructureExampleJson = computed(() => JSON.stringify(uiStructureExample.value, null, 2))
 </script>
 
 <style scoped>
 /* Matrix-spezifische Styles - können nicht durch Vuetify ersetzt werden */
 .matrix-wrapper {
   overflow: auto;
-  max-height: 360px;
+  max-width: 100%;
+  max-height: 320px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.matrix-wrapper :deep(.v-table__wrapper) {
+  overflow: visible;
+  max-height: none;
+}
+
+.refinement-section {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .relation-matrix {
@@ -432,6 +442,92 @@ const formatMaxValue = (value: number | null): number => (value === null ? -1 : 
   background: #ffffff;
 }
 
+.refinement-matrix {
+  min-width: 980px;
+  width: max-content;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.refinement-matrix thead th {
+  background: #f6f8fb;
+  color: rgba(var(--v-theme-on-surface), 0.8);
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 10px 12px;
+}
+
+.refinement-corner,
+.refinement-header {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #eef2f8;
+  font-weight: 600;
+  white-space: nowrap;
+  padding: 10px 12px;
+}
+
+.refinement-corner {
+  z-index: 3;
+}
+
+.refinement-cell {
+  padding: 5px 8px;
+  background: #ffffff;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.refinement-cell--cardinality {
+  min-width: 0;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.refinement-cell--cardinality :deep(.v-btn-toggle) {
+  justify-content: center;
+}
+
+.refinement-kard-header {
+  padding: 8px 10px;
+  background: #f6f8fb;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.refinement-sep {
+  border-left: 1px solid rgba(var(--v-theme-outline), 0.18);
+}
+
+.preset-btn {
+  font-size: 10px !important;
+  letter-spacing: 0 !important;
+  min-width: 34px !important;
+  padding: 0 4px !important;
+  height: 22px !important;
+}
+
+.structure-preview {
+  background: #0f172a;
+  color: #e2e8f0;
+  overflow: auto;
+  max-height: 280px;
+}
+
+.structure-preview__code {
+  margin: 0;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  font-family: 'Cascadia Code', 'Consolas', monospace;
+}
+
+.matrix-button--all {
+  background: rgba(var(--v-theme-primary), 0.18);
+  color: rgb(var(--v-theme-primary));
+}
+
 /* Button-spezifische Styles für Matrix */
 .matrix-button {
   width: 38px;
@@ -452,37 +548,6 @@ const formatMaxValue = (value: number | null): number => (value === null ? -1 : 
 .matrix-button--unset {
   background: rgba(var(--v-theme-outline), 0.18);
   color: rgba(var(--v-theme-on-surface), 0.6);
-}
-
-/* Mode-Button-Farben */
-.mode-btn--combined.v-btn--active {
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-}
-
-.mode-btn--separate.v-btn--active {
-  background: rgb(var(--v-theme-secondary));
-  color: rgb(var(--v-theme-on-secondary));
-}
-
-.mode-btn--allow.v-btn--active {
-  background: rgba(var(--v-theme-success), 0.18);
-  color: rgb(var(--v-theme-success));
-}
-
-.mode-btn--exclude.v-btn--active {
-  background: rgba(var(--v-theme-error), 0.18);
-  color: rgb(var(--v-theme-error));
-}
-
-.mode-btn--scope-aggregate.v-btn--active {
-  background: rgba(var(--v-theme-primary), 0.2);
-  color: rgb(var(--v-theme-primary));
-}
-
-.mode-btn--scope-per.v-btn--active {
-  background: rgba(var(--v-theme-secondary), 0.2);
-  color: rgb(var(--v-theme-secondary));
 }
 
 /* Scrollbar-Styling */

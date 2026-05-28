@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { DiagramLanguage, DiagramElement, DiagramConnection, DiagramSyntax } from '@/model/DiagramLanguage'
 import type { DiagramFeedbackConfig, FeedbackTargetOverlays, FeedbackTargetType } from '@/model/Feedback'
-import type { MultiplicitySyntaxRule, MultiplicityRelationConfig, MultiplicityRuleConfig, MultiplicityRelationState, MultiplicityCombinedConfig, MultiplicitySeparateEntry } from '@/model/Syntax'
+import type { MultiplicitySyntaxRule, MultiplicityRelationConfig, MultiplicityRuleConfig, MultiplicityRelationState, MultiplicityRefinementConfig, MultiplicityCardinalityConfig } from '@/model/Syntax'
 import { createEmptyFeedbackConfig, ensureFeedbackTargets, createDefaultTargetOverlays } from '@/utils/feedbackConfig'
 
 const ensureFeedbackForLanguage = (language: DiagramLanguage): DiagramFeedbackConfig => {
@@ -244,21 +244,21 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   }
   const relationKey = (sourceType: string, targetType: string): string => `${sourceType}::${targetType}`
 
-  const createCombinedConfig = (): MultiplicityCombinedConfig => ({
-    connectionTypes: [],
+  const createCardinalityConfig = (): MultiplicityCardinalityConfig => ({
     min: 0,
     max: null
+  })
+
+  const createRefinementConfig = (): MultiplicityRefinementConfig => ({
+    connectionTypes: [],
+    cardinality: createCardinalityConfig()
   })
 
   const createRelationConfig = (sourceType: string, targetType: string, state: MultiplicityRelationState = 'allowed'): MultiplicityRelationConfig => ({
     sourceType,
     targetType,
     state,
-    mode: 'combined',
-    scope: 'aggregate',
-    connectionMode: 'allow',
-    combined: createCombinedConfig(),
-    separate: []
+    refinement: createRefinementConfig()
   })
 
   const normalizeNumber = (value: unknown, allowUnlimited = false): number | null => {
@@ -269,59 +269,33 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     return Math.floor(numeric)
   }
 
-  const normalizeCombinedConfig = (config?: Partial<MultiplicityCombinedConfig>): MultiplicityCombinedConfig => {
-    const combined = createCombinedConfig()
-    if (!config) return combined
+  const normalizeRefinementConfig = (config?: Partial<MultiplicityRefinementConfig>): MultiplicityRefinementConfig => {
+    const refinement = createRefinementConfig()
+    if (!config) return refinement
 
     if (Array.isArray(config.connectionTypes)) {
-      combined.connectionTypes = [...config.connectionTypes]
+      refinement.connectionTypes = [...new Set(config.connectionTypes.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0))]
     }
 
-    const min = normalizeNumber(config.min)
+    const min = normalizeNumber(config.cardinality?.min)
     if (min !== null) {
-      combined.min = min
+      refinement.cardinality.min = min
     }
 
-    const max = normalizeNumber(config.max, true)
-    combined.max = max
-
-    return combined
+    refinement.cardinality.max = normalizeNumber(config.cardinality?.max, true)
+    return refinement
   }
 
-  const normalizeSeparateEntries = (entries?: Partial<MultiplicitySeparateEntry>[]): MultiplicitySeparateEntry[] => {
-    if (!Array.isArray(entries)) return []
-    return entries
-      .map((entry) => {
-        if (!entry) return null
-        const normalised: MultiplicitySeparateEntry = {
-          connectionType: typeof entry.connectionType === 'string' ? entry.connectionType : '',
-          min: normalizeNumber(entry.min) ?? 0,
-          max: normalizeNumber(entry.max, true)
-        }
-        return normalised
-      })
-      .filter((entry): entry is MultiplicitySeparateEntry => entry !== null)
-  }
-
-  const cloneCombinedConfig = (combined: MultiplicityCombinedConfig): MultiplicityCombinedConfig => ({
+  const cloneRefinementConfig = (combined: MultiplicityRefinementConfig): MultiplicityRefinementConfig => ({
     connectionTypes: [...combined.connectionTypes],
-    min: combined.min,
-    max: combined.max
+    cardinality: {
+      min: combined.cardinality.min,
+      max: combined.cardinality.max
+    }
   })
 
-  const cloneSeparateEntries = (entries: MultiplicitySeparateEntry[]): MultiplicitySeparateEntry[] =>
-    entries.map((entry) => ({
-      connectionType: entry.connectionType,
-      min: entry.min,
-      max: entry.max
-    }))
-
   const ensureRelationDefaults = (relation: MultiplicityRelationConfig) => {
-    relation.mode = relation.mode === 'separate' ? 'separate' : 'combined'
-    relation.scope = relation.scope === 'perConnection' ? 'perConnection' : 'aggregate'
-    relation.connectionMode = relation.connectionMode === 'exclude' ? 'exclude' : 'allow'
-    relation.combined = normalizeCombinedConfig(relation.combined)
-    relation.separate = normalizeSeparateEntries(relation.separate)
+    relation.refinement = normalizeRefinementConfig(relation.refinement)
   }
 
   const mergeRelations = (base: MultiplicityRelationConfig, override: MultiplicityRelationConfig): MultiplicityRelationConfig => {
@@ -329,21 +303,14 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       sourceType: base.sourceType,
       targetType: base.targetType,
       state: override.state ?? base.state,
-      mode: override.mode ?? base.mode,
-      scope: override.scope ?? base.scope,
-      connectionMode: override.connectionMode ?? base.connectionMode,
-      combined: cloneCombinedConfig(base.combined),
-      separate: cloneSeparateEntries(base.separate)
+      refinement: cloneRefinementConfig(base.refinement)
     }
 
     ensureRelationDefaults(merged)
     ensureRelationDefaults(override)
 
-    if (override.combined) {
-      merged.combined = cloneCombinedConfig(override.combined)
-    }
-    if (override.separate?.length) {
-      merged.separate = cloneSeparateEntries(override.separate)
+    if (override.refinement) {
+      merged.refinement = cloneRefinementConfig(override.refinement)
     }
 
     return merged
@@ -358,29 +325,40 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       sourceType,
       targetType,
       state: relation?.state === 'forbidden' ? 'forbidden' : 'allowed',
-      mode: relation?.mode === 'separate' ? 'separate' : 'combined',
-      scope: relation?.scope === 'perConnection' ? 'perConnection' : 'aggregate',
-      connectionMode: relation?.connectionMode === 'exclude' ? 'exclude' : 'allow',
-      combined: normalizeCombinedConfig(relation?.combined),
-      separate: normalizeSeparateEntries(relation?.separate)
+      refinement: normalizeRefinementConfig(relation?.refinement)
+    }
+
+    const legacyCombined = relation?.combined
+    if (legacyCombined) {
+      result.refinement = normalizeRefinementConfig({
+        connectionTypes: legacyCombined.connectionTypes,
+        cardinality: {
+          min: legacyCombined.min,
+          max: legacyCombined.max
+        }
+      })
+    }
+
+    if (Array.isArray(relation?.separate) && relation.separate.length > 0 && result.refinement.connectionTypes.length === 0) {
+      const first = relation.separate[0]
+      result.refinement = normalizeRefinementConfig({
+        connectionTypes: relation.separate.map((entry: any) => entry?.connectionType),
+        cardinality: {
+          min: first?.min,
+          max: first?.max
+        }
+      })
     }
 
     const legacyOutgoing = relation?.outgoing
     if (legacyOutgoing) {
-      result.connectionMode = legacyOutgoing.connectionMode === 'exclude' ? 'exclude' : 'allow'
-      result.combined = normalizeCombinedConfig({
+      result.refinement = normalizeRefinementConfig({
         connectionTypes: legacyOutgoing.allowedConnectionTypes,
-        min: legacyOutgoing.min,
-        max: legacyOutgoing.max
+        cardinality: {
+          min: legacyOutgoing.min,
+          max: legacyOutgoing.max
+        }
       })
-    }
-
-    if (result.mode === 'separate' && result.separate.length === 0 && result.combined.connectionTypes.length) {
-      result.separate = result.combined.connectionTypes.map((connectionType) => ({
-        connectionType,
-        min: result.combined.min,
-        max: result.combined.max
-      }))
     }
 
     ensureRelationDefaults(result)
@@ -465,11 +443,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
             sourceType: relation.sourceType,
             targetType: relation.targetType,
             state: relation.state,
-            mode: relation.mode,
-            scope: relation.scope,
-            connectionMode: relation.connectionMode,
-            combined: cloneCombinedConfig(relation.combined),
-            separate: cloneSeparateEntries(relation.separate)
+            refinement: cloneRefinementConfig(relation.refinement)
           })
         }
       }
