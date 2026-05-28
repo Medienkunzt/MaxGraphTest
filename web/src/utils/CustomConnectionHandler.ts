@@ -1,7 +1,19 @@
-import { ConnectionHandler, CellState, InternalMouseEvent, type Graph } from '@maxgraph/core'
+import { Cell, ConnectionConstraint, ConnectionHandler, ConstraintHandler, CellState, InternalMouseEvent, mathUtils, Point, type Graph, type ImageShape, type Rectangle } from '@maxgraph/core'
 import type { CellStyle } from '@maxgraph/core'
 import type { DiagramConnection } from '@/model/Connection'
 import { applyConnectionAdditionalLabels } from '@/utils/connectionLabelHelpers'
+
+/**
+ * Benutzerdefinierter ConstraintHandler, der das Einrasten am Quellknoten
+ * (source) erlaubt – notwendig damit updateEdgeState greift.
+ * Entspricht dem FixedPoints-Beispiel aus den MaxGraph-Stories.
+ */
+class AnchorConstraintHandler extends ConstraintHandler {
+  override intersects(icon: ImageShape, rectangle: Rectangle, source: boolean, existingEdge: boolean): boolean {
+    // Für den Zielknoten immer true; am Quellknoten nur wenn Cursor nahe genug
+    return !source || existingEdge || mathUtils.intersects(icon.bounds!, rectangle)
+  }
+}
 
 /**
  * Custom ConnectionHandler, der den Style der ausgewählten Verbindung verwendet
@@ -12,6 +24,53 @@ export class CustomConnectionHandler extends ConnectionHandler {
 
   constructor(graph: Graph) {
     super(graph)
+  }
+
+  /** Verwendet den AnchorConstraintHandler statt des Standard-ConstraintHandlers */
+  protected override createConstraintHandler(): ConstraintHandler {
+    return new AnchorConstraintHandler(this.graph)
+  }
+
+  /**
+   * Verhindert freie Verbindungen für Elemente mit definierten Ankerpunkten.
+   * Der Benutzer muss auf ein Anker-Icon klicken (wie im FixedPoints-Beispiel).
+   * Elemente ohne Ankerpunkte erlauben weiterhin freie Verbindungen.
+   */
+  override isConnectableCell(cell: Cell): boolean {
+    const constraints = (cell.getGeometry() as any)?.constraints
+    return !(constraints && constraints.length > 0)
+  }
+
+  /**
+   * Rastet den Startpunkt einer neuen Verbindung am nächstgelegenen Ankerpunkt ein.
+   * Entspricht dem FixedPoints-Muster aus den MaxGraph-Stories:
+   * Während der Benutzer zieht, wird this.sourceConstraint auf den nächstgelegenen
+   * ConnectionConstraint des Quellelements gesetzt.
+   */
+  override updateEdgeState(pt: Point, constraint: ConnectionConstraint | null): void {
+    if (pt != null && this.previous != null) {
+      const constraints = this.graph.getAllConnectionConstraints(this.previous, true)
+      let nearestConstraint: ConnectionConstraint | null = null
+      let bestDist: number | null = null
+
+      for (const ref of constraints ?? []) {
+        const cp = this.graph.getConnectionPoint(this.previous, ref)
+        if (cp != null) {
+          const dx = cp.x - pt.x
+          const dy = cp.y - pt.y
+          const dist = dx * dx + dy * dy
+          if (bestDist === null || dist < bestDist) {
+            nearestConstraint = ref
+            bestDist = dist
+          }
+        }
+      }
+
+      if (nearestConstraint != null) {
+        this.sourceConstraint = nearestConstraint
+      }
+    }
+    super.updateEdgeState(pt, constraint)
   }
 
   /**

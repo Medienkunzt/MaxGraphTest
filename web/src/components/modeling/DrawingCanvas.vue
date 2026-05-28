@@ -122,7 +122,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
-import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler, FitPlugin, Clipboard } from '@maxgraph/core'
+import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler, FitPlugin, Clipboard, ConnectionConstraint } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
@@ -202,6 +202,19 @@ class MyCustomGraph extends Graph {
   override getAllConnectionConstraints = (terminal: CellState | null, _source: boolean) => {
     void _source
     return (terminal?.cell?.geometry as any)?.constraints ?? null
+  }
+
+  /**
+   * Behebt den MaxGraph Round-Trip-Bug: exitPerimeter/entryPerimeter wird als '0' (String)
+   * gespeichert, aber '0' ist in JS truthy → perimeter=false Constraints verhalten sich wie true.
+   */
+  override getConnectionConstraint = (edge: CellState, terminal: CellState | null, source: boolean): ConnectionConstraint => {
+    const constraint = super.getConnectionConstraint(edge, terminal, source)
+    const p = (constraint as any).perimeter
+    if (p === '0' || p === 0) {
+      ;(constraint as any).perimeter = false
+    }
+    return constraint
   }
 
   override isCellEditable = (cell: Cell) => {

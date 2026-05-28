@@ -110,17 +110,53 @@
             <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addAnchorPoint"> Hinzufügen </v-btn>
           </div>
 
-          <v-row v-for="(point, index) in diagramElementData.anchorPoints" :key="index" class="mb-2">
-            <v-col cols="5">
-              <v-text-field v-model.number="point.x" label="X (0-1)" variant="outlined" density="compact" type="number" step="0.1" min="0" max="1" @input="emitUpdate" />
+          <v-switch v-model="showAutoAnchorGenerator" label="Anchor Points automatisch verteilen" density="compact" color="primary" class="mb-2" hint="Optional: Punkte gleichmaessig auf der Aussenlinie der Shape erzeugen" persistent-hint />
+
+          <v-row v-if="showAutoAnchorGenerator" dense class="mb-3">
+            <v-col cols="12" md="4">
+              <v-text-field v-model.number="autoAnchorCount" label="Anzahl Punkte" variant="outlined" density="compact" type="number" min="1" max="128" @input="emitUpdate" />
             </v-col>
-            <v-col cols="5">
-              <v-text-field v-model.number="point.y" label="Y (0-1)" variant="outlined" density="compact" type="number" step="0.1" min="0" max="1" @input="emitUpdate" />
+            <v-col cols="12" md="4">
+              <v-text-field v-model.number="autoAnchorStartAngle" label="Startwinkel" variant="outlined" density="compact" type="number" suffix="deg" hint="0 = rechts, 90 = oben" persistent-hint @input="emitUpdate" />
             </v-col>
-            <v-col cols="2" class="d-flex align-center">
-              <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="removeAnchorPoint(index)" />
+            <v-col cols="12" md="4" class="d-flex align-center">
+              <v-btn color="primary" variant="flat" prepend-icon="mdi-auto-fix" @click="generateAnchorPoints"> Generieren </v-btn>
             </v-col>
           </v-row>
+
+          <div v-if="diagramElementData.anchorPoints && diagramElementData.anchorPoints.length > 0" class="mb-2">
+            <div class="d-flex flex-wrap align-center ga-2 mb-2">
+              <v-checkbox-btn :model-value="allAnchorRowsSelected" :indeterminate="someAnchorRowsSelected" @update:model-value="toggleSelectAllAnchorRows(Boolean($event))" />
+              <span class="text-body-2">Alle auswählen</span>
+              <v-chip size="small" variant="tonal">Ausgewählt: {{ selectedAnchorRows.length }}</v-chip>
+              <v-btn color="error" variant="tonal" size="small" prepend-icon="mdi-delete" :disabled="selectedAnchorRows.length === 0" @click="removeSelectedAnchorPoints"> Auswahl löschen </v-btn>
+            </div>
+
+            <v-table density="compact" class="anchor-table">
+              <thead>
+                <tr>
+                  <th style="width: 48px"></th>
+                  <th style="width: 64px">#</th>
+                  <th>X (0-1)</th>
+                  <th>Y (0-1)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(point, index) in diagramElementData.anchorPoints" :key="index">
+                  <td>
+                    <v-checkbox-btn :model-value="selectedAnchorRows.includes(index)" @update:model-value="updateAnchorRowSelection(index, Boolean($event))" />
+                  </td>
+                  <td>{{ index + 1 }}</td>
+                  <td>
+                    <v-text-field v-model.number="point.x" variant="underlined" density="compact" type="number" step="0.1" min="0" max="1" hide-details @input="emitUpdate" />
+                  </td>
+                  <td>
+                    <v-text-field v-model.number="point.y" variant="underlined" density="compact" type="number" step="0.1" min="0" max="1" hide-details @input="emitUpdate" />
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </div>
 
           <v-alert v-if="!diagramElementData.anchorPoints || diagramElementData.anchorPoints.length === 0" type="info" variant="tonal" class="mt-2"> Keine Verbindungspunkte definiert. Standard-Punkte werden verwendet. </v-alert>
         </v-expansion-panel-text>
@@ -240,8 +276,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, toRef, watch } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import type { DiagramElement, ChildElement, ElementStyle } from '@/model/Element'
+import { generateEvenlyDistributedAnchorPoints } from '@/utils/anchorPointGenerator'
 import CollapseSettings from './CollapseSettings.vue'
 import ColorPickerField from './ColorPickerField.vue'
 
@@ -298,6 +335,75 @@ const predefinedShapes = [
 
 const alignOptions = ['left', 'center', 'right']
 const verticalAlignOptions = ['top', 'middle', 'bottom']
+const showAutoAnchorGenerator = ref(false)
+const autoAnchorCount = ref(8)
+const autoAnchorStartAngle = ref(0)
+const selectedAnchorRows = ref<number[]>([])
+
+const allAnchorRowsSelected = computed(() => {
+  const points = diagramElementData.value?.anchorPoints ?? []
+  return points.length > 0 && selectedAnchorRows.value.length === points.length
+})
+
+const someAnchorRowsSelected = computed(() => {
+  const points = diagramElementData.value?.anchorPoints ?? []
+  return selectedAnchorRows.value.length > 0 && selectedAnchorRows.value.length < points.length
+})
+
+function updateAnchorRowSelection(index: number, selected: boolean) {
+  const current = new Set(selectedAnchorRows.value)
+  if (selected) {
+    current.add(index)
+  } else {
+    current.delete(index)
+  }
+  selectedAnchorRows.value = Array.from(current).sort((a, b) => a - b)
+}
+
+function toggleSelectAllAnchorRows(selected: boolean) {
+  const points = diagramElementData.value?.anchorPoints ?? []
+  if (!selected || points.length === 0) {
+    selectedAnchorRows.value = []
+    return
+  }
+
+  selectedAnchorRows.value = points.map((_, index) => index)
+}
+
+function removeSelectedAnchorPoints() {
+  if (!isDiagramElement(localElement.value)) {
+    return
+  }
+
+  if (selectedAnchorRows.value.length === 0) {
+    return
+  }
+
+  const selected = new Set(selectedAnchorRows.value)
+  localElement.value.anchorPoints = localElement.value.anchorPoints.filter((_, index) => !selected.has(index))
+  selectedAnchorRows.value = []
+  emitUpdate()
+}
+
+function generateAnchorPoints() {
+  if (!isDiagramElement(localElement.value)) {
+    return
+  }
+
+  const generated = generateEvenlyDistributedAnchorPoints({
+    renderMode: localElement.value.renderMode,
+    predefinedShape: localElement.value.predefinedShape,
+    style: localElement.value.style,
+    count: autoAnchorCount.value,
+    startAngleDeg: autoAnchorStartAngle.value
+  })
+
+  autoAnchorCount.value = generated.length
+
+  localElement.value.anchorPoints = generated
+  selectedAnchorRows.value = []
+  emitUpdate()
+}
 
 watch(
   localElement,
@@ -390,15 +496,6 @@ function addAnchorPoint() {
     localElement.value.anchorPoints = []
   }
   localElement.value.anchorPoints.push({ x: 0.5, y: 0.5 })
-  emitUpdate()
-}
-
-function removeAnchorPoint(index: number) {
-  if (!isDiagramElement(localElement.value)) {
-    return
-  }
-
-  localElement.value.anchorPoints.splice(index, 1)
   emitUpdate()
 }
 
