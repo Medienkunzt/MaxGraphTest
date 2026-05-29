@@ -21,7 +21,7 @@
     <v-row class="flex-grow-1">
       <v-col cols="12" class="canvas-column">
         <div class="canvas-wrapper">
-          <DrawingCanvas :model="model" :languages="languages" :language-connections="activeLanguage?.connections" :language-syntax="activeLanguage?.syntax" :autonomy-mode="autonomyMode" @update:autonomyMode="autonomyMode = $event" />
+          <DrawingCanvas :model="model" :languages="languages" :language-connections="activeLanguage?.connections" :language-syntax="activeLanguage?.syntax" :feedback-config="activeLanguage?.feedback" :autonomy-mode="autonomyMode" @update:autonomyMode="autonomyMode = $event" />
         </div>
       </v-col>
     </v-row>

@@ -21,11 +21,6 @@
         <v-list-item-subtitle>{{ getItemSubtitle(item) }}</v-list-item-subtitle>
 
         <template #append>
-          <!-- Zusätzliche Chips für spezielle Eigenschaften -->
-          <v-chip v-if="showSeverityChip && item.severity" :color="getSeverityColor(item.severity)" variant="tonal" size="x-small" class="mr-2">
-            {{ item.severity }}
-          </v-chip>
-
           <v-btn v-if="showDeleteButton" icon="mdi-delete" variant="text" size="small" color="error" @click.stop="$emit('delete', index)" />
         </template>
       </v-list-item>
@@ -53,7 +48,6 @@ interface Props {
   subtitleField?: string
   iconField?: string
   colorField?: string
-  showSeverityChip?: boolean
   iconMap?: Record<string, string>
   colorMap?: Record<string, string>
   showAddButton?: boolean
@@ -67,7 +61,6 @@ const props = withDefaults(defineProps<Props>(), {
   subtitleField: 'type',
   iconField: 'type',
   colorField: 'type',
-  showSeverityChip: false,
   iconMap: () => ({}),
   colorMap: () => ({}),
   showAddButton: true,
@@ -112,14 +105,5 @@ const getItemColor = (item: EntityItem) => {
   }
 
   return 'grey'
-}
-
-const getSeverityColor = (severity: string) => {
-  const severityColors: Record<string, string> = {
-    error: 'error',
-    warning: 'warning',
-    info: 'info'
-  }
-  return severityColors[severity] || 'grey'
 }
 </script>

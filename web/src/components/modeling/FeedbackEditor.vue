@@ -5,6 +5,7 @@
       <v-col cols="3" class="pr-2 editor-col">
         <div class="scroll-column">
           <EditorEntityList
+            v-if="activeFeedbackEditorTab === 'overlay'"
             title="Feedback-Ziele"
             add-button-text=""
             :show-add-button="false"
@@ -20,15 +21,45 @@
             :color-map="targetColorMap"
             @select="selectTarget"
           />
+          <EditorEntityList
+            v-else
+            title="Feedback-Elemente"
+            add-button-text="Hinzufügen"
+            :show-add-button="true"
+            :show-delete-button="true"
+            :items="feedbackCanvasElementItems"
+            :selected-index="selectedCanvasElementIndex"
+            empty-text="Keine Feedback-Elemente vorhanden"
+            title-field="label"
+            subtitle-field="subtitle"
+            icon-field="icon"
+            color-field="color"
+            @add="addCanvasElement"
+            @delete="removeCanvasElement"
+            @select="selectCanvasElement"
+          />
         </div>
       </v-col>
 
       <!-- Konfigurationsformular -->
       <v-col cols="5" class="px-1 editor-col">
         <div class="scroll-column">
-          <BasicEditorForm type="feedback" :selected-item="selectedTargetSummary">
-            <FeedbackEditorForm v-if="selectedConfig" :config="selectedConfig" :state-definitions="stateDefinitions" @update="scheduleConfigUpdate" />
-          </BasicEditorForm>
+          <v-tabs v-model="activeFeedbackEditorTab" density="compact" color="primary" class="mb-3">
+            <v-tab value="overlay">Overlay</v-tab>
+            <v-tab value="canvas">Feedback-Elemente</v-tab>
+          </v-tabs>
+
+          <div v-show="activeFeedbackEditorTab === 'overlay'">
+            <BasicEditorForm type="feedback" :selected-item="selectedTargetSummary">
+              <FeedbackEditorForm v-if="selectedConfig" :config="selectedConfig" :state-definitions="stateDefinitions" @update="scheduleConfigUpdate" />
+            </BasicEditorForm>
+          </div>
+
+          <div v-show="activeFeedbackEditorTab === 'canvas'">
+            <BasicEditorForm type="feedback" :selected-item="selectedCanvasConfigSummary">
+              <FeedbackCanvasConfiguratorForm v-if="selectedCanvasConfig" :config="selectedCanvasConfig" @update="scheduleCanvasConfigUpdate" />
+            </BasicEditorForm>
+          </div>
         </div>
       </v-col>
 
@@ -50,9 +81,22 @@
 
           <v-card-text>
             <div class="preview-canvas">
-              <DrawingCanvas ref="drawingCanvasRef" :show-elements="false" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="languageSyntaxForCanvas" :show-toolbar="true" :allow-edit="true" :context-menu="true" :overlays="previewCanvasOverlays" />
+              <DrawingCanvas
+                ref="drawingCanvasRef"
+                :show-elements="false"
+                :show-model-sidebar="false"
+                :show-feedback-sidebar="false"
+                :language-elements="languageElementsForCanvas"
+                :language-connections="languageConnectionsForCanvas"
+                :language-syntax="languageSyntaxForCanvas"
+                :show-toolbar="true"
+                :allow-edit="true"
+                :context-menu="true"
+                :overlays="previewCanvasOverlays"
+                :feedback-config="previewFeedbackConfig"
+              />
             </div>
-            <v-alert v-if="!selectedTargetSummary" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element oder eine Verbindung, um die Feedback-Position zu testen. </v-alert>
+            <v-alert v-if="activeFeedbackEditorTab === 'overlay' && !selectedTargetSummary" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element oder eine Verbindung, um die Feedback-Position zu testen. </v-alert>
           </v-card-text>
         </v-card>
       </v-col>
@@ -67,14 +111,15 @@ import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
 import BasicEditorForm from '@/components/modeling/form/BasicEditorForm.vue'
 import FeedbackEditorForm from '@/components/modeling/form/FeedbackEditorForm.vue'
+import FeedbackCanvasConfiguratorForm from '@/components/modeling/form/FeedbackCanvasConfiguratorForm.vue'
 import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
 import { clearConnectionPreview, renderSimpleConnectionPreview } from '@/utils/connectionPreview'
 import type { DiagramElement, DiagramConnection } from '@/model/DiagramLanguage'
-import type { FeedbackCanvasOverlayEntry, FeedbackState, FeedbackTargetOverlays } from '@/model/Feedback'
+import type { DiagramFeedbackConfig, FeedbackCanvasConfig, FeedbackCanvasOverlayEntry, FeedbackState, FeedbackTargetOverlays } from '@/model/Feedback'
 import { FEEDBACK_STATE_LABELS } from '@/model/Feedback'
-import { cloneFeedbackTargetOverlays } from '@/utils/feedbackConfig'
+import { cloneFeedbackCanvasConfig, cloneFeedbackTargetOverlays, createDefaultFeedbackCanvasConfig, createDefaultFeedbackCanvasElementConfig } from '@/utils/feedbackConfig'
 
 interface Props {
   languageId?: string
@@ -90,17 +135,22 @@ const { languages, setCurrentLanguage } = useDiagramLanguages()
 const drawingCanvasRef = ref()
 const selectedTargetIndex = ref<number>(-1)
 const selectedConfig = ref<FeedbackTargetOverlays | null>(null)
+const selectedCanvasConfig = ref<FeedbackCanvasConfig | null>(null)
 const previewState = ref<FeedbackState>('correct')
 const previewCellId = ref<string | null>(null)
+const activeFeedbackEditorTab = ref<'overlay' | 'canvas'>('overlay')
 
 const hydratingConfig = ref(false)
+const hydratingCanvasConfig = ref(false)
 let storeUpdateTimeout: ReturnType<typeof setTimeout> | null = null
+let canvasConfigUpdateTimeout: ReturnType<typeof setTimeout> | null = null
 
 const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
 const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
 const languageSyntaxForCanvas = computed(() => store.currentLanguage?.syntax ?? [])
 
 const previewCanvasOverlays = computed<FeedbackCanvasOverlayEntry[]>(() => {
+  if (activeFeedbackEditorTab.value !== 'overlay') return []
   if (!previewCellId.value || !selectedConfig.value) return []
   const config = selectedConfig.value[previewState.value]
   if (!config) return []
@@ -111,6 +161,16 @@ const previewCanvasOverlays = computed<FeedbackCanvasOverlayEntry[]>(() => {
       config
     }
   ]
+})
+
+const previewFeedbackConfig = computed<DiagramFeedbackConfig | undefined>(() => {
+  const feedback = store.currentLanguage?.feedback
+  if (!feedback) return undefined
+
+  return {
+    ...feedback,
+    canvas: selectedCanvasConfig.value ? cloneFeedbackCanvasConfig(selectedCanvasConfig.value) : createDefaultFeedbackCanvasConfig(feedback.canvas)
+  }
 })
 
 interface FeedbackTargetItem {
@@ -157,6 +217,54 @@ const selectedTargetSummary = computed(() => {
   }
 })
 
+const selectedCanvasConfigSummary = computed(() => {
+  if (!store.currentLanguage) return undefined
+  return {
+    name: `Feedback-Elemente (${store.currentLanguage.name})`
+  }
+})
+
+const activeFeedbackCanvasElement = computed(() => {
+  const canvasConfig = selectedCanvasConfig.value
+  if (!canvasConfig || !Array.isArray(canvasConfig.configurableElements) || canvasConfig.configurableElements.length === 0) {
+    return null
+  }
+
+  const activeId = canvasConfig.activeElementId
+  if (activeId) {
+    const selected = canvasConfig.configurableElements.find((entry) => entry.id === activeId)
+    if (selected) return selected
+  }
+
+  return canvasConfig.configurableElements[0] ?? null
+})
+
+const feedbackCanvasElementItems = computed(() => {
+  const canvasConfig = selectedCanvasConfig.value
+  if (!canvasConfig || !Array.isArray(canvasConfig.configurableElements)) return []
+
+  return canvasConfig.configurableElements.map((entry, index) => ({
+    type: entry.id,
+    id: entry.id,
+    label: entry.element.defaultLabel || entry.element.type || `Feedback ${index + 1}`,
+    subtitle: entry.connection.label || entry.connection.type || 'Verbindung',
+    icon: 'mdi-comment-text-outline',
+    color: 'orange-darken-2'
+  }))
+})
+
+const selectedCanvasElementIndex = computed(() => {
+  const canvasConfig = selectedCanvasConfig.value
+  if (!canvasConfig || !Array.isArray(canvasConfig.configurableElements) || canvasConfig.configurableElements.length === 0) {
+    return -1
+  }
+
+  const activeId = canvasConfig.activeElementId
+  if (!activeId) return 0
+  const index = canvasConfig.configurableElements.findIndex((entry) => entry.id === activeId)
+  return index >= 0 ? index : 0
+})
+
 const stateDefinitions = [
   { key: 'correct' as FeedbackState, label: FEEDBACK_STATE_LABELS.correct, shortLabel: FEEDBACK_STATE_LABELS.correct, color: 'success', icon: 'mdi-check-circle-outline' },
   { key: 'incorrect' as FeedbackState, label: FEEDBACK_STATE_LABELS.incorrect, shortLabel: FEEDBACK_STATE_LABELS.incorrect, color: 'error', icon: 'mdi-close-circle-outline' },
@@ -196,18 +304,76 @@ const selectTarget = (index: number) => {
 }
 
 const scheduleConfigUpdate = () => {
-  if (hydratingConfig.value || !selectedConfig.value) return
+  if (hydratingConfig.value || !selectedConfig.value || !store.currentLanguage || !selectedTarget.value) return
   if (storeUpdateTimeout) {
     clearTimeout(storeUpdateTimeout)
   }
+  const languageId = store.currentLanguage.id
+  const targetType = selectedTarget.value.targetType
+  const targetId = selectedTarget.value.id
+  const configSnapshot = cloneFeedbackTargetOverlays(selectedConfig.value)
   storeUpdateTimeout = setTimeout(() => {
-    persistSelectedConfig()
+    store.updateFeedbackEntryForLanguage(languageId, targetType, targetId, configSnapshot)
   }, 180)
 }
 
-const persistSelectedConfig = () => {
-  if (!store.currentLanguage || !selectedTarget.value || !selectedConfig.value) return
-  store.updateFeedbackEntryForLanguage(store.currentLanguage.id, selectedTarget.value.targetType, selectedTarget.value.id, selectedConfig.value)
+const scheduleCanvasConfigUpdate = () => {
+  if (hydratingCanvasConfig.value || !selectedCanvasConfig.value || !store.currentLanguage) return
+  if (canvasConfigUpdateTimeout) {
+    clearTimeout(canvasConfigUpdateTimeout)
+  }
+  const languageId = store.currentLanguage.id
+  const canvasConfigSnapshot = cloneFeedbackCanvasConfig(selectedCanvasConfig.value)
+  canvasConfigUpdateTimeout = setTimeout(() => {
+    store.updateFeedbackCanvasConfigForLanguage(languageId, canvasConfigSnapshot)
+  }, 180)
+}
+
+const findNextCanvasElementIndex = () => {
+  const canvasConfig = selectedCanvasConfig.value
+  if (!canvasConfig) return 1
+  let index = canvasConfig.configurableElements.length + 1
+  const existingIds = new Set(canvasConfig.configurableElements.map((entry) => entry.id))
+  while (existingIds.has(`feedback-element-${index}`)) {
+    index += 1
+  }
+  return index
+}
+
+const selectCanvasElement = (index: number) => {
+  const canvasConfig = selectedCanvasConfig.value
+  if (!canvasConfig) return
+  const selected = canvasConfig.configurableElements[index]
+  if (!selected) return
+  canvasConfig.activeElementId = selected.id
+  triggerRenderPreview()
+}
+
+const addCanvasElement = () => {
+  const canvasConfig = selectedCanvasConfig.value
+  if (!canvasConfig) return
+  const nextIndex = findNextCanvasElementIndex()
+  const entry = createDefaultFeedbackCanvasElementConfig(nextIndex)
+  canvasConfig.configurableElements.push(entry)
+  canvasConfig.activeElementId = entry.id
+  triggerRenderPreview()
+}
+
+const removeCanvasElement = (index: number) => {
+  const canvasConfig = selectedCanvasConfig.value
+  if (!canvasConfig) return
+  if (index < 0 || index >= canvasConfig.configurableElements.length) return
+
+  canvasConfig.configurableElements.splice(index, 1)
+  if (canvasConfig.configurableElements.length === 0) {
+    const fallback = createDefaultFeedbackCanvasElementConfig(1)
+    canvasConfig.configurableElements.push(fallback)
+    canvasConfig.activeElementId = fallback.id
+  } else if (!canvasConfig.activeElementId || !canvasConfig.configurableElements.some((entry) => entry.id === canvasConfig.activeElementId)) {
+    canvasConfig.activeElementId = canvasConfig.configurableElements[Math.min(index, canvasConfig.configurableElements.length - 1)].id
+  }
+
+  triggerRenderPreview()
 }
 
 const loadSelectedConfig = () => {
@@ -228,6 +394,19 @@ const loadSelectedConfig = () => {
   })
 }
 
+const loadCanvasConfig = () => {
+  const feedback = store.currentLanguage?.feedback
+
+  hydratingCanvasConfig.value = true
+  selectedCanvasConfig.value = cloneFeedbackCanvasConfig(feedback?.canvas)
+  nextTick(() => {
+    hydratingCanvasConfig.value = false
+    if (activeFeedbackEditorTab.value === 'canvas') {
+      triggerRenderPreview()
+    }
+  })
+}
+
 const renderPreview = () => {
   const canvas = drawingCanvasRef.value
   if (!canvas?.graph) return
@@ -235,6 +414,20 @@ const renderPreview = () => {
   canvas.clearCanvas()
   clearConnectionPreview(canvas.graph)
   previewCellId.value = null
+
+  if (activeFeedbackEditorTab.value === 'canvas') {
+    const activeCanvasElement = activeFeedbackCanvasElement.value
+    if (!activeCanvasElement) return
+
+    const graph = canvas.graph
+    graph.batchUpdate(() => {
+      const created = createCellFromElement(activeCanvasElement.element, 80, 60)
+      addCellToGraph(graph, created, activeCanvasElement.element as DiagramElement, graph.getDefaultParent())
+      previewCellId.value = created.getId?.() ?? null
+      graph.setSelectionCell(created)
+    })
+    return
+  }
 
   const target = selectedTarget.value
   const language = store.currentLanguage
@@ -297,11 +490,43 @@ watch(selectedTarget, () => {
   triggerRenderPreview()
 })
 
+watch(activeFeedbackEditorTab, () => {
+  triggerRenderPreview()
+})
+
+watch(
+  () => store.currentLanguage?.id,
+  () => {
+    if (storeUpdateTimeout) {
+      clearTimeout(storeUpdateTimeout)
+      storeUpdateTimeout = null
+    }
+    if (canvasConfigUpdateTimeout) {
+      clearTimeout(canvasConfigUpdateTimeout)
+      canvasConfigUpdateTimeout = null
+    }
+    loadCanvasConfig()
+  },
+  { immediate: true }
+)
+
 watch(
   selectedConfig,
   () => {
     if (hydratingConfig.value || !selectedConfig.value) return
     scheduleConfigUpdate()
+  },
+  { deep: true }
+)
+
+watch(
+  selectedCanvasConfig,
+  () => {
+    if (hydratingCanvasConfig.value || !selectedCanvasConfig.value) return
+    scheduleCanvasConfigUpdate()
+    if (activeFeedbackEditorTab.value === 'canvas') {
+      triggerRenderPreview()
+    }
   },
   { deep: true }
 )
@@ -333,6 +558,10 @@ onUnmounted(() => {
   if (renderPreviewTimeout) {
     clearTimeout(renderPreviewTimeout)
     renderPreviewTimeout = null
+  }
+  if (canvasConfigUpdateTimeout) {
+    clearTimeout(canvasConfigUpdateTimeout)
+    canvasConfigUpdateTimeout = null
   }
 })
 

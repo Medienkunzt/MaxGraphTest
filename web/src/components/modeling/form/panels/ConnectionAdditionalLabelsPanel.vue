@@ -201,6 +201,10 @@ type NormalizedLabel = ConnectionLabelCell & {
 }
 
 const ensureLabelDefaults = (label: ConnectionLabelCell): NormalizedLabel => {
+  if (!label.type || label.type.trim().length === 0) {
+    label.type = 'connection-label'
+  }
+
   const trimmedId = typeof label.id === 'string' ? label.id.trim() : ''
   if (!trimmedId) {
     const index = connection.value.additionalLabels?.indexOf(label) ?? -1
@@ -276,6 +280,7 @@ const addLabel = () => {
   const newLabelId = `Label ${index}`
   const newLabel: NormalizedLabel = {
     id: newLabelId,
+    type: 'connection-label',
     text: newLabelId,
     geometry: {
       x: 0,

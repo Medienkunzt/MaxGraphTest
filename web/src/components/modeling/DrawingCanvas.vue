@@ -55,6 +55,12 @@
             <span class="validation-text">Validieren</span>
           </v-btn>
 
+          <v-btn-toggle v-model="activeLayerView" mandatory density="compact" class="layer-visibility-toggle" title="Sichtbare Layer">
+            <v-btn value="both" size="small">Beide</v-btn>
+            <v-btn value="model" size="small">Modell</v-btn>
+            <v-btn value="feedback" size="small">Feedback</v-btn>
+          </v-btn-toggle>
+
           <AutonomyControls :mode="autonomyMode" @update:mode="updateAutonomyMode" />
         </div>
 
@@ -67,7 +73,7 @@
       <!-- Canvas Area: Sidebar + Graph -->
       <div class="canvas-area">
         <!-- Elements Sidebar -->
-        <SidebarContainer v-if="props.showElements !== false && props.showToolbar && sidebarLanguages.length > 0" :languages="sidebarLanguages" />
+        <SidebarContainer v-if="props.showElements !== false && props.showModelSidebar !== false && props.showToolbar && sidebarLanguages.length > 0" :languages="sidebarLanguages" />
 
         <!-- Graph Container -->
         <div ref="graphWrapper" class="graph-wrapper">
@@ -114,6 +120,8 @@
             </v-tooltip>
           </div>
         </div>
+
+        <SidebarFeedbackContainer v-if="props.showElements !== false && props.showFeedbackSidebar !== false && props.showToolbar" :feedback-shapes="feedbackSidebarShapes" />
       </div>
       <!-- /canvas-area -->
     </v-card-text>
@@ -154,17 +162,21 @@ import { CustomConnectionHandler } from '@/utils/CustomConnectionHandler'
 import { setupUndoManager, type UndoManagerApi, type UndoManagerState } from '@/utils/setupUndoManager'
 import { alignHorizontal, alignVertical } from '@/utils/alignCells'
 import { clearValidationWarningOverlays, getGraphValidationMode, isValidationPassActive, setGraphValidationMode } from '@/utils/graphValidationRuntime'
+import { createCellFromElement } from '@/utils/elementFactory'
 import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
 import AutonomyControls from './AutonomyControls.vue'
 import SidebarContainer from './SidebarContainer.vue'
+import SidebarFeedbackContainer from './SidebarFeedbackContainer.vue'
 import type { SidebarLanguage } from './ElementsSidebar.vue'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
 import type { DiagramSyntax } from '@/model/Syntax'
 import { buildValidationRulesFromSyntax, DiagramValidator } from '@/utils/multiplicity'
 import type { AutonomyMode } from '@/model/Autonomy'
+import type { DiagramFeedbackConfig, FeedbackCanvasOverlayEntry } from '@/model/Feedback'
+import { createDefaultFeedbackCanvasConfig } from '@/utils/feedbackConfig'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
 import img_ellipse from '@/assets/images/ellipse.gif'
@@ -172,7 +184,6 @@ import img_rhombus from '@/assets/images/rhombus.gif'
 import img_triangle from '@/assets/images/triangle.gif'
 import img_cloud from '@/assets/images/cloud.gif'
 import img_elementPlaceholder from '@/assets/images/rectangle.gif'
-import type { FeedbackCanvasOverlayEntry } from '@/model/Feedback'
 
 class MyCustomCellEditorHandler extends CellEditorHandler {
   // Custom CellEditorHandler - kann später erweitert werden
@@ -293,6 +304,8 @@ const props = withDefaults(
     allowEdit?: boolean
     showToolbar?: boolean
     showElements?: boolean
+    showModelSidebar?: boolean
+    showFeedbackSidebar?: boolean
     contextMenu?: boolean
     languageName?: string
     languageElements?: DiagramElement[]
@@ -303,11 +316,14 @@ const props = withDefaults(
     previewConnection?: DiagramConnection
     previewMode?: 'simple' | 'scenario' | 'routing'
     overlays?: FeedbackCanvasOverlayEntry[]
+    feedbackConfig?: DiagramFeedbackConfig
   }>(),
   {
     allowEdit: true,
     showToolbar: true,
     showElements: true,
+    showModelSidebar: true,
+    showFeedbackSidebar: true,
     contextMenu: false,
     languageName: undefined,
     languageElements: undefined,
@@ -317,7 +333,8 @@ const props = withDefaults(
     autonomyMode: 'manual',
     previewConnection: undefined,
     previewMode: 'simple',
-    overlays: () => []
+    overlays: () => [],
+    feedbackConfig: undefined
   }
 )
 
@@ -326,7 +343,10 @@ const emit = defineEmits<{
   'update:autonomyMode': [AutonomyMode]
 }>()
 
+type CanvasLayerView = 'both' | 'model' | 'feedback'
+
 const autonomyMode = ref<AutonomyMode>(props.autonomyMode ?? 'manual')
+const activeLayerView = ref<CanvasLayerView>('both')
 
 // Reaktive Variablen für Konfiguration
 const gridSize = ref(10)
@@ -348,6 +368,8 @@ const canvasGrid = ref<HTMLCanvasElement>()
 // entfernt und SVG-Knoten bleiben als Geister-Elemente im DOM.
 const graph = shallowRef<MyCustomGraph>()
 const parent = shallowRef<Cell>()
+const modelLayerCell = shallowRef<Cell>()
+const feedbackLayerCell = shallowRef<Cell>()
 const keyHandler = shallowRef<KeyHandler>()
 const customConnectionHandler = shallowRef<CustomConnectionHandler>()
 const selectedConnectionIndex = ref(0)
@@ -426,6 +448,38 @@ provideGraphContext({
 const { deleteSelected, duplicateSelected, selectAll, clearSelection } = useGraphOperations(graph, parent)
 const { zoomIn, zoomOut, fitToWindow } = useZoomOperations(graph)
 const { updateGridSize, updateSnapToGrid, updateTolerance, updateUseGridForPanning, toggleGrid, forceGridRepaint } = useGridSettings(graph, gridSize, snapToGrid, tolerance, useGridForPanning)
+const feedbackCanvasConfig = computed(() => createDefaultFeedbackCanvasConfig(props.feedbackConfig?.canvas))
+const feedbackElementConfigs = computed(() => feedbackCanvasConfig.value.configurableElements ?? [])
+const activeFeedbackElementId = computed(() => {
+  const configuredId = feedbackCanvasConfig.value.activeElementId
+  if (configuredId && feedbackElementConfigs.value.some((entry) => entry.id === configuredId)) {
+    return configuredId
+  }
+  return feedbackElementConfigs.value[0]?.id
+})
+const feedbackElementById = computed(() => {
+  const map = new Map<string, (typeof feedbackElementConfigs.value)[number]>()
+  feedbackElementConfigs.value.forEach((entry) => {
+    map.set(entry.id, entry)
+  })
+  return map
+})
+const activeFeedbackElementEntry = computed(() => {
+  const activeId = activeFeedbackElementId.value
+  if (!activeId) return null
+  return feedbackElementById.value.get(activeId) ?? null
+})
+const activeFeedbackConnectionDefinition = computed(() => activeFeedbackElementEntry.value?.connection ?? null)
+const activeFeedbackRules = computed(() => feedbackCanvasConfig.value.rules)
+const feedbackConnectionByElementId = computed<Record<string, DiagramConnection>>(() => {
+  const map: Record<string, DiagramConnection> = {}
+  feedbackElementConfigs.value.forEach((entry) => {
+    if (entry.connection) {
+      map[entry.id] = entry.connection
+    }
+  })
+  return map
+})
 
 // Alignment-Hilfsfunktionen
 const alignLeft = () => graph.value && alignHorizontal(graph.value, 'left')
@@ -438,6 +492,74 @@ const alignBottom = () => graph.value && alignVertical(graph.value, 'bottom')
 const applyUndoState = (state: UndoManagerState) => {
   canUndo.value = state.canUndo
   canRedo.value = state.canRedo
+}
+
+const ensureGraphLayers = (graphInstance: MyCustomGraph): { modelLayer: Cell; feedbackLayer: Cell } => {
+  const model = graphInstance.getDataModel()
+  let root = model.getRoot() as Cell | null
+
+  if (!root) {
+    root = new Cell()
+    model.setRoot(root)
+  }
+
+  while (root.getChildCount() < 2) {
+    root.insert(new Cell())
+  }
+
+  return {
+    modelLayer: root.getChildAt(0),
+    feedbackLayer: root.getChildAt(1)
+  }
+}
+
+const syncLayerReferences = (graphInstance: MyCustomGraph) => {
+  const { modelLayer, feedbackLayer } = ensureGraphLayers(graphInstance)
+  const didChange = modelLayer !== modelLayerCell.value || feedbackLayer !== feedbackLayerCell.value
+  modelLayerCell.value = modelLayer
+  feedbackLayerCell.value = feedbackLayer
+
+  // Alle Sidebar-Elemente landen aktuell ausschließlich im Modell-Layer (Layer 1)
+  parent.value = modelLayer
+  return didChange
+}
+
+const applyLayerVisibility = () => {
+  const currentGraph = graph.value
+  const modelLayer = modelLayerCell.value
+  const feedbackLayer = feedbackLayerCell.value
+
+  if (!currentGraph || !modelLayer || !feedbackLayer) {
+    return
+  }
+
+  const dataModel = currentGraph.getDataModel()
+  const showModelLayer = activeLayerView.value !== 'feedback'
+  const showFeedbackLayer = activeLayerView.value !== 'model'
+
+  const currentModelVisible = (modelLayer as any).isVisible?.() ?? true
+  const currentFeedbackVisible = (feedbackLayer as any).isVisible?.() ?? true
+  const requiresModelLayerUpdate = currentModelVisible !== showModelLayer
+  const requiresFeedbackLayerUpdate = currentFeedbackVisible !== showFeedbackLayer
+
+  if (!requiresModelLayerUpdate && !requiresFeedbackLayerUpdate) {
+    return
+  }
+
+  dataModel.beginUpdate()
+  try {
+    if (requiresModelLayerUpdate) {
+      dataModel.setVisible(modelLayer, showModelLayer)
+    }
+    if (requiresFeedbackLayerUpdate) {
+      dataModel.setVisible(feedbackLayer, showFeedbackLayer)
+    }
+  } finally {
+    dataModel.endUpdate()
+  }
+
+  currentGraph.refresh()
+  currentGraph.view.validate()
 }
 
 const undoGraph = () => {
@@ -509,6 +631,9 @@ watch(
 const onConnectionSelected = (connection: DiagramConnection) => {
   if (customConnectionHandler.value) {
     customConnectionHandler.value.setSelectedConnection(connection)
+    customConnectionHandler.value.setFeedbackElementConnections(feedbackConnectionByElementId.value)
+    customConnectionHandler.value.setFeedbackConnection(activeFeedbackRules.value.enforceDedicatedConnection ? activeFeedbackConnectionDefinition.value : null)
+    customConnectionHandler.value.setFeedbackRules(activeFeedbackRules.value)
   }
 }
 
@@ -544,11 +669,12 @@ onMounted(() => {
       return
     }
 
-    // Nach einem Import ersetzt ModelCodec.decodeRoot() den gesamten Zellbaum via setRoot().
-    // parent.value synchron halten, damit Drop-Handler die aktuelle Default-Parent-Zelle verwenden.
-    const freshParent = currentGraph?.getDefaultParent()
-    if (freshParent && freshParent !== parent.value) {
-      parent.value = freshParent
+    // Nach Imports/Root-Updates Layer-Referenzen neu aufbauen.
+    if (currentGraph) {
+      const didChangeLayers = syncLayerReferences(currentGraph)
+      if (didChangeLayers) {
+        applyLayerVisibility()
+      }
     }
 
     currentGraph?.refresh()
@@ -615,12 +741,38 @@ watch(
 watch(
   () => props.languageConnections,
   (newConnections) => {
-    if (newConnections && newConnections.length > 0 && customConnectionHandler.value) {
-      // Setze die erste Verbindung als Standard, falls noch keine ausgewählt ist
-      if (selectedConnectionIndex.value >= newConnections.length) {
-        selectedConnectionIndex.value = 0
+    if (customConnectionHandler.value) {
+      const safeConnections = newConnections ?? []
+
+      if (safeConnections.length > 0) {
+        // Setze die erste Verbindung als Standard, falls noch keine ausgewählt ist
+        if (selectedConnectionIndex.value >= safeConnections.length) {
+          selectedConnectionIndex.value = 0
+        }
+        customConnectionHandler.value.setSelectedConnection(safeConnections[selectedConnectionIndex.value])
+      } else {
+        customConnectionHandler.value.setSelectedConnection(null)
       }
-      customConnectionHandler.value.setSelectedConnection(newConnections[selectedConnectionIndex.value])
+
+      customConnectionHandler.value.setFeedbackElementConnections(feedbackConnectionByElementId.value)
+      customConnectionHandler.value.setFeedbackConnection(activeFeedbackRules.value.enforceDedicatedConnection ? activeFeedbackConnectionDefinition.value : null)
+      customConnectionHandler.value.setFeedbackRules(activeFeedbackRules.value)
+    }
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.feedbackConfig?.canvas,
+  () => {
+    if (customConnectionHandler.value) {
+      customConnectionHandler.value.setFeedbackElementConnections(feedbackConnectionByElementId.value)
+      customConnectionHandler.value.setFeedbackConnection(activeFeedbackRules.value.enforceDedicatedConnection ? activeFeedbackConnectionDefinition.value : null)
+      customConnectionHandler.value.setFeedbackRules(activeFeedbackRules.value)
+    }
+
+    if (graph.value) {
+      initializeToolbar()
     }
   },
   { deep: true }
@@ -650,6 +802,10 @@ watch(
   }
 )
 
+watch(activeLayerView, () => {
+  applyLayerVisibility()
+})
+
 // Vorschau nur für eine Verbindung (nutzt zentrale Preview-Hilfen)
 function renderConnectionPreviewOnly(connection?: DiagramConnection | null) {
   const g = graph.value
@@ -677,8 +833,13 @@ const initGraph = () => {
   if (props.model) {
     graph.value = new MyCustomGraph(graphContainer.value!, props.model, plugins.value)
   } else {
-    graph.value = new MyCustomGraph(graphContainer.value!, undefined, plugins.value)
+    const root = new Cell()
+    root.insert(new Cell()) // Layer 1 (Modell)
+    root.insert(new Cell()) // Layer 2 (Feedback)
+    graph.value = new MyCustomGraph(graphContainer.value!, new GraphDataModel(root), plugins.value)
   }
+  syncLayerReferences(graph.value)
+  applyLayerVisibility()
   registerGraph(graph.value)
   applyValidationRulesToGraph()
 
@@ -691,6 +852,9 @@ const initGraph = () => {
     customConnectionHandler.value.setSelectedConnection(props.languageConnections[0])
     selectedConnectionIndex.value = 0
   }
+  customConnectionHandler.value?.setFeedbackElementConnections(feedbackConnectionByElementId.value)
+  customConnectionHandler.value?.setFeedbackConnection(activeFeedbackRules.value.enforceDedicatedConnection ? activeFeedbackConnectionDefinition.value : null)
+  customConnectionHandler.value?.setFeedbackRules(activeFeedbackRules.value)
   setGraphValidationMode(graph.value, autonomyMode.value)
 
   graph.value.validationAlert = (message: string) => {
@@ -860,7 +1024,7 @@ const initGraph = () => {
   // Swimlane-Unterstützung aktivieren
   setupSwimlaneSupport(graph.value)
 
-  parent.value = graph.value.getDefaultParent()
+  parent.value = modelLayerCell.value ?? graph.value.getDefaultParent()
 
   // Setup dynamisches Grid
   setupDynamicGrid(graph, canvasGrid, graphContainer, gridSize, snapToGrid)
@@ -895,12 +1059,72 @@ const buildLanguageShapes = computed(() => {
   return buildShapesFromElements(allElements, img_elementPlaceholder)
 })
 
+const feedbackShapes = computed(() =>
+  feedbackElementConfigs.value.map((entry) => {
+    const feedbackElementDefinition = entry.element
+    const width = feedbackElementDefinition.width ?? 170
+    const height = feedbackElementDefinition.height ?? 46
+    const shapeName = feedbackElementDefinition.type || entry.id
+
+    return {
+      name: shapeName,
+      label: feedbackElementDefinition.defaultLabel || shapeName,
+      width,
+      height,
+      style: {
+        shape: feedbackElementDefinition.predefinedShape ?? 'rectangle',
+        ...(feedbackElementDefinition.style ?? {}),
+        cellRole: 'feedback',
+        lockToLayer: activeFeedbackRules.value.preventContainerDrop ? 1 : 0
+      },
+      tooltip: feedbackElementDefinition.defaultLabel || shapeName,
+      image: img_elementPlaceholder,
+      dropHandler: (graphInstance: Graph, _parentCell: Cell | undefined, position: { x?: number; y?: number }) => {
+        if (activeLayerView.value === 'model') {
+          activeLayerView.value = 'both'
+        }
+
+        const targetLayer = feedbackLayerCell.value ?? graphInstance.getDefaultParent()
+        const x = (position.x ?? 0) - width / 2
+        const y = (position.y ?? 0) - height / 2
+
+        let feedbackCell: Cell | null = null
+        graphInstance.batchUpdate(() => {
+          feedbackCell = createCellFromElement(feedbackElementDefinition, x, y)
+          graphInstance.addCell(feedbackCell, targetLayer)
+
+          if (feedbackCell) {
+            ;(feedbackCell as any).feedbackElementId = entry.id
+            ;(feedbackCell as any).feedbackConnectionId = entry.connection.type
+            ;(feedbackCell as any).feedbackConnectionType = entry.connection.connectionType ?? entry.connection.type
+            ;(feedbackCell as any).lockToLayer = activeFeedbackRules.value.preventContainerDrop ? 1 : 0
+            ;(feedbackCell as any).cellRole = 'feedback'
+            ;(feedbackCell as any).canvasRole = 'feedback'
+          }
+        })
+
+        if (feedbackCell) {
+          graphInstance.setSelectionCell(feedbackCell)
+        }
+      }
+    }
+  })
+)
+
+const feedbackSidebarShapes = computed(() =>
+  feedbackShapes.value.map((shape) => ({
+    name: shape.name,
+    label: shape.label ?? shape.name,
+    style: shape.style
+  }))
+)
+
 const initializeToolbar = () => {
   if (!graph.value) {
     return
   }
 
-  toolbarShapes.value = buildLanguageShapes.value
+  toolbarShapes.value = [...buildLanguageShapes.value, ...feedbackShapes.value]
   ensureGraphDropHandlers(graph.value, parent, toolbarShapes.value)
 }
 
@@ -931,14 +1155,14 @@ const clearCanvas = () => {
     return
   }
 
-  const parent = graph.value.getDefaultParent()
-  if (!parent) {
-    return
-  }
+  const layers = [modelLayerCell.value, feedbackLayerCell.value].filter((layer): layer is Cell => Boolean(layer))
+  const parentsToClear = layers.length > 0 ? layers : [graph.value.getDefaultParent()]
 
-  const childCells = graph.value.getChildCells(parent)
-  if (childCells && childCells.length > 0) {
-    graph.value.removeCells(childCells)
+  for (const targetParent of parentsToClear) {
+    const childCells = graph.value.getChildCells(targetParent)
+    if (childCells && childCells.length > 0) {
+      graph.value.removeCells(childCells)
+    }
   }
 }
 
@@ -1064,6 +1288,10 @@ defineExpose({
 
 /* Validierungs-Button */
 .validation-btn {
+  margin-right: 8px;
+}
+
+.layer-visibility-toggle {
   margin-right: 8px;
 }
 

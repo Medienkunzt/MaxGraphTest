@@ -1,4 +1,6 @@
-import type { DiagramFeedbackConfig, FeedbackOverlayConfig, FeedbackTargetOverlays, FeedbackTargetType, FeedbackState } from '@/model/Feedback'
+import type { DiagramElement } from '@/model/Element'
+import type { DiagramConnection } from '@/model/Connection'
+import type { DiagramFeedbackConfig, FeedbackCanvasConfig, FeedbackCanvasElementConfig, FeedbackCanvasRulesConfig, FeedbackOverlayConfig, FeedbackTargetOverlays, FeedbackTargetType, FeedbackState } from '@/model/Feedback'
 import { FEEDBACK_STATE_LABELS, FEEDBACK_STATES } from '@/model/Feedback'
 
 const DEFAULT_IMAGE_SPECS: Record<FeedbackState, { src: string; width: number; height: number }> = {
@@ -58,9 +60,191 @@ export const cloneFeedbackTargetOverlays = (overlays?: FeedbackTargetOverlays | 
   return createDefaultTargetOverlays(overlays ?? undefined)
 }
 
+export const createDefaultFeedbackCanvasElement = (): DiagramElement => ({
+  type: '__feedback_label__',
+  defaultLabel: 'Feedback',
+  renderMode: 'predefined',
+  predefinedShape: 'rectangle',
+  x: 0,
+  y: 0,
+  width: 170,
+  height: 46,
+  style: {
+    shape: 'rectangle',
+    rounded: 1,
+    strokeColor: '#f57c00',
+    fillColor: '#fff3e0',
+    strokeWidth: 1,
+    fontSize: 11,
+    fontColor: '#5d4037',
+    fontFamily: 'Arial',
+    align: 'left',
+    verticalAlign: 'middle',
+    spacingLeft: 10,
+    whiteSpace: 'wrap',
+    cellRole: 'feedback',
+    lockToLayer: 1
+  },
+  anchorPoints: [
+    { x: 0, y: 0 },
+    { x: 0.5, y: 0 },
+    { x: 1, y: 0 },
+    { x: 1, y: 0.5 },
+    { x: 1, y: 1 },
+    { x: 0.5, y: 1 },
+    { x: 0, y: 1 },
+    { x: 0, y: 0.5 }
+  ],
+  children: [],
+  connectable: true,
+  resizable: true,
+  movable: true,
+  allowLabelEdit: true
+})
+
+export const createDefaultFeedbackCanvasConnection = (): DiagramConnection => ({
+  type: '__feedback_note_link__',
+  label: 'Feedback-Verbindung',
+  defaultLabel: '',
+  connectionType: 'feedback-note',
+  connectable: false,
+  style: {
+    shape: 'connector',
+    strokeColor: '#9e9e9e',
+    strokeWidth: 1,
+    strokeOpacity: 100,
+    dashed: true,
+    dashPattern: '4 4',
+    startArrow: 'none',
+    endArrow: 'none',
+    startFill: true,
+    endFill: true,
+    align: 'center',
+    verticalAlign: 'middle',
+    labelPosition: 'center',
+    fontColor: '#9e9e9e',
+    fontSize: 9
+  },
+  additionalLabels: []
+})
+
+const cloneFeedbackCanvasElementConfig = (entry: FeedbackCanvasElementConfig): FeedbackCanvasElementConfig => {
+  const baseElement = createDefaultFeedbackCanvasElement()
+  const baseConnection = createDefaultFeedbackCanvasConnection()
+
+  return {
+    id: entry.id,
+    element: {
+      ...baseElement,
+      ...(entry.element ?? {}),
+      style: {
+        ...baseElement.style,
+        ...(entry.element?.style ?? {})
+      },
+      anchorPoints: [...(entry.element?.anchorPoints ?? baseElement.anchorPoints)],
+      children: [...(entry.element?.children ?? baseElement.children)]
+    },
+    connection: {
+      ...baseConnection,
+      ...(entry.connection ?? {}),
+      style: {
+        ...baseConnection.style,
+        ...(entry.connection?.style ?? {})
+      },
+      additionalLabels: (entry.connection?.additionalLabels ?? baseConnection.additionalLabels ?? []).map((label) => ({
+        ...label,
+        type: label.type || 'connection-label'
+      }))
+    }
+  }
+}
+
+const createFeedbackElementEntryId = (index: number): string => `feedback-element-${index}`
+
+export const createDefaultFeedbackCanvasElementConfig = (index = 1): FeedbackCanvasElementConfig => {
+  const element = createDefaultFeedbackCanvasElement()
+  const connection = createDefaultFeedbackCanvasConnection()
+  const id = createFeedbackElementEntryId(index)
+
+  element.type = `${element.type}_${index}`
+  element.defaultLabel = index === 1 ? 'Feedback' : `Feedback ${index}`
+  connection.type = `${connection.type}_${index}`
+  connection.label = index === 1 ? 'Feedback-Verbindung' : `Feedback-Verbindung ${index}`
+
+  return {
+    id,
+    element,
+    connection
+  }
+}
+
+export const createDefaultFeedbackCanvasRules = (): FeedbackCanvasRulesConfig => ({
+  onlyFeedbackAsSource: true,
+  allowTargetElements: true,
+  allowTargetConnections: true,
+  forbidFeedbackAsTarget: true,
+  enforceDedicatedConnection: true,
+  preventContainerDrop: true
+})
+
+export const createDefaultFeedbackCanvasConfig = (existing?: Partial<FeedbackCanvasConfig>): FeedbackCanvasConfig => {
+  const baseRules = createDefaultFeedbackCanvasRules()
+  const defaultEntry = createDefaultFeedbackCanvasElementConfig(1)
+
+  const legacyEntry =
+    existing?.configurableElement || existing?.configurableConnection
+      ? {
+          id: defaultEntry.id,
+          element: {
+            ...defaultEntry.element,
+            ...(existing?.configurableElement ?? {}),
+            style: {
+              ...defaultEntry.element.style,
+              ...(existing?.configurableElement?.style ?? {})
+            },
+            anchorPoints: [...(existing?.configurableElement?.anchorPoints ?? defaultEntry.element.anchorPoints)],
+            children: [...(existing?.configurableElement?.children ?? defaultEntry.element.children)]
+          },
+          connection: {
+            ...defaultEntry.connection,
+            ...(existing?.configurableConnection ?? {}),
+            style: {
+              ...defaultEntry.connection.style,
+              ...(existing?.configurableConnection?.style ?? {})
+            },
+            additionalLabels: [...(existing?.configurableConnection?.additionalLabels ?? defaultEntry.connection.additionalLabels ?? [])]
+          }
+        }
+      : null
+
+  const normalizedElements = Array.isArray(existing?.configurableElements) && existing?.configurableElements.length > 0 ? existing!.configurableElements.map(cloneFeedbackCanvasElementConfig) : legacyEntry ? [legacyEntry] : [defaultEntry]
+
+  const activeElementId = (() => {
+    const requestedId = existing?.activeElementId
+    if (requestedId && normalizedElements.some((entry) => entry.id === requestedId)) {
+      return requestedId
+    }
+    return normalizedElements[0]?.id
+  })()
+
+  return {
+    activeElementId,
+    configurableElements: normalizedElements,
+    rules: {
+      ...baseRules,
+      ...(existing?.rules ?? {})
+    }
+  }
+}
+
+export const cloneFeedbackCanvasConfig = (config?: FeedbackCanvasConfig | null): FeedbackCanvasConfig => {
+  return createDefaultFeedbackCanvasConfig(config ?? undefined)
+}
+
 export const createEmptyFeedbackConfig = (): DiagramFeedbackConfig => ({
   elements: {},
-  connections: {}
+  connections: {},
+  canvas: createDefaultFeedbackCanvasConfig()
 })
 
 export const ensureFeedbackTargets = (config: DiagramFeedbackConfig, targetType: FeedbackTargetType, keys: string[]): void => {

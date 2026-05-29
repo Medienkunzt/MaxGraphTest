@@ -1,4 +1,5 @@
 import { Cell, EventObject, Graph, InternalEvent } from '@maxgraph/core'
+import { isTruthyFlag } from '@/utils/flagUtils'
 
 /**
  * Swimlane Support für MaxGraph
@@ -21,6 +22,18 @@ export interface GraphWithSwimlaneSupport extends Graph {
   isPool(cell: Cell | null): boolean
   autoStackChildren(container: Cell): void
   autoResizeSwimlane(swimlane: Cell): void
+}
+
+const isContainerSectionTarget = (cell: Cell | null): boolean => {
+  if (!cell) return false
+  const attrValue = (cell as any).getAttribute?.('containerSection', null)
+  return isTruthyFlag(attrValue)
+}
+
+const isLayerLockedCell = (graph: Graph, cell: Cell): boolean => {
+  const style = graph.getCurrentCellStyle(cell) as Record<string, any> | null
+  const lockFlag = style?.lockToLayer ?? (cell as any).lockToLayer
+  return isTruthyFlag(lockFlag)
 }
 
 // ============================================================================
@@ -54,6 +67,15 @@ export function setupSwimlaneSupport(graph: Graph): void {
   // Override moveCells um Auto-Stack bei Verschiebungen zu triggern
   const originalMoveCells = g.moveCells.bind(g)
   g.moveCells = function (cells, dx, dy, clone, target, evt) {
+    // Layer-gebundene Elemente (z.B. Feedback-Labels) dürfen nicht in Container reparented werden.
+    if (target && cells && cells.length > 0) {
+      const hasLayerLockedCell = cells.some((cell) => isLayerLockedCell(this, cell))
+      const targetIsContainer = this.isSwimlane(target) || isContainerSectionTarget(target)
+      if (hasLayerLockedCell && targetIsContainer) {
+        target = null
+      }
+    }
+
     // Verhindere zirkuläre Referenzen: Prüfe ob eine Cell in sich selbst verschoben wird
     if (target && cells && cells.length > 0) {
       for (const cell of cells) {

@@ -20,6 +20,13 @@ export interface ElementStyle {
   autoResize?: boolean // Swimlane automatisch an Inhalt anpassen
   // Collapse/Folding
   foldable?: boolean // Ob Element zusammenklappbar ist
+  // Allgemeine Shape-Feinabstimmung
+  rounded?: boolean | number
+  spacingLeft?: number
+  whiteSpace?: string
+  // Optional: semantische Rollen/Layer-Bindungen (z.B. fuer Feedback-Elemente)
+  cellRole?: string
+  lockToLayer?: boolean | number
 }
 
 export interface AnchorPoint {

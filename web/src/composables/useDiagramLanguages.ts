@@ -28,6 +28,7 @@ export function useDiagramLanguages() {
     updateConnectionInLanguage: store.updateConnectionInLanguage,
     removeConnectionFromLanguage: store.removeConnectionFromLanguage,
     updateFeedbackEntryForLanguage: store.updateFeedbackEntryForLanguage,
+    updateFeedbackCanvasConfigForLanguage: store.updateFeedbackCanvasConfigForLanguage,
 
     // Syntax actions
     addSyntaxToLanguage: store.addSyntaxToLanguage,

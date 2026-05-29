@@ -1,6 +1,7 @@
 import type { CellStyle } from '@maxgraph/core'
 
 export interface ConnectionLabelCell {
+  id?: string
   type: string // Typ-Identifikator fuer das Label
   text: string
   geometry?: {

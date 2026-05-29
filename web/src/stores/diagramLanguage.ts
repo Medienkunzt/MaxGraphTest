@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { DiagramLanguage, DiagramElement, DiagramConnection, DiagramSyntax } from '@/model/DiagramLanguage'
-import type { DiagramFeedbackConfig, FeedbackTargetOverlays, FeedbackTargetType } from '@/model/Feedback'
+import type { DiagramFeedbackConfig, FeedbackCanvasConfig, FeedbackTargetOverlays, FeedbackTargetType } from '@/model/Feedback'
 import type { MultiplicityRule, MultiplicityRelation, MultiplicityConfig, MultiplicityRelationState, MultiplicityRefinement, MultiplicityCardinality } from '@/model/Syntax'
-import { createEmptyFeedbackConfig, ensureFeedbackTargets, createDefaultTargetOverlays } from '@/utils/feedbackConfig'
+import { cloneFeedbackCanvasConfig, createDefaultFeedbackCanvasConfig, createEmptyFeedbackConfig, ensureFeedbackTargets, createDefaultTargetOverlays } from '@/utils/feedbackConfig'
 
 const DEFAULT_MULTIPLICITY_MESSAGE_TEMPLATE = 'Die Beziehung {source} -> {target} mit Verbindungstyp {connection} verletzt die Kardinalitaet ({min}..{max}).'
 
@@ -11,6 +11,8 @@ const ensureFeedbackForLanguage = (language: DiagramLanguage): DiagramFeedbackCo
   if (!language.feedback) {
     language.feedback = createEmptyFeedbackConfig()
   }
+
+  language.feedback.canvas = createDefaultFeedbackCanvasConfig(language.feedback.canvas)
 
   ensureFeedbackTargets(
     language.feedback,
@@ -177,6 +179,13 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     if (language) {
       applyFeedbackEntry(language, targetType, targetKey, overlays)
     }
+  }
+
+  const updateFeedbackCanvasConfigForLanguage = (languageId: string, canvasConfig: FeedbackCanvasConfig) => {
+    const language = languages.value.find((lang) => lang.id === languageId)
+    if (!language) return
+    const feedback = ensureFeedbackForLanguage(language)
+    feedback.canvas = cloneFeedbackCanvasConfig(canvasConfig)
   }
 
   // Syntax-Management
@@ -2412,6 +2421,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     updateConnectionInLanguage,
     removeConnectionFromLanguage,
     updateFeedbackEntryForLanguage,
+    updateFeedbackCanvasConfigForLanguage,
 
     // Syntax actions
     addSyntaxToLanguage,
