@@ -77,6 +77,8 @@
 
         <!-- Graph Container -->
         <div ref="graphWrapper" class="graph-wrapper">
+          <TaskTopBar :task="activeTask" :window-open="taskWindowOpen" :content-html="activeTaskMarkupContent" @pop-out="openTaskInWindow" @update:content-html="updateActiveTaskMarkup" />
+
           <div ref="graphContainer" class="graph-container">
             <!-- Separater Grid Container -->
             <div class="grid-container">
@@ -88,7 +90,43 @@
 
             <!-- Graph Settings Component -->
             <GraphSettings @update:grid-size="updateGridSize" @update:tolerance="updateTolerance" @update:snap-to-grid="updateSnapToGrid" @update:use-grid-for-panning="updateUseGridForPanning" />
+
+            <div class="shortcut-help-anchor" :class="{ 'hidden-during-pan': isPanning }">
+              <v-tooltip location="left" transition="scale-transition">
+                <template #activator="{ props: activatorProps }">
+                  <v-btn v-bind="activatorProps" icon size="small" color="primary" variant="flat" class="shortcut-help-btn" aria-label="Tastenkürzel anzeigen">
+                    <v-icon size="18">mdi-information-outline</v-icon>
+                  </v-btn>
+                </template>
+
+                <div class="shortcut-tooltip-content">
+                  <div><strong>Tastenkürzel</strong></div>
+                  <div>Strg+A: Alles auswählen</div>
+                  <div>Strg+C: Kopieren</div>
+                  <div>Strg+V: Einfügen</div>
+                  <div>Strg+D: Duplizieren</div>
+                  <div>Strg+Z: Rückgängig</div>
+                  <div>Strg+Y: Wiederholen</div>
+                  <div>Entf: Löschen</div>
+                  <div>Esc: Auswahl aufheben</div>
+                  <div>Mausrad im Canvas: Zoom in/out</div>
+                </div>
+              </v-tooltip>
+            </div>
           </div>
+
+          <CanvasWindowHost ref="canvasWindowHost" :graph-container="graphContainer ?? null" :windows="props.canvasWindows" @window-removed="onWindowRemoved">
+            <template #window-content="slotProps">
+              <div v-if="slotProps.definition.meta?.role === 'task'" class="canvas-task-window-content">
+                <TaskRichEditor v-if="taskById.get(slotProps.definition.meta.taskId as string)" :model-value="getTaskMarkupContent(slotProps.definition.meta.taskId as string)" @update:model-value="(value) => onTaskWindowContentUpdated(slotProps.definition.meta, value)" />
+              </div>
+              <slot v-else name="window-content" v-bind="slotProps">
+                <div class="canvas-window-default-content">
+                  {{ slotProps.definition.placeholder ?? 'Fenster bereit. Inhalt kann ueber den Slot window-content oder die Window-Definition eingebunden werden.' }}
+                </div>
+              </slot>
+            </template>
+          </CanvasWindowHost>
 
           <v-tooltip v-if="overlayTooltip.anchor" :model-value="overlayTooltip.visible" location="top" :open-on-hover="false" transition="scale-transition" @update:model-value="(value) => (overlayTooltip.visible = value)">
             <template #activator="{ props: activatorProps }">
@@ -96,32 +134,9 @@
             </template>
             {{ overlayTooltip.text }}
           </v-tooltip>
-
-          <div class="shortcut-help-anchor">
-            <v-tooltip location="left" transition="scale-transition">
-              <template #activator="{ props: activatorProps }">
-                <v-btn v-bind="activatorProps" icon size="small" color="primary" variant="flat" class="shortcut-help-btn" aria-label="Tastenkürzel anzeigen">
-                  <v-icon size="18">mdi-information-outline</v-icon>
-                </v-btn>
-              </template>
-
-              <div class="shortcut-tooltip-content">
-                <div><strong>Tastenkürzel</strong></div>
-                <div>Strg+A: Alles auswählen</div>
-                <div>Strg+C: Kopieren</div>
-                <div>Strg+V: Einfügen</div>
-                <div>Strg+D: Duplizieren</div>
-                <div>Strg+Z: Rückgängig</div>
-                <div>Strg+Y: Wiederholen</div>
-                <div>Entf: Löschen</div>
-                <div>Esc: Auswahl aufheben</div>
-                <div>Mausrad im Canvas: Zoom in/out</div>
-              </div>
-            </v-tooltip>
-          </div>
         </div>
 
-        <SidebarFeedbackContainer v-if="props.showElements !== false && props.showFeedbackSidebar !== false && props.showToolbar" :feedback-shapes="feedbackSidebarShapes" />
+        <SidebarFeedbackContainer v-if="props.showElements !== false && props.showFeedbackSidebar !== false && props.showToolbar" :feedback-shapes="feedbackSidebarShapes" @task-selected="onTaskSelected" />
       </div>
       <!-- /canvas-area -->
     </v-card-text>
@@ -149,11 +164,13 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler, FitPlugin, Clipboard, ConnectionConstraint } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
+import { storeToRefs } from 'pinia'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
 import { useZoomOperations } from '@/composables/useZoomOperations'
 import { useGridSettings } from '@/composables/useGridSettings'
 import { useCanvasOverlays } from '@/composables/useCanvasOverlays'
+import { useTaskStore } from '@/stores/task'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { createDefaultShapes, buildShapesFromElements, ensureGraphDropHandlers } from '@/utils/setupToolbar'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
@@ -167,12 +184,17 @@ import GraphSettings from './GraphSettings.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
 import AutonomyControls from './AutonomyControls.vue'
+import CanvasWindowHost from './CanvasWindowHost.vue'
 import SidebarContainer from './SidebarContainer.vue'
 import SidebarFeedbackContainer from './SidebarFeedbackContainer.vue'
+import TaskTopBar from './TaskTopBar.vue'
+import TaskRichEditor from '@/components/tasks/TaskRichEditor.vue'
 import type { SidebarLanguage } from './ElementsSidebar.vue'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection } from '@/model/Connection'
 import type { DiagramSyntax } from '@/model/Syntax'
+import type { CanvasWindowDefinition, CanvasWindowPatch } from '@/model/CanvasWindow'
+import type { DiagramTask } from '@/model/Task'
 import { buildValidationRulesFromSyntax, DiagramValidator } from '@/utils/multiplicity'
 import type { AutonomyMode } from '@/model/Autonomy'
 import type { DiagramFeedbackConfig, FeedbackCanvasOverlayEntry } from '@/model/Feedback'
@@ -258,6 +280,10 @@ class MyCustomGraph extends Graph {
     return super.isCellEditable(cell)
   }
 
+  override convertValueToString = (cell: Cell) => {
+    return super.convertValueToString(cell)
+  }
+
   override getEdgeValidationError = (edge: Cell | null, source: Cell | null, target: Cell | null): string | null => {
     const error = super.getEdgeValidationError(edge, source, target)
     const mode = getGraphValidationMode(this)
@@ -298,6 +324,14 @@ class MyCustomGraph extends Graph {
   }
 }
 
+interface CanvasWindowHostApi {
+  addWindow: (windowDefinition: CanvasWindowDefinition) => void
+  updateWindow: (patch: CanvasWindowPatch) => void
+  removeWindow: (id: string) => void
+  clearWindows: () => void
+  setWindows: (definitions: CanvasWindowDefinition[]) => void
+}
+
 const props = withDefaults(
   defineProps<{
     model?: GraphDataModel
@@ -317,6 +351,7 @@ const props = withDefaults(
     previewMode?: 'simple' | 'scenario' | 'routing'
     overlays?: FeedbackCanvasOverlayEntry[]
     feedbackConfig?: DiagramFeedbackConfig
+    canvasWindows?: CanvasWindowDefinition[]
   }>(),
   {
     allowEdit: true,
@@ -334,7 +369,8 @@ const props = withDefaults(
     previewConnection: undefined,
     previewMode: 'simple',
     overlays: () => [],
-    feedbackConfig: undefined
+    feedbackConfig: undefined,
+    canvasWindows: undefined
   }
 )
 
@@ -360,6 +396,7 @@ const canRedo = ref(false)
 const graphWrapper = ref<HTMLElement | null>(null)
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
+const canvasWindowHost = ref<CanvasWindowHostApi | null>(null)
 // shallowRef verhindert, dass Vue die Graph-Instanz in einen reactive()-Proxy einwickelt.
 // Vue's deep reactive Proxy würde Cell-Objekte als Proxy zurückgeben, deren Identität
 // von den originalen Cell-Objekten abweicht. maxGraph speichert CellStates in einer
@@ -390,6 +427,8 @@ let documentKeydownHandler: ((evt: KeyboardEvent) => void) | undefined
 let graphContainerWheelHandler: ((evt: WheelEvent) => void) | undefined
 const overlayEntries = computed(() => props.overlays ?? [])
 const { overlayTooltip, overlayTooltipAnchorStyle, registerGraph, cleanup: cleanupCanvasOverlays } = useCanvasOverlays(graphWrapper, overlayEntries)
+const taskStore = useTaskStore()
+const { tasks } = storeToRefs(taskStore)
 
 // Zentraler Validator für alle Diagramm-Regeln
 const diagramValidator = new DiagramValidator()
@@ -480,6 +519,51 @@ const feedbackConnectionByElementId = computed<Record<string, DiagramConnection>
   })
   return map
 })
+
+// Task-Topbar State
+const activeTaskId = ref<string | null>(null)
+const taskWindowOpen = ref(false)
+
+const taskById = computed(() => {
+  const map = new Map<string, DiagramTask>()
+  tasks.value.forEach((task) => {
+    map.set(task.id, task)
+  })
+  return map
+})
+
+const activeTask = computed(() => {
+  if (!activeTaskId.value) return null
+  return taskById.value.get(activeTaskId.value) ?? null
+})
+
+const activeTaskMarkupContent = computed(() => {
+  if (!activeTask.value) return ''
+  return activeTask.value.canvasMarkup?.content ?? activeTask.value.content
+})
+
+const CANVAS_TASK_WINDOW_ID = 'canvas-task-window'
+
+const getTaskMarkupContent = (taskId: string): string => {
+  const task = taskById.value.get(taskId)
+  if (!task) return ''
+  return task.canvasMarkup?.content ?? task.content
+}
+
+const updateTaskMarkup = (taskId: string, content: string) => {
+  taskStore.updateTaskCanvasMarkup(taskId, content)
+}
+
+const onTaskWindowContentUpdated = (meta: Record<string, unknown> | undefined, content: string) => {
+  const taskId = typeof meta?.taskId === 'string' ? meta.taskId : null
+  if (!taskId) return
+  updateTaskMarkup(taskId, content)
+}
+
+const updateActiveTaskMarkup = (content: string) => {
+  if (!activeTaskId.value) return
+  taskStore.updateTaskCanvasMarkup(activeTaskId.value, content)
+}
 
 // Alignment-Hilfsfunktionen
 const alignLeft = () => graph.value && alignHorizontal(graph.value, 'left')
@@ -1166,9 +1250,71 @@ const clearCanvas = () => {
   }
 }
 
+const addCanvasWindow = (windowDefinition: CanvasWindowDefinition) => {
+  canvasWindowHost.value?.addWindow(windowDefinition)
+}
+
+const updateCanvasWindow = (patch: CanvasWindowPatch) => {
+  canvasWindowHost.value?.updateWindow(patch)
+}
+
+const removeCanvasWindow = (id: string) => {
+  canvasWindowHost.value?.removeWindow(id)
+}
+
+const clearCanvasWindows = () => {
+  canvasWindowHost.value?.clearWindows()
+}
+
+const setCanvasWindows = (definitions: CanvasWindowDefinition[]) => {
+  canvasWindowHost.value?.setWindows(definitions)
+}
+
+const onTaskSelected = (taskId: string) => {
+  activeTaskId.value = taskId
+  // Wenn ein Fenster für eine andere Aufgabe offen ist, Inhalt aktualisieren
+  if (taskWindowOpen.value) {
+    const task = taskById.value.get(taskId)
+    if (task) {
+      removeCanvasWindow(CANVAS_TASK_WINDOW_ID)
+      taskWindowOpen.value = false
+      nextTick(() => openTaskInWindow())
+    }
+  }
+}
+
+const openTaskInWindow = () => {
+  const task = activeTask.value
+  if (!task) return
+  addCanvasWindow({
+    id: CANVAS_TASK_WINDOW_ID,
+    title: task.title,
+    behavior: {
+      maximizable: false
+    },
+    meta: { role: 'task', taskId: task.id },
+    x: 60,
+    y: 60,
+    width: 480,
+    height: 340
+  })
+  taskWindowOpen.value = true
+}
+
+const onWindowRemoved = (windowId: string) => {
+  if (windowId === CANVAS_TASK_WINDOW_ID) {
+    taskWindowOpen.value = false
+  }
+}
+
 defineExpose({
   graph,
-  clearCanvas
+  clearCanvas,
+  addCanvasWindow,
+  updateCanvasWindow,
+  removeCanvasWindow,
+  clearCanvasWindows,
+  setCanvasWindows
 })
 </script>
 
@@ -1184,7 +1330,9 @@ defineExpose({
 .graph-container {
   position: relative;
   width: 100%;
-  height: 100%;
+  height: auto;
+  flex: 1;
+  min-height: 0;
   border: 1px solid #ddd;
   border-radius: 4px;
   background-color: transparent;
@@ -1196,6 +1344,9 @@ defineExpose({
   width: 100%;
   height: 100%;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
   min-height: 0;
 }
@@ -1227,11 +1378,34 @@ defineExpose({
   height: 30px;
 }
 
+.hidden-during-pan {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
 .shortcut-tooltip-content {
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 12px;
+}
+
+.canvas-window-default-content {
+  padding: 8px;
+  font-size: 13px;
+  color: #424242;
+  line-height: 1.4;
+}
+
+.canvas-task-window-content {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  overflow: auto;
 }
 
 .grid-container {

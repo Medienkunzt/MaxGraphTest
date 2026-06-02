@@ -2,15 +2,34 @@
   <div class="sidebar-container" :style="{ width: sidebarWidth + 'px', minWidth: sidebarWidth + 'px' }">
     <div class="sidebar-topbar">
       <div class="tab-buttons" role="tablist" aria-label="Feedback Sidebar">
-        <button type="button" class="tab-button tab-button--active" title="Feedback">
+        <button type="button" class="tab-button" :class="{ 'tab-button--active': activeTab === 'feedback' }" title="Feedback" @click="activeTab = 'feedback'">
           <v-icon size="14">mdi-comment-text-multiple-outline</v-icon>
           <span>Feedback</span>
+        </button>
+        <button type="button" class="tab-button" :class="{ 'tab-button--active': activeTab === 'tasks' }" title="Aufgaben" @click="activeTab = 'tasks'">
+          <v-icon size="14">mdi-clipboard-text-outline</v-icon>
+          <span>Aufgaben</span>
         </button>
       </div>
     </div>
 
     <div class="sidebar-body">
-      <FeedbackSidebar :sidebar-width="sidebarWidth" :feedback-shapes="feedbackShapes" />
+      <FeedbackSidebar v-if="activeTab === 'feedback'" :sidebar-width="sidebarWidth" :feedback-shapes="feedbackShapes" />
+
+      <div v-else class="tasks-sidebar" :style="{ width: sidebarWidth + 'px', minWidth: sidebarWidth + 'px' }">
+        <div class="tasks-sidebar-header">
+          <span class="tasks-sidebar-title">Aufgaben</span>
+        </div>
+
+        <div class="tasks-sidebar-list">
+          <button v-for="task in tasks" :key="task.id" type="button" class="task-list-item" :class="{ 'task-list-item--active': task.id === currentTaskId }" @click="selectTaskInSidebar(task.id)">
+            <v-icon size="14">mdi-clipboard-text-outline</v-icon>
+            <span class="task-list-item__title">{{ task.title }}</span>
+          </button>
+
+          <div v-if="tasks.length === 0" class="tasks-empty-state">Keine Aufgaben vorhanden.</div>
+        </div>
+      </div>
     </div>
 
     <div class="resize-handle" title="Breite anpassen" @mousedown.prevent="startResize">
@@ -21,6 +40,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useTaskStore } from '@/stores/task'
 import FeedbackSidebar from './FeedbackSidebar.vue'
 
 withDefaults(
@@ -35,6 +56,20 @@ withDefaults(
     feedbackShapes: () => []
   }
 )
+
+const emit = defineEmits<{
+  'task-selected': [string]
+}>()
+
+const activeTab = ref<'feedback' | 'tasks'>('feedback')
+
+const taskStore = useTaskStore()
+const { tasks, currentTaskId } = storeToRefs(taskStore)
+
+const selectTaskInSidebar = (taskId: string) => {
+  taskStore.selectTask(taskId)
+  emit('task-selected', taskId)
+}
 
 const DEFAULT_WIDTH = 210
 const MIN_WIDTH = Math.round(DEFAULT_WIDTH / 2)
@@ -122,6 +157,84 @@ const startResize = (event: MouseEvent) => {
   min-height: 0;
   overflow: hidden;
   background: #ffffff;
+}
+
+.tasks-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: #ffffff;
+}
+
+.tasks-sidebar-header {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 9px 10px 9px 12px;
+  border-left: 3px solid rgba(var(--v-theme-primary), 0.7);
+  border-bottom: 1px solid rgba(var(--v-theme-outline), 0.1);
+}
+
+.tasks-sidebar-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(var(--v-theme-on-surface), 0.82);
+}
+
+.tasks-sidebar-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(var(--v-theme-outline), 0.14);
+  border-radius: 7px;
+  background: #ffffff;
+  color: rgba(var(--v-theme-on-surface), 0.82);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  padding: 7px 8px;
+  transition:
+    border-color 0.13s,
+    box-shadow 0.13s,
+    background 0.13s;
+}
+
+.task-list-item:hover {
+  border-color: rgba(var(--v-theme-primary), 0.35);
+  background: rgba(var(--v-theme-primary), 0.03);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.08);
+}
+
+.task-list-item--active {
+  border-color: rgba(var(--v-theme-primary), 0.45);
+  background: rgba(var(--v-theme-primary), 0.09);
+  color: rgba(var(--v-theme-primary), 1);
+}
+
+.task-list-item__title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tasks-empty-state {
+  font-size: 12px;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  padding: 8px 2px;
 }
 
 .resize-handle {

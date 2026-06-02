@@ -19,6 +19,10 @@
         <span> Editor </span>
         <v-tooltip activator="parent" location="bottom"> Diagramsprachen-Editor </v-tooltip>
       </v-btn>
+      <v-btn to="/tasks" active-class="active" prepend-icon="mdi-clipboard-text-outline">
+        <span> Aufgaben </span>
+        <v-tooltip activator="parent" location="bottom"> Aufgaben erstellen und verwalten </v-tooltip>
+      </v-btn>
     </template>
   </v-app-bar>
 </template>
