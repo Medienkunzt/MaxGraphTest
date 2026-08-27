@@ -4,12 +4,12 @@
       <v-col cols="12">
         <v-card>
           <v-card-title class="d-flex align-center justify-space-between">
-            <span>Diagramsprachen Übersicht</span>
-            <v-btn color="primary" prepend-icon="mdi-plus" @click="createNewLanguage"> Neue Sprache </v-btn>
+            <span>Diagram Language Overview</span>
+            <v-btn color="primary" prepend-icon="mdi-plus" @click="createNewLanguage"> New Language </v-btn>
           </v-card-title>
 
           <v-card-text>
-            <v-data-table :headers="headers" :items="languages" :items-per-page="10" class="elevation-1" no-data-text="Keine Diagramsprachen vorhanden">
+            <v-data-table :headers="headers" :items="languages" :items-per-page="10" class="elevation-1" no-data-text="No diagram languages available">
               <!-- Name Spalte -->
               <template #[`item.name`]="{ item }">
                 <div class="font-weight-medium">
@@ -52,19 +52,19 @@
               <template #[`item.actions`]="{ item }">
                 <v-btn size="small" variant="text" color="success" @click="tryLanguage(item)">
                   <v-icon>mdi-play</v-icon>
-                  <v-tooltip activator="parent" location="top"> Ausprobieren </v-tooltip>
+                  <v-tooltip activator="parent" location="top"> Try </v-tooltip>
                 </v-btn>
                 <v-btn size="small" variant="text" color="primary" @click="editLanguage(item)">
                   <v-icon>mdi-pencil</v-icon>
-                  <v-tooltip activator="parent" location="top"> Bearbeiten </v-tooltip>
+                  <v-tooltip activator="parent" location="top"> Edit </v-tooltip>
                 </v-btn>
                 <v-btn size="small" variant="text" color="info" @click="openInEditor(item)">
                   <v-icon>mdi-application-edit</v-icon>
-                  <v-tooltip activator="parent" location="top"> Editor öffnen </v-tooltip>
+                  <v-tooltip activator="parent" location="top"> Open Editor </v-tooltip>
                 </v-btn>
                 <v-btn size="small" variant="text" color="error" @click="deleteLanguage(item)">
                   <v-icon>mdi-delete</v-icon>
-                  <v-tooltip activator="parent" location="top"> Löschen </v-tooltip>
+                  <v-tooltip activator="parent" location="top"> Delete </v-tooltip>
                 </v-btn>
               </template>
             </v-data-table>
@@ -112,25 +112,25 @@ const headers = [
     align: 'start' as const
   },
   {
-    title: 'Elemente',
+    title: 'Elements',
     key: 'elementsCount',
     sortable: true,
     align: 'center' as const
   },
   {
-    title: 'Verbindungen',
+    title: 'Connections',
     key: 'connectionsCount',
     sortable: true,
     align: 'center' as const
   },
   {
-    title: 'Syntax-Regeln',
+    title: 'Syntax',
     key: 'syntaxCount',
     sortable: true,
     align: 'center' as const
   },
   {
-    title: 'Aktionen',
+    title: 'Actions',
     key: 'actions',
     sortable: false,
     align: 'center' as const
@@ -164,9 +164,9 @@ const openInEditor = (language: DiagramLanguage) => {
 }
 
 const deleteLanguage = async (language: DiagramLanguage) => {
-  const title = 'Sprache löschen'
-  const message = `Möchten Sie die Sprache "${language.name}" wirklich löschen?\n\nAchtung: Diese Aktion kann nicht rückgängig gemacht werden. Alle Elemente, Verbindungen und Syntax-Regeln gehen verloren.`
-  const confirmBtnText = 'Löschen'
+  const title = 'Delete Language'
+  const message = `Are you sure you want to delete the language "${language.name}"?\n\nWarning: This action cannot be undone. All Elements, Connections, and Syntax definitions will be lost.`
+  const confirmBtnText = 'Delete'
 
   try {
     const confirmed = await confirmDialog.value?.openDialog(title, message, confirmBtnText)
@@ -174,7 +174,7 @@ const deleteLanguage = async (language: DiagramLanguage) => {
       deleteLanguageFromStore(language.id)
     }
   } catch (error) {
-    console.error('Fehler beim Löschen der Sprache:', error)
+    console.error('Failed to delete language:', error)
   }
 }
 

@@ -5,7 +5,7 @@
       <v-card-title class="d-flex align-center justify-space-between py-3">
         <div class="d-flex align-center">
           <v-icon class="mr-2" color="primary">mdi-application-edit</v-icon>
-          <span>Diagramsprachen-Editor</span>
+          <span>Diagram Language Editor</span>
           <v-chip v-if="currentLanguage" color="primary" variant="tonal" size="small" class="ml-3">
             {{ currentLanguage.name }}
           </v-chip>
@@ -13,11 +13,11 @@
 
         <!-- Editor-Navigation -->
         <v-btn-toggle v-model="activeEditor" mandatory color="primary" variant="outlined" density="compact">
-          <v-btn value="elements" prepend-icon="mdi-shape"> Elemente </v-btn>
-          <v-btn value="connections" prepend-icon="mdi-connection"> Verbindungen </v-btn>
+          <v-btn value="elements" prepend-icon="mdi-shape"> Elements </v-btn>
+          <v-btn value="connections" prepend-icon="mdi-connection"> Connections </v-btn>
           <v-btn value="syntax" prepend-icon="mdi-code-braces"> Syntax </v-btn>
           <v-btn value="feedback" prepend-icon="mdi-comment-check"> Feedback </v-btn>
-          <v-btn value="settings" prepend-icon="mdi-cog"> Globale Einstellungen </v-btn>
+          <v-btn value="settings" prepend-icon="mdi-cog"> Global Settings </v-btn>
         </v-btn-toggle>
       </v-card-title>
     </v-card>

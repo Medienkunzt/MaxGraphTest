@@ -8,20 +8,20 @@
 
     <template #append>
       <v-btn to="/modeling" active-class="active" prepend-icon="mdi-pencil-ruler">
-        <span> Modellierung </span>
-        <v-tooltip activator="parent" location="bottom"> Modellierung </v-tooltip>
+        <span> Modeling </span>
+        <v-tooltip activator="parent" location="bottom"> Modeling </v-tooltip>
       </v-btn>
       <v-btn to="/diagramLanguages" active-class="active" prepend-icon="mdi-view-list">
-        <span> Sprachen </span>
-        <v-tooltip activator="parent" location="bottom"> Diagramsprachen-Übersicht </v-tooltip>
+        <span> Languages </span>
+        <v-tooltip activator="parent" location="bottom"> Diagram Language Overview </v-tooltip>
       </v-btn>
       <v-btn to="/diagramLanguageEditor" active-class="active" prepend-icon="mdi-application-edit">
         <span> Editor </span>
-        <v-tooltip activator="parent" location="bottom"> Diagramsprachen-Editor </v-tooltip>
+        <v-tooltip activator="parent" location="bottom"> Diagram Language Editor </v-tooltip>
       </v-btn>
       <v-btn to="/tasks" active-class="active" prepend-icon="mdi-clipboard-text-outline">
-        <span> Aufgaben </span>
-        <v-tooltip activator="parent" location="bottom"> Aufgaben erstellen und verwalten </v-tooltip>
+        <span> Tasks </span>
+        <v-tooltip activator="parent" location="bottom"> Create and manage tasks </v-tooltip>
       </v-btn>
     </template>
   </v-app-bar>

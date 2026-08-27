@@ -73,7 +73,7 @@ export interface DiagramFeedbackConfig {
 export const FEEDBACK_STATES: FeedbackState[] = ['correct', 'incorrect', 'hint']
 
 export const FEEDBACK_STATE_LABELS: Record<FeedbackState, string> = {
-  correct: 'Richtig',
-  incorrect: 'Falsch',
-  hint: 'Hinweis'
+  correct: 'Correct',
+  incorrect: 'Incorrect',
+  hint: 'Hint'
 }

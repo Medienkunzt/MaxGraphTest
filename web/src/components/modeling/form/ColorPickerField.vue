@@ -10,7 +10,7 @@
     <v-card>
       <v-color-picker v-model="internalColor" :modes="['hex', 'rgba']" show-alpha hide-inputs show-swatches swatches-max-height="120" />
       <v-card-actions class="justify-end">
-        <v-btn variant="text" @click="menu = false">Schließen</v-btn>
+        <v-btn variant="text" @click="menu = false">Close</v-btn>
       </v-card-actions>
     </v-card>
   </v-menu>

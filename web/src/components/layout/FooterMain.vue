@@ -5,7 +5,7 @@
         {{ link.name }}
       </v-btn>
       <v-col class="text-center mt-4" cols="12"
-        ><strong> &copy; {{ new Date().getFullYear() }} Technische Hochschule Mittelhessen</strong>
+        ><strong> &copy; {{ new Date().getFullYear() }} University of Applied Sciences Mittelhessen</strong>
       </v-col>
     </v-row>
   </v-footer>
@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 const links = [
-  { name: 'Impressum', url: '/' },
-  { name: 'Datenschutz', url: '/' }
+  { name: 'Legal Notice', url: '/' },
+  { name: 'Privacy', url: '/' }
 ]
 </script>

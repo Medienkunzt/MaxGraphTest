@@ -2,45 +2,45 @@
   <div>
     <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
       <div class="d-flex gap-4 mb-3">
-        <v-text-field v-model="sourcePerimeterSpacingValue" label="Perimeter Abstand Quelle (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Zusätzlicher Abstand zur Umrandung am Quellknoten." persistent-hint />
-        <v-text-field v-model="targetPerimeterSpacingValue" label="Perimeter Abstand Ziel (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Zusätzlicher Abstand zur Umrandung am Zielknoten." persistent-hint />
+        <v-text-field v-model="sourcePerimeterSpacingValue" label="Source Perimeter Spacing (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Additional spacing from the source node perimeter." persistent-hint />
+        <v-text-field v-model="targetPerimeterSpacingValue" label="Target Perimeter Spacing (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Additional spacing from the target node perimeter." persistent-hint />
       </div>
     </FieldWithIndicator>
 
     <FieldWithIndicator :config="{ minComplexity: 'dev', condition: () => !localStyle.entryPerimeter }">
       <div class="d-flex gap-4 mb-3">
-        <v-text-field v-model="entryXValue" label="Entry X (relativ)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Relative X-Position des Eintrittspunktes (-1..1)." persistent-hint />
-        <v-text-field v-model="entryYValue" label="Entry Y (relativ)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Relative Y-Position des Eintrittspunktes (-1..1)." persistent-hint />
+        <v-text-field v-model="entryXValue" label="Entry X (relative)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Relative X position of the entry point (-1..1)." persistent-hint />
+        <v-text-field v-model="entryYValue" label="Entry Y (relative)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Relative Y position of the entry point (-1..1)." persistent-hint />
       </div>
     </FieldWithIndicator>
 
     <FieldWithIndicator :config="{ minComplexity: 'dev', condition: () => localStyle.entryPerimeter === true }">
       <div class="d-flex gap-4 mb-3">
-        <v-text-field v-model="entryDxValue" label="Entry Offset X (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Absolute Verschiebung in Pixeln für den Eintrittspunkt." persistent-hint />
-        <v-text-field v-model="entryDyValue" label="Entry Offset Y (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Absolute Verschiebung in Pixeln für den Eintrittspunkt." persistent-hint />
+        <v-text-field v-model="entryDxValue" label="Entry Offset X (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Absolute entry point offset in pixels." persistent-hint />
+        <v-text-field v-model="entryDyValue" label="Entry Offset Y (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Absolute entry point offset in pixels." persistent-hint />
       </div>
     </FieldWithIndicator>
 
     <FieldWithIndicator :config="{ minComplexity: 'dev' }">
-      <v-switch v-model="localStyle.entryPerimeter" color="primary" density="compact" class="mb-3" label="Entry am Umfang ausrichten" hint="Berechnet den Eintrittspunkt anhand des Objektumfangs." persistent-hint @update:model-value="emit('update')" />
+      <v-switch v-model="localStyle.entryPerimeter" color="primary" density="compact" class="mb-3" label="Align Entry to Perimeter" hint="Calculates the entry point from the object perimeter." persistent-hint @update:model-value="emit('update')" />
     </FieldWithIndicator>
 
     <FieldWithIndicator :config="{ minComplexity: 'dev', condition: () => !localStyle.exitPerimeter }">
       <div class="d-flex gap-4 mb-3">
-        <v-text-field v-model="exitXValue" label="Exit X (relativ)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Relative X-Position des Austrittspunktes (-1..1)." persistent-hint />
-        <v-text-field v-model="exitYValue" label="Exit Y (relativ)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Relative Y-Position des Austrittspunktes (-1..1)." persistent-hint />
+        <v-text-field v-model="exitXValue" label="Exit X (relative)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Relative X position of the exit point (-1..1)." persistent-hint />
+        <v-text-field v-model="exitYValue" label="Exit Y (relative)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Relative Y position of the exit point (-1..1)." persistent-hint />
       </div>
     </FieldWithIndicator>
 
     <FieldWithIndicator :config="{ minComplexity: 'dev', condition: () => localStyle.exitPerimeter === true }">
       <div class="d-flex gap-4 mb-3">
-        <v-text-field v-model="exitDxValue" label="Exit Offset X (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Absolute Verschiebung der Austrittsposition in Pixeln." persistent-hint />
-        <v-text-field v-model="exitDyValue" label="Exit Offset Y (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Absolute Verschiebung der Austrittsposition in Pixeln." persistent-hint />
+        <v-text-field v-model="exitDxValue" label="Exit Offset X (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Absolute exit position offset in pixels." persistent-hint />
+        <v-text-field v-model="exitDyValue" label="Exit Offset Y (px)" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Absolute exit position offset in pixels." persistent-hint />
       </div>
     </FieldWithIndicator>
 
     <FieldWithIndicator :config="{ minComplexity: 'dev' }">
-      <v-switch v-model="localStyle.exitPerimeter" color="primary" density="compact" class="mb-3" label="Exit am Umfang ausrichten" hint="Berechnet den Austrittspunkt anhand des Objektumfangs." persistent-hint @update:model-value="emit('update')" />
+      <v-switch v-model="localStyle.exitPerimeter" color="primary" density="compact" class="mb-3" label="Align Exit to Perimeter" hint="Calculates the exit point from the object perimeter." persistent-hint @update:model-value="emit('update')" />
     </FieldWithIndicator>
   </div>
 </template>

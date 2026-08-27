@@ -1,14 +1,14 @@
 <template>
   <v-card class="pa-4">
-    <v-card-title>Diagramsprachen-Verwaltung</v-card-title>
+    <v-card-title>Diagram Language Management</v-card-title>
 
     <v-card-text>
       <v-row>
         <v-col cols="12" md="6">
-          <v-select v-model="selectedLanguageId" :items="languageOptions" label="Diagramsprache auswählen" item-title="text" item-value="value" @update:model-value="onLanguageSelect" />
+          <v-select v-model="selectedLanguageId" :items="languageOptions" label="Select Diagram Language" item-title="text" item-value="value" @update:model-value="onLanguageSelect" />
         </v-col>
         <v-col cols="12" md="6">
-          <v-btn color="primary" @click="createNewLanguage"> Neue Sprache erstellen </v-btn>
+          <v-btn color="primary" @click="createNewLanguage"> Create New Language </v-btn>
         </v-col>
       </v-row>
 
@@ -16,13 +16,13 @@
       <div v-if="currentLanguage">
         <v-divider class="my-4" />
         <h3>{{ currentLanguage.name }}</h3>
-        <p>Elemente: {{ currentLanguage.elements.length }}</p>
-        <p>Verbindungen: {{ currentLanguage.connections.length }}</p>
-        <p>Syntax-Regeln: {{ currentLanguage.syntax.length }}</p>
+        <p>Elements: {{ currentLanguage.elements.length }}</p>
+        <p>Connections: {{ currentLanguage.connections.length }}</p>
+        <p>Syntax: {{ currentLanguage.syntax.length }}</p>
       </div>
 
       <!-- Keine Sprache ausgewählt -->
-      <v-alert v-else type="info" variant="tonal" class="mt-4"> Keine Diagramsprache ausgewählt. </v-alert>
+      <v-alert v-else type="info" variant="tonal" class="mt-4"> No diagram language selected. </v-alert>
     </v-card-text>
   </v-card>
 </template>
@@ -54,7 +54,7 @@ const onLanguageSelect = (languageId: string | null) => {
 }
 
 const createNewLanguage = () => {
-  const name = `Neue Sprache ${languages.length + 1}`
+  const name = `New Language ${languages.length + 1}`
   const newLanguage = createLanguage(name)
   selectedLanguageId.value = newLanguage.id
   setCurrentLanguage(newLanguage)

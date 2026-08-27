@@ -63,48 +63,48 @@ export const cloneFeedbackTargetOverlays = (overlays?: FeedbackTargetOverlays | 
 export const createDefaultFeedbackCanvasElement = (): DiagramElement => ({
   type: '__feedback_label__',
   defaultLabel: 'Feedback',
-  renderMode: 'predefined',
+  renderMode: 'swimlane',
   predefinedShape: 'rectangle',
   x: 0,
   y: 0,
-  width: 170,
-  height: 46,
+  width: 180,
+  height: 72,
   style: {
-    shape: 'rectangle',
-    rounded: 1,
+    shape: 'swimlane',
+    rounded: 0,
     strokeColor: '#f57c00',
-    fillColor: '#fff3e0',
+    fillColor: '#fff8e1',
     strokeWidth: 1,
-    fontSize: 11,
+    fontSize: 12,
     fontColor: '#5d4037',
     fontFamily: 'Arial',
+    fontStyle: 1,
     align: 'left',
     verticalAlign: 'middle',
+    startSize: 28,
+    horizontal: true,
+    labelBackgroundColor: '#ffe0b2',
     spacingLeft: 10,
     whiteSpace: 'wrap',
     cellRole: 'feedback',
     lockToLayer: 1
   },
   anchorPoints: [
-    { x: 0, y: 0 },
     { x: 0.5, y: 0 },
-    { x: 1, y: 0 },
     { x: 1, y: 0.5 },
-    { x: 1, y: 1 },
     { x: 0.5, y: 1 },
-    { x: 0, y: 1 },
     { x: 0, y: 0.5 }
   ],
   children: [],
   connectable: true,
   resizable: true,
   movable: true,
-  allowLabelEdit: true
+  allowLabelEdit: false
 })
 
 export const createDefaultFeedbackCanvasConnection = (): DiagramConnection => ({
   type: '__feedback_note_link__',
-  label: 'Feedback-Verbindung',
+  label: 'Feedback Connection',
   defaultLabel: '',
   connectionType: 'feedback-note',
   connectable: false,
@@ -167,9 +167,9 @@ export const createDefaultFeedbackCanvasElementConfig = (index = 1): FeedbackCan
   const id = createFeedbackElementEntryId(index)
 
   element.type = `${element.type}_${index}`
-  element.defaultLabel = index === 1 ? 'Feedback' : `Feedback ${index}`
+  element.defaultLabel = 'Feedback'
   connection.type = `${connection.type}_${index}`
-  connection.label = index === 1 ? 'Feedback-Verbindung' : `Feedback-Verbindung ${index}`
+  connection.label = index === 1 ? 'Feedback Connection' : `Feedback Connection ${index}`
 
   return {
     id,

@@ -7,14 +7,14 @@
             <v-icon icon="mdi-shape" class="mr-3" />
             <div>
               <div class="text-h6">{{ activeLanguage.name }}</div>
-              <div class="text-caption text-medium-emphasis">Sprache ausprobieren</div>
+              <div class="text-caption text-medium-emphasis">Try language</div>
             </div>
             <v-spacer />
             <v-chip v-for="tag in activeLanguage.tags" :key="tag" size="small" class="ml-2" color="primary" variant="tonal"> {{ tag }} </v-chip>
           </v-card-title>
         </v-card>
 
-        <v-alert v-else type="info" variant="tonal" class="mb-4"> Keine Modellierungssprache ausgewählt. Bitte wählen Sie in der Übersicht eine Sprache und klicken Sie auf „Ausprobieren“. </v-alert>
+        <v-alert v-else type="info" variant="tonal" class="mb-4"> No modeling language selected. Select a language in the overview and click “Try”. </v-alert>
       </v-col>
     </v-row>
 

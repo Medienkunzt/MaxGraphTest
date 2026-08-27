@@ -337,7 +337,7 @@ export function createDefaultShapes(images: { rectangle: string; ellipse: string
       width: 80,
       height: 60,
       style: { shape: 'rectangle', perimeter: 'rectanglePerimeter', fillColor: '#f0f0f0' },
-      tooltip: 'Rechteck (Drag & Drop)',
+      tooltip: 'Rectangle (Drag & Drop)',
       image: images.rectangle
     },
     {
@@ -353,7 +353,7 @@ export function createDefaultShapes(images: { rectangle: string; ellipse: string
       width: 70,
       height: 70,
       style: { shape: 'rhombus', perimeter: 'rhombusPerimeter', fillColor: '#fff3e0' },
-      tooltip: 'Raute (Drag & Drop)',
+      tooltip: 'Diamond (Drag & Drop)',
       image: images.rhombus
     },
     {
@@ -361,7 +361,7 @@ export function createDefaultShapes(images: { rectangle: string; ellipse: string
       width: 60,
       height: 60,
       style: { shape: 'triangle', perimeter: 'trianglePerimeter', fillColor: '#f3e5f5' },
-      tooltip: 'Dreieck (Drag & Drop)',
+      tooltip: 'Triangle (Drag & Drop)',
       image: images.triangle
     },
     {
@@ -369,7 +369,7 @@ export function createDefaultShapes(images: { rectangle: string; ellipse: string
       width: 100,
       height: 60,
       style: { shape: 'cloud', perimeter: 'rectanglePerimeter', fillColor: '#fce4ec' },
-      tooltip: 'Wolke (Drag & Drop)',
+      tooltip: 'Cloud (Drag & Drop)',
       image: images.cloud
     }
   ]

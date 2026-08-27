@@ -52,15 +52,15 @@ const getEmptyIcon = (): string => {
 const getEmptyMessage = (): string => {
   switch (props.type) {
     case 'element':
-      return 'Wählen Sie ein Element aus der Liste aus'
+      return 'Select an Element from the list'
     case 'connection':
-      return 'Wählen Sie eine Verbindung aus der Liste aus'
+      return 'Select a Connection from the list'
     case 'syntax':
-      return 'Wählen Sie eine Syntax-Regel aus der Liste aus'
+      return 'Select a Syntax definition from the list'
     case 'feedback':
-      return 'Wählen Sie ein Feedback-Ziel aus der Liste aus'
+      return 'Select a feedback target from the list'
     default:
-      return 'Wählen Sie einen Eintrag aus der Liste aus'
+      return 'Select an entry from the list'
   }
 }
 </script>

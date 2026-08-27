@@ -2,26 +2,26 @@
   <div class="floating-settings-menu" :class="{ 'hidden-during-pan': isPanning }">
     <v-menu v-model="menuOpen" :close-on-content-click="false" location="top">
       <template #activator="{ props: activatorProps }">
-        <v-btn v-bind="activatorProps" icon="mdi-chevron-up" size="small" density="compact" variant="outlined" title="Einstellungen" :class="{ 'settings-active': menuOpen }" />
+        <v-btn v-bind="activatorProps" icon="mdi-chevron-up" size="small" density="compact" variant="outlined" title="Settings" :class="{ 'settings-active': menuOpen }" />
       </template>
       <v-card class="settings-card" min-width="280">
         <v-card-title class="py-2 px-3">
           <v-icon class="mr-2">mdi-cog</v-icon>
-          Einstellungen
+          Settings
         </v-card-title>
         <v-card-text class="py-2 px-3">
           <v-row dense>
             <v-col cols="12">
-              <v-text-field v-model="localGridSize" label="Raster (px)" type="number" density="compact" variant="outlined" min="5" max="100" hint="Empfohlen: 5-25" @input="handleGridSizeChange" />
+              <v-text-field v-model="localGridSize" label="Grid (px)" type="number" density="compact" variant="outlined" min="5" max="100" hint="Recommended: 5–25" @input="handleGridSizeChange" />
             </v-col>
             <v-col cols="12">
-              <v-text-field v-model="localTolerance" label="Toleranz (px)" type="number" density="compact" variant="outlined" min="1" max="50" hint="Mauserkennung in px" @input="handleToleranceChange" />
+              <v-text-field v-model="localTolerance" label="Tolerance (px)" type="number" density="compact" variant="outlined" min="1" max="50" hint="Mouse detection in px" @input="handleToleranceChange" />
             </v-col>
             <v-col cols="12">
-              <v-select v-model="localSnapToGrid" label="Raster-Snap" :items="snapOptions" density="compact" variant="outlined" @update:model-value="handleSnapToGridChange" />
+              <v-select v-model="localSnapToGrid" label="Snap to Grid" :items="snapOptions" density="compact" variant="outlined" @update:model-value="handleSnapToGridChange" />
             </v-col>
             <v-col cols="12">
-              <v-select v-model="localUseGridForPanning" label="Raster für Panning" :items="snapOptions" density="compact" variant="outlined" hint="Grid-basiertes Panning" @update:model-value="handleUseGridForPanningChange" />
+              <v-select v-model="localUseGridForPanning" label="Grid for Panning" :items="snapOptions" density="compact" variant="outlined" hint="Grid-based panning" @update:model-value="handleUseGridForPanningChange" />
             </v-col>
           </v-row>
         </v-card-text>
@@ -44,8 +44,8 @@ const localUseGridForPanning = ref(useGridForPanning.value)
 const menuOpen = ref(false)
 
 const snapOptions = ref([
-  { title: 'Ein', value: true },
-  { title: 'Aus', value: false }
+  { title: 'On', value: true },
+  { title: 'Off', value: false }
 ])
 
 // Emits für Parent-Komponente

@@ -1,8 +1,8 @@
 <template>
   <v-btn-toggle v-model="internalValue" density="compact" mandatory class="autonomy-toggle">
-    <v-btn value="manual" title="Stufe 1 - Freies Modellieren">Stufe 1</v-btn>
-    <v-btn value="assisted" title="Stufe 2 - Gefuehrte Validierung">Stufe 2</v-btn>
-    <v-btn value="strict" title="Stufe 3 - Strikte Regeln">Stufe 3</v-btn>
+    <v-btn value="manual" title="Level 1 - Free modeling">Level 1</v-btn>
+    <v-btn value="assisted" title="Level 2 - Guided validation">Level 2</v-btn>
+    <v-btn value="strict" title="Level 3 - Strict rules">Level 3</v-btn>
   </v-btn-toggle>
 </template>
 

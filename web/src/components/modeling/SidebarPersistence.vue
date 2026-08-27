@@ -2,51 +2,51 @@
   <div class="sidebar-persistence">
     <div class="sidebar-section">
       <div class="sidebar-header sidebar-header--static">
-        <span class="sidebar-title">Modell persistieren</span>
+        <span class="sidebar-title">Model Persistence</span>
       </div>
 
       <div class="sidebar-section-body">
-        <p class="sidebar-description">Exportiere das aktuelle Modell als XML oder JSON oder lade eine gespeicherte Datei wieder in den Editor.</p>
+        <p class="sidebar-description">Export the current model as XML or JSON, or load a saved file into the editor.</p>
 
         <div class="sidebar-action-buttons">
-          <v-btn color="primary" variant="flat" size="small" prepend-icon="mdi-download" @click="openDialog('download')"> Herunterladen </v-btn>
-          <v-btn color="secondary" variant="tonal" size="small" prepend-icon="mdi-upload" @click="openDialog('upload')"> Hochladen </v-btn>
+          <v-btn color="primary" variant="flat" size="small" prepend-icon="mdi-download" @click="openDialog('download')"> Download </v-btn>
+          <v-btn color="secondary" variant="tonal" size="small" prepend-icon="mdi-upload" @click="openDialog('upload')"> Upload </v-btn>
         </div>
 
-        <p v-if="!graph" class="sidebar-hint">Für den Export oder Import muss ein Graph verfügbar sein.</p>
+        <p v-if="!graph" class="sidebar-hint">A graph must be available for export or import.</p>
       </div>
     </div>
 
     <v-dialog v-model="isDialogOpen" max-width="520px" persistent>
       <v-card>
         <v-card-title class="text-h6">
-          {{ dialogMode === 'download' ? 'Modell herunterladen' : 'Modell hochladen' }}
+          {{ dialogMode === 'download' ? 'Download Model' : 'Upload Model' }}
         </v-card-title>
 
         <v-card-text class="sidebar-dialog-body">
           <template v-if="dialogMode === 'download'">
-            <p class="sidebar-description">Wähle das Zielformat für den Download.</p>
+            <p class="sidebar-description">Select the target format for the download.</p>
             <v-btn-toggle v-model="downloadFormat" color="primary" mandatory density="comfortable" class="format-toggle">
               <v-btn value="xml">XML</v-btn>
               <v-btn value="json">JSON</v-btn>
             </v-btn-toggle>
 
-            <p class="sidebar-hint">XML entspricht dem nativen maxGraph-Format. JSON enthält dieselbe Struktur in einer JSON-Repräsentation.</p>
+            <p class="sidebar-hint">XML is the native maxGraph format. JSON contains the same structure in a JSON representation.</p>
           </template>
 
           <template v-else>
-            <p class="sidebar-description">Wähle eine XML- oder JSON-Datei, die zuvor exportiert wurde.</p>
+            <p class="sidebar-description">Select a previously exported XML or JSON file.</p>
 
             <input ref="fileInput" class="file-input" type="file" accept=".xml,.json,application/xml,application/json,text/xml,text/json" @change="onFileSelected" />
 
             <div class="sidebar-action-buttons">
-              <v-btn variant="tonal" size="small" prepend-icon="mdi-folder-open" @click="chooseFile"> Datei auswählen </v-btn>
+              <v-btn variant="tonal" size="small" prepend-icon="mdi-folder-open" @click="chooseFile"> Select File </v-btn>
               <span class="selected-file" :class="{ 'selected-file--empty': !selectedFileName }">
-                {{ selectedFileName || 'Noch keine Datei gewählt' }}
+                {{ selectedFileName || 'No file selected yet' }}
               </span>
             </div>
 
-            <p v-if="selectedFileName" class="sidebar-hint">Erkanntes Format: {{ detectedFileFormat.toUpperCase() }}</p>
+            <p v-if="selectedFileName" class="sidebar-hint">Detected format: {{ detectedFileFormat.toUpperCase() }}</p>
           </template>
 
           <p v-if="errorMessage" class="sidebar-error">{{ errorMessage }}</p>
@@ -54,9 +54,9 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="closeDialog">Abbrechen</v-btn>
-          <v-btn v-if="dialogMode === 'download'" color="primary" :disabled="!graph" @click="downloadModel"> Herunterladen </v-btn>
-          <v-btn v-else color="primary" :disabled="!graph || !selectedFile" @click="importModel"> Hochladen </v-btn>
+          <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+          <v-btn v-if="dialogMode === 'download'" color="primary" :disabled="!graph" @click="downloadModel"> Download </v-btn>
+          <v-btn v-else color="primary" :disabled="!graph || !selectedFile" @click="importModel"> Upload </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -108,19 +108,19 @@ const chooseFile = () => {
 const downloadModel = () => {
   const currentGraph = graph.value
   if (!currentGraph) {
-    errorMessage.value = 'Kein Graph verfügbar.'
+    errorMessage.value = 'No graph available.'
     return
   }
 
   try {
     if (downloadFormat.value === 'xml') {
-      saveTextFile(exportModelAsXml(currentGraph), 'modell.xml', 'application/xml')
+      saveTextFile(exportModelAsXml(currentGraph), 'model.xml', 'application/xml')
       return
     }
 
-    saveTextFile(exportModelAsJson(currentGraph), 'modell.json', 'application/json')
+    saveTextFile(exportModelAsJson(currentGraph), 'model.json', 'application/json')
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Export fehlgeschlagen.'
+    errorMessage.value = error instanceof Error ? error.message : 'Export failed.'
   }
 }
 
@@ -143,7 +143,7 @@ const importModel = async () => {
   const file = selectedFile.value
 
   if (!currentGraph || !file) {
-    errorMessage.value = 'Bitte zuerst eine Datei auswählen.'
+    errorMessage.value = 'Select a file first.'
     return
   }
 
@@ -167,7 +167,7 @@ const importModel = async () => {
 
     closeDialog()
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'Import fehlgeschlagen.'
+    errorMessage.value = error instanceof Error ? error.message : 'Import failed.'
   }
 }
 </script>

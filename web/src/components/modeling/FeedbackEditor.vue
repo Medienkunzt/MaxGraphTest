@@ -6,13 +6,13 @@
         <div class="scroll-column">
           <EditorEntityList
             v-if="activeFeedbackEditorTab === 'overlay'"
-            title="Feedback-Ziele"
+            title="Feedback Targets"
             add-button-text=""
             :show-add-button="false"
             :show-delete-button="false"
             :items="feedbackTargets"
             :selected-index="selectedTargetIndex"
-            empty-text="Keine Elemente oder Verbindungen verfügbar"
+            empty-text="No Elements or Connections available"
             title-field="label"
             subtitle-field="subtitle"
             icon-field="targetType"
@@ -23,13 +23,13 @@
           />
           <EditorEntityList
             v-else
-            title="Feedback-Elemente"
-            add-button-text="Hinzufügen"
+            title="Feedback Elements"
+            add-button-text="Add"
             :show-add-button="true"
             :show-delete-button="true"
             :items="feedbackCanvasElementItems"
             :selected-index="selectedCanvasElementIndex"
-            empty-text="Keine Feedback-Elemente vorhanden"
+            empty-text="No Feedback Elements available"
             title-field="label"
             subtitle-field="subtitle"
             icon-field="icon"
@@ -46,7 +46,7 @@
         <div class="scroll-column">
           <v-tabs v-model="activeFeedbackEditorTab" density="compact" color="primary" class="mb-3">
             <v-tab value="overlay">Overlay</v-tab>
-            <v-tab value="canvas">Feedback-Elemente</v-tab>
+            <v-tab value="canvas">Feedback Elements</v-tab>
           </v-tabs>
 
           <div v-show="activeFeedbackEditorTab === 'overlay'">
@@ -67,7 +67,7 @@
       <v-col cols="4" class="pl-2 preview-column">
         <v-card class="preview-card">
           <v-card-title class="py-2">
-            <span class="text-h6">Feedback-Vorschau</span>
+            <span class="text-h6">Feedback Preview</span>
             <v-spacer />
             <v-btn-toggle v-model="previewState" density="compact" mandatory color="primary">
               <v-btn v-for="state in stateDefinitions" :key="state.key" :value="state.key">
@@ -96,7 +96,7 @@
                 :feedback-config="previewFeedbackConfig"
               />
             </div>
-            <v-alert v-if="activeFeedbackEditorTab === 'overlay' && !selectedTargetSummary" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element oder eine Verbindung, um die Feedback-Position zu testen. </v-alert>
+            <v-alert v-if="activeFeedbackEditorTab === 'overlay' && !selectedTargetSummary" type="info" variant="tonal" class="mt-3"> Select an Element or Connection to test the feedback position. </v-alert>
           </v-card-text>
         </v-card>
       </v-col>
@@ -196,7 +196,7 @@ const feedbackTargets = computed<FeedbackTargetItem[]>(() => {
   const connectionTargets = language.connections.map((connection) => ({
     type: `connection:${connection.type}`,
     label: connection.label || connection.type,
-    subtitle: 'Verbindung',
+    subtitle: 'Connection',
     targetType: 'connection' as const,
     id: connection.type
   }))
@@ -211,7 +211,7 @@ const selectedTarget = computed<FeedbackTargetItem | undefined>(() => {
 
 const selectedTargetSummary = computed(() => {
   if (!selectedTarget.value) return undefined
-  const suffix = selectedTarget.value.targetType === 'element' ? 'Element' : 'Verbindung'
+  const suffix = selectedTarget.value.targetType === 'element' ? 'Element' : 'Connection'
   return {
     name: `${selectedTarget.value.label} (${suffix})`
   }
@@ -220,7 +220,7 @@ const selectedTargetSummary = computed(() => {
 const selectedCanvasConfigSummary = computed(() => {
   if (!store.currentLanguage) return undefined
   return {
-    name: `Feedback-Elemente (${store.currentLanguage.name})`
+    name: `Feedback Elements (${store.currentLanguage.name})`
   }
 })
 
@@ -247,7 +247,7 @@ const feedbackCanvasElementItems = computed(() => {
     type: entry.id,
     id: entry.id,
     label: entry.element.defaultLabel || entry.element.type || `Feedback ${index + 1}`,
-    subtitle: entry.connection.label || entry.connection.type || 'Verbindung',
+    subtitle: entry.connection.label || entry.connection.type || 'Connection',
     icon: 'mdi-comment-text-outline',
     color: 'orange-darken-2'
   }))
@@ -535,7 +535,7 @@ onMounted(() => {
   loadLanguageFromRoute()
   const initializeCanvas = (attempts = 0) => {
     if (attempts > 10) {
-      console.warn('Feedback preview konnte nicht initialisiert werden')
+      console.warn('Feedback preview could not be initialized')
       return
     }
     if (drawingCanvasRef.value?.graph) {

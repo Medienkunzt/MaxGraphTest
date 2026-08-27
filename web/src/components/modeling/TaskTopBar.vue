@@ -3,7 +3,7 @@
     <div v-if="task" class="task-topbar">
       <!-- Header – immer sichtbar -->
       <div class="task-topbar__header">
-        <button type="button" class="task-topbar__toggle" :title="expanded ? 'Einklappen' : 'Aufgabe einblenden'" @click="expanded = !expanded">
+        <button type="button" class="task-topbar__toggle" :title="expanded ? 'Collapse' : 'Show task'" @click="expanded = !expanded">
           <v-icon size="15" color="primary">mdi-clipboard-text-outline</v-icon>
           <span class="task-topbar__task-title">{{ task.title }}</span>
           <v-icon size="16" class="task-topbar__chevron" :class="{ 'task-topbar__chevron--open': expanded }">mdi-chevron-down</v-icon>
@@ -12,12 +12,12 @@
         <div class="task-topbar__header-actions">
           <v-chip v-if="windowOpen" size="x-small" color="primary" variant="tonal" class="task-topbar__window-chip">
             <v-icon start size="12">mdi-open-in-new</v-icon>
-            Im Fenster geöffnet
+            Open in window
           </v-chip>
-          <v-btn v-if="!windowOpen" size="x-small" variant="text" density="compact" title="Markiermodus" class="task-topbar__action-btn" :color="markMode ? 'primary' : undefined" @click="markMode = !markMode">
+          <v-btn v-if="!windowOpen" size="x-small" variant="text" density="compact" title="Highlight mode" class="task-topbar__action-btn" :color="markMode ? 'primary' : undefined" @click="markMode = !markMode">
             <v-icon size="15">mdi-marker</v-icon>
           </v-btn>
-          <v-btn v-if="!windowOpen" size="x-small" variant="text" density="compact" title="Als frei bewegliches Fenster öffnen" class="task-topbar__action-btn" @click="emit('pop-out')">
+          <v-btn v-if="!windowOpen" size="x-small" variant="text" density="compact" title="Open as a free-floating window" class="task-topbar__action-btn" @click="emit('pop-out')">
             <v-icon size="15">mdi-open-in-new</v-icon>
           </v-btn>
         </div>
@@ -28,11 +28,11 @@
         <div v-if="expanded" class="task-topbar__body" :style="bodyStyle">
           <div v-if="windowOpen" class="task-topbar__window-hint">
             <v-icon size="16" color="primary">mdi-open-in-new</v-icon>
-            Der Aufgabentext ist im Fenster geöffnet — schließe das Fenster, um ihn hier anzuzeigen.
+            The task text is open in a window. Close the window to display it here.
           </div>
           <TaskRichEditor v-else :model-value="contentHtml" :readonly="!markMode" class="task-topbar__editor" :style="editorStyle" @update:model-value="onContentUpdated" />
 
-          <div class="task-topbar__resize-handle" title="Hoehe anpassen" @mousedown.prevent="startResize">
+          <div class="task-topbar__resize-handle" title="Adjust height" @mousedown.prevent="startResize">
             <v-icon size="12">mdi-drag-horizontal</v-icon>
           </div>
         </div>

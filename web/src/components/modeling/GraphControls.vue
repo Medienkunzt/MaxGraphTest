@@ -2,21 +2,21 @@
   <div class="floating-button-group" :class="{ 'hidden-during-pan': isPanning }">
     <div class="control-row">
       <v-btn-group size="small" density="compact" variant="outlined">
-        <v-btn :icon="snapToGrid ? 'mdi-grid' : 'mdi-grid-off'" :color="snapToGrid ? 'primary' : 'grey'" title="Raster umschalten" @click="handleToggleGrid" />
-        <v-btn icon="mdi-refresh" title="Raster neu laden" @click="handleForceGridRepaint" />
+        <v-btn :icon="snapToGrid ? 'mdi-grid' : 'mdi-grid-off'" :color="snapToGrid ? 'primary' : 'grey'" title="Toggle grid" @click="handleToggleGrid" />
+        <v-btn icon="mdi-refresh" title="Reload grid" @click="handleForceGridRepaint" />
       </v-btn-group>
     </div>
     <div class="control-row">
       <v-btn-group size="small" density="compact" variant="outlined">
-        <v-btn icon="mdi-undo" :disabled="!props.canUndo" title="Rückgängig (Strg+Z)" @click="handleUndo" />
-        <v-btn icon="mdi-redo" :disabled="!props.canRedo" title="Wiederholen (Strg+Y)" @click="handleRedo" />
+        <v-btn icon="mdi-undo" :disabled="!props.canUndo" title="Undo (Ctrl+Z)" @click="handleUndo" />
+        <v-btn icon="mdi-redo" :disabled="!props.canRedo" title="Redo (Ctrl+Y)" @click="handleRedo" />
       </v-btn-group>
     </div>
     <div class="control-row">
       <v-btn-group size="small" density="compact" variant="outlined">
-        <v-btn icon="mdi-magnify-minus" title="Herauszoomen" @click="handleZoomOut" />
-        <v-btn icon="mdi-fit-to-page" title="An Fenster anpassen" @click="handleFitToWindow" />
-        <v-btn icon="mdi-magnify-plus" title="Hineinzoomen" @click="handleZoomIn" />
+        <v-btn icon="mdi-magnify-minus" title="Zoom out" @click="handleZoomOut" />
+        <v-btn icon="mdi-fit-to-page" title="Fit to window" @click="handleFitToWindow" />
+        <v-btn icon="mdi-magnify-plus" title="Zoom in" @click="handleZoomIn" />
       </v-btn-group>
     </div>
   </div>

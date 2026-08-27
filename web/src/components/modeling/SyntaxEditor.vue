@@ -14,7 +14,7 @@
       <v-col cols="4" class="pl-2 preview-column">
         <v-card class="preview-card">
           <v-card-title class="py-2 d-flex align-center">
-            <span class="text-h6">Vorschau</span>
+            <span class="text-h6">Preview</span>
             <v-spacer />
             <AutonomyModeToggle v-model="autonomyMode" />
           </v-card-title>
@@ -26,7 +26,7 @@
               <DrawingCanvas ref="drawingCanvasRef" :show-elements="false" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="syntaxRules" :autonomy-mode="autonomyMode" />
             </div>
 
-            <v-alert v-if="!selectedRule" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Syntax-Regel aus, um eine Vorschau zu sehen </v-alert>
+            <v-alert v-if="!selectedRule" type="info" variant="tonal" class="mt-3"> Select a Syntax definition to see a preview </v-alert>
           </v-card-text>
         </v-card>
       </v-col>
@@ -116,9 +116,9 @@ const loadLanguageFromRoute = () => {
     const language = languages.find((lang) => lang.id === languageId)
     if (language) {
       setCurrentLanguage(language)
-      console.log('Sprache aus Route geladen:', language.name)
+      console.log('Language loaded from route:', language.name)
     } else {
-      console.warn('Sprache mit ID nicht gefunden:', languageId)
+      console.warn('Language ID not found:', languageId)
     }
   }
 }

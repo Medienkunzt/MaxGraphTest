@@ -4,7 +4,9 @@ import { setValidationPassActive } from '@/utils/graphValidationRuntime'
 
 export type ValidationCheckType = 'ElementCheck' | 'ConnectionCheck' | 'MultiplicityCheck'
 
-const DEFAULT_MESSAGE_TEMPLATE = 'Die Beziehung {source} -> {target} mit Verbindungstyp {connection} verletzt die Kardinalitaet ({min}..{max}).'
+const DEFAULT_MESSAGE_TEMPLATE = 'The Connection {source} -> {target} with Connection type {connection} violates the cardinality ({min}..{max}).'
+const FORBIDDEN_CONNECTION_MESSAGE_TEMPLATE = 'The Connection {source} -> {target} with Connection type {connection} is forbidden.'
+const UNSUPPORTED_CONNECTION_TYPE_MESSAGE_TEMPLATE = 'The Connection {source} -> {target} does not allow Connection type {connection}.'
 const ORIGINAL_CELL_VALIDATION_KEY = Symbol('originalCellValidation')
 const LIVE_VALIDATION_LISTENER_KEY = Symbol('liveValidationListener')
 
@@ -73,14 +75,14 @@ const getElementType = (cell: Cell | null): string | null => {
 const getConnectionType = (edge: Cell | null): string | null => {
   if (!edge) return null
 
-  const connectionId = (edge as any).connectionId
-  if (typeof connectionId === 'string' && connectionId.length > 0) {
-    return connectionId
-  }
-
   const semanticType = (edge as any).connectionType
   if (typeof semanticType === 'string' && semanticType.length > 0) {
     return semanticType
+  }
+
+  const connectionId = (edge as any).connectionId
+  if (typeof connectionId === 'string' && connectionId.length > 0) {
+    return connectionId
   }
 
   return null
@@ -155,6 +157,14 @@ class DiagramMultiplicity extends Multiplicity {
     })
   }
 
+  private renderConnectionMessage(template: string, sourceType: string, targetType: string, connectionType: string): string {
+    return fillTemplate(template, {
+      source: sourceType,
+      target: targetType,
+      connection: connectionType
+    })
+  }
+
   override check(_graph: Graph, edge: Cell, source: Cell, target: Cell, _sourceOut: number, _targetIn: number): string | null {
     const sourceType = getElementType(source)
     const targetType = getElementType(target)
@@ -166,11 +176,11 @@ class DiagramMultiplicity extends Multiplicity {
     const connectionType = getConnectionType(edge) ?? '-'
 
     if (this.relation.state === 'forbidden') {
-      return `${this.renderMessage(sourceType, targetType, connectionType, 0, 0)}\n`
+      return `${this.renderConnectionMessage(FORBIDDEN_CONNECTION_MESSAGE_TEMPLATE, sourceType, targetType, connectionType)}\n`
     }
 
     if (!this.isConnectionTypeAllowed(edge)) {
-      return `${this.renderMessage(sourceType, targetType, connectionType, this.relation.refinement.cardinality.min, this.relation.refinement.cardinality.max)}\n`
+      return `${this.renderConnectionMessage(UNSUPPORTED_CONNECTION_TYPE_MESSAGE_TEMPLATE, sourceType, targetType, connectionType)}\n`
     }
 
     const max = this.relation.refinement.cardinality.max

@@ -6,58 +6,58 @@
         <div class="toolbar-primary-row">
           <!-- Vue Action Buttons -->
           <v-btn-group size="small" density="compact" class="mr-2">
-            <v-btn title="Alles auswählen (Strg+A)" @click="selectAll">
+            <v-btn title="Select all (Ctrl+A)" @click="selectAll">
               <v-icon>mdi-select-all</v-icon>
             </v-btn>
-            <v-btn title="Auswahl aufheben (Esc)" @click="clearSelection">
+            <v-btn title="Clear selection (Esc)" @click="clearSelection">
               <v-icon>mdi-selection-off</v-icon>
             </v-btn>
           </v-btn-group>
 
           <v-btn-group size="small" density="compact">
-            <v-btn title="Löschen (Entf)" @click="deleteSelected">
+            <v-btn title="Delete (Del)" @click="deleteSelected">
               <v-icon>mdi-delete</v-icon>
             </v-btn>
-            <v-btn title="Duplizieren (Strg+D)" @click="duplicateSelected">
+            <v-btn title="Duplicate (Ctrl+D)" @click="duplicateSelected">
               <v-icon>mdi-content-duplicate</v-icon>
             </v-btn>
           </v-btn-group>
 
           <!-- Alignment Horizontal -->
           <v-btn-group size="small" density="compact" class="mr-2">
-            <v-btn title="Linksbündig ausrichten" @click="alignLeft">
+            <v-btn title="Align left" @click="alignLeft">
               <v-icon>mdi-format-horizontal-align-left</v-icon>
             </v-btn>
-            <v-btn title="Horizontal zentrieren" @click="alignCenterH">
+            <v-btn title="Center horizontally" @click="alignCenterH">
               <v-icon>mdi-format-horizontal-align-center</v-icon>
             </v-btn>
-            <v-btn title="Rechtsbündig ausrichten" @click="alignRight">
+            <v-btn title="Align right" @click="alignRight">
               <v-icon>mdi-format-horizontal-align-right</v-icon>
             </v-btn>
           </v-btn-group>
 
           <!-- Alignment Vertikal -->
           <v-btn-group size="small" density="compact" class="mr-2">
-            <v-btn title="Oben ausrichten" @click="alignTop">
+            <v-btn title="Align top" @click="alignTop">
               <v-icon>mdi-format-vertical-align-top</v-icon>
             </v-btn>
-            <v-btn title="Vertikal zentrieren" @click="alignMiddleV">
+            <v-btn title="Center vertically" @click="alignMiddleV">
               <v-icon>mdi-format-vertical-align-center</v-icon>
             </v-btn>
-            <v-btn title="Unten ausrichten" @click="alignBottom">
+            <v-btn title="Align bottom" @click="alignBottom">
               <v-icon>mdi-format-vertical-align-bottom</v-icon>
             </v-btn>
           </v-btn-group>
 
           <!-- Validation Button -->
-          <v-btn v-if="hasValidationRules" size="small" density="compact" color="primary" class="validation-btn" title="Diagramm validieren" @click="manualValidate">
+          <v-btn v-if="hasValidationRules" size="small" density="compact" color="primary" class="validation-btn" title="Validate diagram" @click="manualValidate">
             <v-icon start class="validation-icon">mdi-check-circle</v-icon>
-            <span class="validation-text">Validieren</span>
+            <span class="validation-text">Validate</span>
           </v-btn>
 
-          <v-btn-toggle v-model="activeLayerView" mandatory density="compact" class="layer-visibility-toggle" title="Sichtbare Layer">
-            <v-btn value="both" size="small">Beide</v-btn>
-            <v-btn value="model" size="small">Modell</v-btn>
+          <v-btn-toggle v-model="activeLayerView" mandatory density="compact" class="layer-visibility-toggle" title="Visible layers">
+            <v-btn value="both" size="small">Both</v-btn>
+            <v-btn value="model" size="small">Model</v-btn>
             <v-btn value="feedback" size="small">Feedback</v-btn>
           </v-btn-toggle>
 
@@ -94,22 +94,22 @@
             <div class="shortcut-help-anchor" :class="{ 'hidden-during-pan': isPanning }">
               <v-tooltip location="left" transition="scale-transition">
                 <template #activator="{ props: activatorProps }">
-                  <v-btn v-bind="activatorProps" icon size="small" color="primary" variant="flat" class="shortcut-help-btn" aria-label="Tastenkürzel anzeigen">
+                  <v-btn v-bind="activatorProps" icon size="small" color="primary" variant="flat" class="shortcut-help-btn" aria-label="Show keyboard shortcuts">
                     <v-icon size="18">mdi-information-outline</v-icon>
                   </v-btn>
                 </template>
 
                 <div class="shortcut-tooltip-content">
-                  <div><strong>Tastenkürzel</strong></div>
-                  <div>Strg+A: Alles auswählen</div>
-                  <div>Strg+C: Kopieren</div>
-                  <div>Strg+V: Einfügen</div>
-                  <div>Strg+D: Duplizieren</div>
-                  <div>Strg+Z: Rückgängig</div>
-                  <div>Strg+Y: Wiederholen</div>
-                  <div>Entf: Löschen</div>
-                  <div>Esc: Auswahl aufheben</div>
-                  <div>Mausrad im Canvas: Zoom in/out</div>
+                  <div><strong>Keyboard shortcuts</strong></div>
+                  <div>Ctrl+A: Select all</div>
+                  <div>Ctrl+C: Copy</div>
+                  <div>Ctrl+V: Paste</div>
+                  <div>Ctrl+D: Duplicate</div>
+                  <div>Ctrl+Z: Undo</div>
+                  <div>Ctrl+Y: Redo</div>
+                  <div>Del: Delete</div>
+                  <div>Esc: Clear selection</div>
+                  <div>Mouse wheel on canvas: Zoom in/out</div>
                 </div>
               </v-tooltip>
             </div>
@@ -122,7 +122,7 @@
               </div>
               <slot v-else name="window-content" v-bind="slotProps">
                 <div class="canvas-window-default-content">
-                  {{ slotProps.definition.placeholder ?? 'Fenster bereit. Inhalt kann ueber den Slot window-content oder die Window-Definition eingebunden werden.' }}
+                  {{ slotProps.definition.placeholder ?? 'Window ready. Content can be provided through the window-content slot or the window definition.' }}
                 </div>
               </slot>
             </template>
@@ -143,7 +143,7 @@
 
     <v-dialog v-model="strictValidationDialogVisible" max-width="640">
       <v-card>
-        <v-card-title>Validierungsfehler</v-card-title>
+        <v-card-title>Validation Errors</v-card-title>
         <v-card-text>
           <ul class="strict-validation-errors">
             <li v-for="(message, index) in strictValidationMessages" :key="`strict-validation-${index}`">
@@ -153,7 +153,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn color="primary" variant="text" @click="strictValidationDialogVisible = false">Schließen</v-btn>
+          <v-btn color="primary" variant="text" @click="strictValidationDialogVisible = false">Close</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -695,7 +695,7 @@ const sidebarLanguages = computed<SidebarLanguage[]>(() => {
     return props.languages
   }
   if (props.languageElements && props.languageElements.length > 0) {
-    return [{ id: '_default', name: props.languageName || 'Elemente', elements: props.languageElements }]
+    return [{ id: '_default', name: props.languageName || 'Elements', elements: props.languageElements }]
   }
   return []
 })
@@ -731,9 +731,9 @@ const manualValidate = () => {
   const errors = diagramValidator.validateGraph(currentGraph)
 
   if (errors.length === 0) {
-    alert('✓ Keine Validierungsfehler gefunden!')
+    alert('✓ No validation errors found!')
   } else {
-    alert('✗ Validierungsfehler:\n\n' + errors.join('\n'))
+    alert('✗ Validation errors:\n\n' + errors.join('\n'))
   }
 }
 
@@ -1146,8 +1146,8 @@ const buildLanguageShapes = computed(() => {
 const feedbackShapes = computed(() =>
   feedbackElementConfigs.value.map((entry) => {
     const feedbackElementDefinition = entry.element
-    const width = feedbackElementDefinition.width ?? 170
-    const height = feedbackElementDefinition.height ?? 46
+    const width = feedbackElementDefinition.width ?? 180
+    const height = feedbackElementDefinition.height ?? 72
     const shapeName = feedbackElementDefinition.type || entry.id
 
     return {

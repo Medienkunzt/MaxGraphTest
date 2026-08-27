@@ -1,7 +1,7 @@
 <template>
   <div class="feedback-form">
     <v-alert type="info" variant="tonal" density="comfortable" class="mb-4">
-      Konfigurieren Sie für jeden Status das Overlay (Icon, Position, Tooltip, Cursor).
+      Configure the overlay for each state (icon, position, tooltip, and cursor).
     </v-alert>
 
     <v-expansion-panels variant="accordion" multiple>
@@ -19,7 +19,7 @@
                   :items="overlayImageOptions"
                   item-title="title"
                   item-value="value"
-                  label="Overlay-Bild"
+                  label="Overlay Image"
                   density="comfortable"
                   variant="outlined"
                   clearable
@@ -30,7 +30,7 @@
               <v-col cols="3">
                 <v-text-field
                   v-model.number="config[state.key].image.width"
-                  label="Breite (px)"
+                  label="Width (px)"
                   type="number"
                   density="comfortable"
                   variant="outlined"
@@ -40,7 +40,7 @@
               <v-col cols="3">
                 <v-text-field
                   v-model.number="config[state.key].image.height"
-                  label="Höhe (px)"
+                  label="Height (px)"
                   type="number"
                   density="comfortable"
                   variant="outlined"
@@ -51,7 +51,7 @@
 
             <section class="mb-2">
               <div class="d-flex align-center justify-space-between mb-2">
-                <span class="section-label">Positionierung</span>
+                <span class="section-label">Positioning</span>
                 <v-chip :color="positionModeMeta[overlayDisplayMode[state.key]].color" variant="tonal" size="small" class="text-uppercase font-weight-medium">
                   <v-icon size="16" class="mr-1">{{ positionModeMeta[overlayDisplayMode[state.key]].icon }}</v-icon>
                   {{ positionModeMeta[overlayDisplayMode[state.key]].label }}
@@ -67,8 +67,8 @@
             </section>
 
             <div v-if="overlayDisplayMode[state.key] === 'alignment'" class="alignment-fields">
-              <v-select v-model="config[state.key].align" :items="alignOptions" label="Horizontal-Ausrichtung" density="comfortable" variant="outlined" @update:model-value="emitUpdate" />
-              <v-select v-model="config[state.key].verticalAlign" :items="verticalAlignOptions" label="Vertikal-Ausrichtung" density="comfortable" variant="outlined" @update:model-value="emitUpdate" />
+              <v-select v-model="config[state.key].align" :items="alignOptions" label="Horizontal Alignment" density="comfortable" variant="outlined" @update:model-value="emitUpdate" />
+              <v-select v-model="config[state.key].verticalAlign" :items="verticalAlignOptions" label="Vertical Alignment" density="comfortable" variant="outlined" @update:model-value="emitUpdate" />
             </div>
 
             <div v-else-if="config[state.key].offset" class="offset-fields">
@@ -137,53 +137,53 @@ const emit = defineEmits<{
 const config = toRef(props, 'config')
 
 const alignOptions = [
-  { title: 'Links', value: 'left' },
-  { title: 'Zentriert', value: 'center' },
-  { title: 'Rechts', value: 'right' }
+  { title: 'Left', value: 'left' },
+  { title: 'Center', value: 'center' },
+  { title: 'Right', value: 'right' }
 ]
 
 const verticalAlignOptions = [
-  { title: 'Oben', value: 'top' },
-  { title: 'Mitte', value: 'middle' },
-  { title: 'Unten', value: 'bottom' }
+  { title: 'Top', value: 'top' },
+  { title: 'Middle', value: 'middle' },
+  { title: 'Bottom', value: 'bottom' }
 ]
 
 const overlayImageOptions = [
-  { title: 'Grüner Haken (checkmark)', value: '/images/checkmark.gif' },
-  { title: 'Rotes Kreuz (cross)', value: '/images/cross.gif' },
-  { title: 'Fehler (error)', value: '/images/error.gif' },
-  { title: 'Kleiner Fehler (small_error)', value: '/images/small_error.gif' },
-  { title: 'Warnung (warning)', value: '/images/warning.gif' },
-  { title: 'Hilfe (help)', value: '/images/help.gif' },
-  { title: 'Grüner Punkt (green-dot)', value: '/images/green-dot.gif' },
+  { title: 'Green Checkmark (checkmark)', value: '/images/checkmark.gif' },
+  { title: 'Red Cross (cross)', value: '/images/cross.gif' },
+  { title: 'Error (error)', value: '/images/error.gif' },
+  { title: 'Small Error (small_error)', value: '/images/small_error.gif' },
+  { title: 'Warning (warning)', value: '/images/warning.gif' },
+  { title: 'Help (help)', value: '/images/help.gif' },
+  { title: 'Green Dot (green-dot)', value: '/images/green-dot.gif' },
   { title: 'Info/Link (small_link)', value: '/images/small_link.gif' }
 ]
 
 const cursorOptions = [
-  { title: 'Standard (default)', value: 'default' },
-  { title: 'Zeiger (pointer)', value: 'pointer' },
-  { title: 'Hilfe (help)', value: 'help' },
-  { title: 'Verschieben (move)', value: 'move' },
+  { title: 'Default (default)', value: 'default' },
+  { title: 'Pointer (pointer)', value: 'pointer' },
+  { title: 'Help (help)', value: 'help' },
+  { title: 'Move (move)', value: 'move' },
   { title: 'Text (text)', value: 'text' },
-  { title: 'Warten (wait)', value: 'wait' },
-  { title: 'Fadenkreuz (crosshair)', value: 'crosshair' },
-  { title: 'Nicht erlaubt (not-allowed)', value: 'not-allowed' },
-  { title: 'Greifen (grab)', value: 'grab' },
-  { title: 'Greifend (grabbing)', value: 'grabbing' }
+  { title: 'Wait (wait)', value: 'wait' },
+  { title: 'Crosshair (crosshair)', value: 'crosshair' },
+  { title: 'Not Allowed (not-allowed)', value: 'not-allowed' },
+  { title: 'Grab (grab)', value: 'grab' },
+  { title: 'Grabbing (grabbing)', value: 'grabbing' }
 ]
 
 const positionModeOptions: PositionModeOption[] = [
   {
     value: 'alignment',
-    label: 'Ausrichtung',
-    description: 'Position anhand horizontaler und vertikaler Ausrichtung setzen.',
+    label: 'Alignment',
+    description: 'Set the position using horizontal and vertical alignment.',
     icon: 'mdi-select-compare',
     color: 'primary'
   },
   {
     value: 'offset',
     label: 'Offset',
-    description: 'Feinpositionierung über X- und Y-Werte vornehmen.',
+    description: 'Fine-tune the position with X and Y values.',
     icon: 'mdi-cursor-move',
     color: 'teal-darken-2'
   }
@@ -228,4 +228,3 @@ const emitUpdate = () => {
   gap: 12px;
 }
 </style>
-

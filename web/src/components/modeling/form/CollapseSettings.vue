@@ -1,63 +1,63 @@
 <template>
   <div>
     <v-alert type="info" variant="tonal" density="compact" class="mb-4">
-      <div class="text-caption">Aktiviere das Zusammenklappen und definiere Darstellung, Größe und Stil der zusammengeklappten Variante.</div>
+      <div class="text-caption">Enable collapsing and define the appearance, size, and style of the collapsed variant.</div>
     </v-alert>
 
     <!-- Collapsible Aktivieren -->
-    <v-checkbox v-model="localElement.collapsible" label="Element kann zusammengeklappt werden" density="compact" hint="Fügt +/- Icon zum Element hinzu" persistent-hint @update:model-value="onCollapsibleChange" />
+    <v-checkbox v-model="localElement.collapsible" label="Element Can Be Collapsed" density="compact" hint="Adds a +/- icon to the Element" persistent-hint @update:model-value="onCollapsibleChange" />
 
     <!-- Collapse-Einstellungen (nur wenn collapsible aktiviert) -->
     <template v-if="localElement.collapsible">
       <v-divider class="my-3" />
 
-      <div class="text-subtitle-2 mb-3">Größe & Text</div>
+      <div class="text-subtitle-2 mb-3">Size & Text</div>
 
       <v-row dense>
         <v-col cols="6">
-          <v-text-field v-model.number="collapsedConfig.width" label="Breite (zugeklappt)" variant="outlined" density="compact" type="number" @input="emitUpdate" />
+          <v-text-field v-model.number="collapsedConfig.width" label="Width (collapsed)" variant="outlined" density="compact" type="number" @input="emitUpdate" />
         </v-col>
         <v-col cols="6">
-          <v-text-field v-model.number="collapsedConfig.height" label="Höhe (zugeklappt)" variant="outlined" density="compact" type="number" @input="emitUpdate" />
+          <v-text-field v-model.number="collapsedConfig.height" label="Height (collapsed)" variant="outlined" density="compact" type="number" @input="emitUpdate" />
         </v-col>
       </v-row>
 
-      <v-text-field v-model="collapsedConfig.label" label="Alternativer Text" variant="outlined" density="compact" hint="Optionaler Text der im zugeklappten Zustand angezeigt wird" persistent-hint clearable class="mt-2" @input="emitUpdate" />
+      <v-text-field v-model="collapsedConfig.label" label="Alternative Text" variant="outlined" density="compact" hint="Optional text shown in the collapsed state" persistent-hint clearable class="mt-2" @input="emitUpdate" />
 
       <v-divider class="my-4" />
 
-      <div class="text-subtitle-2 mb-3">Shape & Style (zugeklappt)</div>
+      <div class="text-subtitle-2 mb-3">Shape & Style (collapsed)</div>
 
       <v-select v-model="collapsedStyle.shape" :items="shapeOptions" item-title="label" item-value="value" label="Shape" variant="outlined" density="compact" clearable @update:model-value="onShapeChange" />
 
       <v-row dense class="mt-1">
         <v-col cols="6">
-          <ColorPickerField v-model="collapsedStyle.strokeColor" label="Rahmenfarbe" @update:model-value="emitUpdate" />
+          <ColorPickerField v-model="collapsedStyle.strokeColor" label="Border Color" @update:model-value="emitUpdate" />
         </v-col>
         <v-col cols="6">
-          <ColorPickerField v-model="collapsedStyle.fillColor" label="Füllfarbe" @update:model-value="emitUpdate" />
-        </v-col>
-      </v-row>
-
-      <v-slider v-model="collapsedStyle.strokeWidth" label="Rahmenstärke" min="1" max="10" step="1" thumb-label class="my-3" @update:model-value="emitUpdate" />
-
-      <v-slider v-model="collapsedStyle.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="emitUpdate" />
-
-      <v-row dense>
-        <v-col cols="6">
-          <ColorPickerField v-model="collapsedStyle.fontColor" label="Schriftfarbe" @update:model-value="emitUpdate" />
-        </v-col>
-        <v-col cols="6">
-          <v-text-field v-model="collapsedStyle.fontFamily" label="Schriftart" variant="outlined" density="compact" @input="emitUpdate" />
+          <ColorPickerField v-model="collapsedStyle.fillColor" label="Fill Color" @update:model-value="emitUpdate" />
         </v-col>
       </v-row>
 
+      <v-slider v-model="collapsedStyle.strokeWidth" label="Border Width" min="1" max="10" step="1" thumb-label class="my-3" @update:model-value="emitUpdate" />
+
+      <v-slider v-model="collapsedStyle.fontSize" label="Font Size" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="emitUpdate" />
+
       <v-row dense>
         <v-col cols="6">
-          <v-select v-model="collapsedStyle.align" :items="horizontalAlignOptions" label="Horizontale Ausrichtung" variant="outlined" density="compact" @update:model-value="emitUpdate" />
+          <ColorPickerField v-model="collapsedStyle.fontColor" label="Font Color" @update:model-value="emitUpdate" />
         </v-col>
         <v-col cols="6">
-          <v-select v-model="collapsedStyle.verticalAlign" :items="verticalAlignOptions" label="Vertikale Ausrichtung" variant="outlined" density="compact" @update:model-value="emitUpdate" />
+          <v-text-field v-model="collapsedStyle.fontFamily" label="Font Family" variant="outlined" density="compact" @input="emitUpdate" />
+        </v-col>
+      </v-row>
+
+      <v-row dense>
+        <v-col cols="6">
+          <v-select v-model="collapsedStyle.align" :items="horizontalAlignOptions" label="Horizontal Alignment" variant="outlined" density="compact" @update:model-value="emitUpdate" />
+        </v-col>
+        <v-col cols="6">
+          <v-select v-model="collapsedStyle.verticalAlign" :items="verticalAlignOptions" label="Vertical Alignment" variant="outlined" density="compact" @update:model-value="emitUpdate" />
         </v-col>
       </v-row>
     </template>
@@ -82,10 +82,10 @@ const emit = defineEmits<{
 const localElement = computed(() => props.element)
 
 const shapeOptions = [
-  { label: 'Rechteck', value: 'rectangle' },
+  { label: 'Rectangle', value: 'rectangle' },
   { label: 'Ellipse', value: 'ellipse' },
-  { label: 'Raute', value: 'rhombus' },
-  { label: 'Dreieck', value: 'triangle' }
+  { label: 'Diamond', value: 'rhombus' },
+  { label: 'Triangle', value: 'triangle' }
 ]
 
 const horizontalAlignOptions = ['left', 'center', 'right']

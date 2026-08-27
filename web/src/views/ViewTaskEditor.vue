@@ -4,7 +4,7 @@
     <v-card class="mx-2 mt-2 mb-1" variant="outlined">
       <v-card-title class="d-flex align-center py-3">
         <v-icon class="mr-2" color="primary">mdi-clipboard-text-outline</v-icon>
-        <span>Aufgaben</span>
+        <span>Tasks</span>
         <v-chip v-if="currentTask" color="primary" variant="tonal" size="small" class="ml-3">
           {{ currentTask.title }}
         </v-chip>
@@ -16,10 +16,10 @@
       <!-- Linke Sidebar: Aufgabenliste -->
       <v-card class="task-sidebar">
         <v-card-title class="sidebar-header d-flex align-center justify-space-between py-2 px-3">
-          <span class="text-body-2 font-weight-bold">Aufgaben</span>
+          <span class="text-body-2 font-weight-bold">Tasks</span>
           <v-btn size="small" color="primary" variant="tonal" icon @click="addTask">
             <v-icon>mdi-plus</v-icon>
-            <v-tooltip activator="parent" location="right">Neue Aufgabe</v-tooltip>
+            <v-tooltip activator="parent" location="right">New Task</v-tooltip>
           </v-btn>
         </v-card-title>
 
@@ -36,12 +36,12 @@
             <template #append>
               <v-btn size="x-small" variant="text" icon color="error" class="task-delete-btn" @click.stop="confirmDelete(task.id)">
                 <v-icon size="16">mdi-delete-outline</v-icon>
-                <v-tooltip activator="parent" location="right">Aufgabe löschen</v-tooltip>
+                <v-tooltip activator="parent" location="right">Delete Task</v-tooltip>
               </v-btn>
             </template>
           </v-list-item>
 
-          <v-list-item v-if="tasks.length === 0" disabled class="text-caption text-grey pa-2"> Noch keine Aufgaben vorhanden. </v-list-item>
+          <v-list-item v-if="tasks.length === 0" disabled class="text-caption text-grey pa-2"> No tasks available yet. </v-list-item>
         </v-list>
       </v-card>
 
@@ -50,14 +50,14 @@
         <v-card v-if="currentTask" height="100%" class="d-flex flex-column">
           <v-card-text class="task-editor-content d-flex flex-column pa-3">
             <!-- Titelfeld -->
-            <v-text-field v-model="titleModel" label="Titel" density="compact" variant="outlined" class="mb-3" hide-details="auto" placeholder="Aufgabentitel" @update:model-value="onTitleChange" />
+            <v-text-field v-model="titleModel" label="Title" density="compact" variant="outlined" class="mb-3" hide-details="auto" placeholder="Task title" @update:model-value="onTitleChange" />
 
             <!-- Rich-Text-Editor -->
             <TaskRichEditor v-model="contentModel" class="flex-1-1" @update:model-value="onContentChange" />
 
             <!-- Rohstruktur des Textes -->
             <div class="task-raw-structure mt-3">
-              <div class="task-raw-structure__title">Rohstruktur (HTML)</div>
+              <div class="task-raw-structure__title">Raw structure (HTML)</div>
               <pre class="task-raw-structure__content">{{ contentModel || '<p></p>' }}</pre>
             </div>
           </v-card-text>
@@ -66,9 +66,9 @@
         <v-card v-else height="100%" variant="outlined" class="d-flex align-center justify-center">
           <div class="text-center text-grey">
             <v-icon size="48" class="mb-3">mdi-clipboard-text-outline</v-icon>
-            <div class="text-body-1">Keine Aufgabe ausgewählt</div>
-            <div class="text-caption mt-1">Wähle eine Aufgabe aus der Liste oder erstelle eine neue.</div>
-            <v-btn class="mt-4" color="primary" prepend-icon="mdi-plus" @click="addTask">Neue Aufgabe erstellen</v-btn>
+            <div class="text-body-1">No task selected</div>
+            <div class="text-caption mt-1">Select a task from the list or create a new one.</div>
+            <v-btn class="mt-4" color="primary" prepend-icon="mdi-plus" @click="addTask">Create New Task</v-btn>
           </div>
         </v-card>
       </div>
@@ -77,12 +77,12 @@
     <!-- Lösch-Bestätigungsdialog -->
     <v-dialog v-model="deleteDialogVisible" max-width="400">
       <v-card>
-        <v-card-title>Aufgabe löschen?</v-card-title>
-        <v-card-text>Diese Aktion kann nicht rückgängig gemacht werden.</v-card-text>
+        <v-card-title>Delete Task?</v-card-title>
+        <v-card-text>This action cannot be undone.</v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="deleteDialogVisible = false">Abbrechen</v-btn>
-          <v-btn color="error" variant="tonal" @click="executeDelete">Löschen</v-btn>
+          <v-btn variant="text" @click="deleteDialogVisible = false">Cancel</v-btn>
+          <v-btn color="error" variant="tonal" @click="executeDelete">Delete</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

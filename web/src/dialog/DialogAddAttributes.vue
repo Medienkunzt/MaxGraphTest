@@ -3,13 +3,13 @@
     <v-card>
       <v-card-title> Attribute </v-card-title>
       <v-card-subtitle>
-        Entität: <b>{{ toolManagementStore.selectedEntity.entityName }}</b>
+        Element: <b>{{ toolManagementStore.selectedEntity.entityName }}</b>
       </v-card-subtitle>
 
       <v-card-text class="card-text">
         <v-form class="imput-form" @submit.prevent>
-          <v-text-field v-model="newAttributeName" label="Attribut Name" variant="solo" required :hide-details="true" @keydown.enter="addAttribute" />
-          <v-btn class="btn" color="success" @click="addAttribute">Hinzufügen</v-btn>
+          <v-text-field v-model="newAttributeName" label="Attribute Name" variant="solo" required :hide-details="true" @keydown.enter="addAttribute" />
+          <v-btn class="btn" color="success" @click="addAttribute">Add</v-btn>
         </v-form>
 
         <draggable v-model="toolManagementStore.selectedEntity.attributes" class="draggable" ghost-class="ghost" group="people" item-key="id" @start="drag = true" @end="drag = false">
@@ -28,7 +28,7 @@
       </v-card-text>
 
       <v-card-actions>
-        <v-btn block @click="closeModal()">Schließen</v-btn>
+        <v-btn block @click="closeModal()">Close</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

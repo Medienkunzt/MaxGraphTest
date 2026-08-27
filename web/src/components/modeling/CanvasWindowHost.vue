@@ -2,7 +2,7 @@
   <div class="canvas-window-host">
     <Teleport v-for="entry in windowEntries" :key="entry.definition.id" :to="`#${entry.contentTargetId}`" :disabled="!entry.isMounted">
       <slot name="window-content" :window="entry" :definition="entry.definition">
-        <div class="window-placeholder-content">{{ entry.definition.placeholder ?? 'Fensterinhalt' }}</div>
+        <div class="window-placeholder-content">{{ entry.definition.placeholder ?? 'Window content' }}</div>
       </slot>
     </Teleport>
   </div>

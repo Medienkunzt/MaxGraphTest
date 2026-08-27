@@ -5,7 +5,7 @@ import type { DiagramFeedbackConfig, FeedbackCanvasConfig, FeedbackTargetOverlay
 import type { MultiplicityRule, MultiplicityRelation, MultiplicityConfig, MultiplicityRelationState, MultiplicityRefinement, MultiplicityCardinality } from '@/model/Syntax'
 import { cloneFeedbackCanvasConfig, createDefaultFeedbackCanvasConfig, createEmptyFeedbackConfig, ensureFeedbackTargets, createDefaultTargetOverlays } from '@/utils/feedbackConfig'
 
-const DEFAULT_MULTIPLICITY_MESSAGE_TEMPLATE = 'Die Beziehung {source} -> {target} mit Verbindungstyp {connection} verletzt die Kardinalitaet ({min}..{max}).'
+const DEFAULT_MULTIPLICITY_MESSAGE_TEMPLATE = 'The Connection {source} -> {target} with Connection type {connection} violates the cardinality ({min}..{max}).'
 
 const ensureFeedbackForLanguage = (language: DiagramLanguage): DiagramFeedbackConfig => {
   if (!language.feedback) {
@@ -465,13 +465,13 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   const createExampleLanguage = (): DiagramLanguage[] => {
     const example: DiagramLanguage = {
       id: 'uml-class-diagram',
-      name: 'UML Klassendiagramm',
-      tags: ['UML', 'Objektorientiert', 'Software-Architektur'],
+      name: 'UML Class Diagram',
+      tags: ['UML', 'Object-oriented', 'Software Architecture'],
       elements: [
         // Klasse (mit 3 Abschnitten: Name, Attribute, Methoden)
         {
           type: 'uml-class',
-          defaultLabel: 'Klassenname',
+          defaultLabel: 'ClassName',
           renderMode: 'swimlane',
           x: 50,
           y: 50,
@@ -510,7 +510,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           collapsed: {
             width: 160,
             height: 60,
-            label: 'Klasse',
+            label: 'Class',
             style: {
               shape: 'rectangle',
               strokeColor: '#0d47a1',
@@ -527,7 +527,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Abstrakte Klasse
         {
           type: 'uml-abstract-class',
-          defaultLabel: '<<abstract>>\nAbstrakteKlasse',
+          defaultLabel: '<<abstract>>\nAbstractClass',
           renderMode: 'swimlane',
           x: 50,
           y: 50,
@@ -566,7 +566,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           collapsed: {
             width: 160,
             height: 60,
-            label: 'Abstrakt',
+            label: 'Abstract',
             style: {
               shape: 'rectangle',
               strokeColor: '#bf360c',
@@ -695,7 +695,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Paket
         {
           type: 'uml-package',
-          defaultLabel: 'paket',
+          defaultLabel: 'package',
           renderMode: 'swimlane',
           x: 100,
           y: 100,
@@ -729,7 +729,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           collapsed: {
             width: 200,
             height: 80,
-            label: 'Paket',
+            label: 'Package',
             style: {
               shape: 'rectangle',
               strokeColor: '#546e7a',
@@ -746,7 +746,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Notiz
         {
           type: 'uml-note',
-          defaultLabel: 'Notiz',
+          defaultLabel: 'Note',
           renderMode: 'canvas2d',
           x: 40,
           y: 40,
@@ -778,7 +778,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Text-Label für Attribute/Methoden
         {
           type: 'uml-text-label',
-          defaultLabel: '+ attribut: Typ',
+          defaultLabel: '+ attribute: Type',
           renderMode: 'predefined',
           x: 0,
           y: 0,
@@ -807,7 +807,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Vererbung (Generalisierung)
         {
           type: 'uml-inheritance',
-          label: 'Vererbung',
+          label: 'Inheritance',
           defaultLabel: '',
           connectionType: 'inheritance',
           connectable: true,
@@ -832,7 +832,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Realisierung (Interface-Implementierung)
         {
           type: 'uml-realization',
-          label: 'Realisierung',
+          label: 'Realization',
           defaultLabel: '',
           connectionType: 'realization',
           connectable: true,
@@ -858,7 +858,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Assoziation
         {
           type: 'uml-association',
-          label: 'Assoziation',
+          label: 'Association',
           defaultLabel: '',
           connectionType: 'association',
           connectable: true,
@@ -883,7 +883,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Gerichtete Assoziation
         {
           type: 'uml-directed-association',
-          label: 'Gerichtete Assoziation',
+          label: 'Directed Association',
           defaultLabel: '',
           connectionType: 'directed-association',
           connectable: true,
@@ -933,7 +933,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Komposition
         {
           type: 'uml-composition',
-          label: 'Komposition',
+          label: 'Composition',
           defaultLabel: '',
           connectionType: 'composition',
           connectable: true,
@@ -958,7 +958,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Abhängigkeit
         {
           type: 'uml-dependency',
-          label: 'Abhängigkeit',
+          label: 'Dependency',
           defaultLabel: '<<use>>',
           connectionType: 'dependency',
           connectable: true,
@@ -984,7 +984,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         // Notiz-Verbindung
         {
           type: 'uml-note-link',
-          label: 'Notiz-Verbindung',
+          label: 'Note Connection',
           defaultLabel: '',
           connectionType: 'note',
           connectable: false,
@@ -1025,11 +1025,11 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     const erm: DiagramLanguage = {
       id: 'erm-diagram',
       name: 'ERM (Entity-Relationship)',
-      tags: ['ERM', 'Datenmodellierung', 'Datenbanken'],
+      tags: ['ERM', 'Data Modeling', 'Databases'],
       elements: [
         {
           type: 'erm-entity',
-          defaultLabel: 'Entitaet',
+          defaultLabel: 'Entity',
           renderMode: 'predefined',
           x: 60,
           y: 60,
@@ -1060,7 +1060,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'erm-weak-entity',
-          defaultLabel: 'SchwacheEntitaet',
+          defaultLabel: 'WeakEntity',
           renderMode: 'predefined',
           x: 60,
           y: 60,
@@ -1091,7 +1091,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'erm-relationship',
-          defaultLabel: 'Beziehung',
+          defaultLabel: 'Relationship',
           renderMode: 'predefined',
           x: 80,
           y: 80,
@@ -1122,7 +1122,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'erm-identifying-relationship',
-          defaultLabel: 'Identifizierend',
+          defaultLabel: 'Identifying',
           renderMode: 'predefined',
           x: 80,
           y: 80,
@@ -1153,7 +1153,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'erm-attribute',
-          defaultLabel: 'Attribut',
+          defaultLabel: 'Attribute',
           renderMode: 'predefined',
           x: 80,
           y: 80,
@@ -1184,7 +1184,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'erm-multivalued-attribute',
-          defaultLabel: 'Mehrwertig',
+          defaultLabel: 'Multivalued',
           renderMode: 'predefined',
           x: 80,
           y: 80,
@@ -1215,7 +1215,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'erm-key-attribute',
-          defaultLabel: '<<PK>> Attribut',
+          defaultLabel: '<<PK>> Attribute',
           renderMode: 'predefined',
           x: 80,
           y: 80,
@@ -1248,7 +1248,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       connections: [
         {
           type: 'erm-relationship-link',
-          label: 'Beziehungs-Linie',
+          label: 'Relationship Connection',
           defaultLabel: '',
           connectionType: 'relationship',
           connectable: true,
@@ -1272,7 +1272,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'erm-attribute-link',
-          label: 'Attribut-Linie',
+          label: 'Attribute Connection',
           defaultLabel: '',
           connectionType: 'attribute',
           connectable: true,
@@ -1296,7 +1296,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'erm-identifying-link',
-          label: 'Identifizierend',
+          label: 'Identifying',
           defaultLabel: '',
           connectionType: 'identifying',
           connectable: true,
@@ -1327,8 +1327,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
 
     const circuit: DiagramLanguage = {
       id: 'circuit-diagram',
-      name: 'Elektrotechnik & Schaltkreise',
-      tags: ['Schaltplan', 'Elektronik', 'Wires'],
+      name: 'Electrical Engineering & Circuits',
+      tags: ['Circuit Diagram', 'Electronics', 'Wires'],
       elements: [
         {
           type: 'circuit-junction',
@@ -1662,6 +1662,119 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
           }
         },
         {
+          type: 'circuit-pcb-ic',
+          defaultLabel: 'U1',
+          renderMode: 'predefined',
+          x: 120,
+          y: 120,
+          width: 60,
+          height: 120,
+          predefinedShape: 'rectangle',
+          style: {
+            strokeColor: '#1a1a1a',
+            fillColor: '#c0c0c0',
+            strokeWidth: 2,
+            fontSize: 11,
+            fontColor: '#1a1a1a',
+            fontFamily: 'Arial',
+            align: 'center',
+            verticalAlign: 'middle',
+            rounded: false
+          },
+          anchorPoints: [
+            { x: 0, y: 0.25 },
+            { x: 0, y: 0.75 },
+            { x: 1, y: 0.25 },
+            { x: 1, y: 0.75 }
+          ],
+          children: [
+            {
+              type: 'circuit-pcb-pad-1',
+              defaultLabel: '1',
+              renderMode: 'predefined',
+              predefinedShape: 'ellipse',
+              style: {
+                strokeColor: '#d4af37',
+                fillColor: '#ffd700',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#1a1a1a',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: -0.2, y: 0.12, width: 0.16, height: 0.16, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-pcb-pad-2',
+              defaultLabel: '2',
+              renderMode: 'predefined',
+              predefinedShape: 'ellipse',
+              style: {
+                strokeColor: '#d4af37',
+                fillColor: '#ffd700',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#1a1a1a',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: -0.2, y: 0.8, width: 0.16, height: 0.16, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-pcb-pad-3',
+              defaultLabel: '3',
+              renderMode: 'predefined',
+              predefinedShape: 'ellipse',
+              style: {
+                strokeColor: '#d4af37',
+                fillColor: '#ffd700',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#1a1a1a',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 1.04, y: 0.8, width: 0.16, height: 0.16, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            },
+            {
+              type: 'circuit-pcb-pad-4',
+              defaultLabel: '4',
+              renderMode: 'predefined',
+              predefinedShape: 'ellipse',
+              style: {
+                strokeColor: '#d4af37',
+                fillColor: '#ffd700',
+                strokeWidth: 1,
+                fontSize: 9,
+                fontColor: '#1a1a1a',
+                fontFamily: 'Arial',
+                align: 'center',
+                verticalAlign: 'middle'
+              },
+              position: { x: 1.04, y: 0.12, width: 0.16, height: 0.16, relative: true },
+              children: [],
+              connectable: true,
+              allowLabelEdit: false
+            }
+          ],
+          connectable: false,
+          resizable: true,
+          movable: true,
+          allowLabelEdit: true
+        },
+        {
           type: 'circuit-connector',
           defaultLabel: 'J',
           renderMode: 'predefined',
@@ -1752,7 +1865,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     const bpmn: DiagramLanguage = {
       id: 'bpmn-diagram',
       name: 'BPMN',
-      tags: ['BPMN', 'Prozessmodellierung'],
+      tags: ['BPMN', 'Process Modeling'],
       elements: [
         {
           type: 'bpmn-pool',
@@ -1909,7 +2022,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'bpmn-event-end',
-          defaultLabel: 'Ende',
+          defaultLabel: 'End',
           renderMode: 'predefined',
           x: 120,
           y: 120,
@@ -1971,7 +2084,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'bpmn-data-object',
-          defaultLabel: 'Datenobjekt',
+          defaultLabel: 'Data Object',
           renderMode: 'predefined',
           x: 120,
           y: 120,
@@ -2085,8 +2198,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
 
     const molecule: DiagramLanguage = {
       id: 'molecule-structure',
-      name: 'Molekuelstrukturen',
-      tags: ['Chemie', 'Molekuel', 'Strukturformel'],
+      name: 'Molecular Structures',
+      tags: ['Chemistry', 'Molecule', 'Structural Formula'],
       elements: [
         {
           type: 'mol-atom-label',
@@ -2209,7 +2322,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'mol-text-label',
-          defaultLabel: 'Kommentar',
+          defaultLabel: 'Comment',
           renderMode: 'predefined',
           x: 80,
           y: 80,
@@ -2270,7 +2383,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       connections: [
         {
           type: 'mol-bond-single',
-          label: 'Einfachbindung',
+          label: 'Single Bond',
           defaultLabel: '',
           connectionType: 'single',
           connectable: true,
@@ -2294,7 +2407,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'mol-bond-double',
-          label: 'Doppelbindung',
+          label: 'Double Bond',
           defaultLabel: '',
           connectionType: 'double',
           connectable: true,
@@ -2318,7 +2431,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'mol-bond-triple',
-          label: 'Dreifachbindung',
+          label: 'Triple Bond',
           defaultLabel: '',
           connectionType: 'triple',
           connectable: true,
@@ -2342,7 +2455,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'mol-bond-dashed',
-          label: 'Gestrichelt',
+          label: 'Dashed',
           defaultLabel: '',
           connectionType: 'dashed',
           connectable: true,
@@ -2367,7 +2480,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
         },
         {
           type: 'mol-bond-aromatic',
-          label: 'Aromatisch',
+          label: 'Aromatic',
           defaultLabel: '',
           connectionType: 'aromatic',
           connectable: true,

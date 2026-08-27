@@ -6,9 +6,9 @@
           <v-icon size="14">mdi-comment-text-multiple-outline</v-icon>
           <span>Feedback</span>
         </button>
-        <button type="button" class="tab-button" :class="{ 'tab-button--active': activeTab === 'tasks' }" title="Aufgaben" @click="activeTab = 'tasks'">
+        <button type="button" class="tab-button" :class="{ 'tab-button--active': activeTab === 'tasks' }" title="Tasks" @click="activeTab = 'tasks'">
           <v-icon size="14">mdi-clipboard-text-outline</v-icon>
-          <span>Aufgaben</span>
+          <span>Tasks</span>
         </button>
       </div>
     </div>
@@ -18,7 +18,7 @@
 
       <div v-else class="tasks-sidebar" :style="{ width: sidebarWidth + 'px', minWidth: sidebarWidth + 'px' }">
         <div class="tasks-sidebar-header">
-          <span class="tasks-sidebar-title">Aufgaben</span>
+          <span class="tasks-sidebar-title">Tasks</span>
         </div>
 
         <div class="tasks-sidebar-list">
@@ -27,12 +27,12 @@
             <span class="task-list-item__title">{{ task.title }}</span>
           </button>
 
-          <div v-if="tasks.length === 0" class="tasks-empty-state">Keine Aufgaben vorhanden.</div>
+          <div v-if="tasks.length === 0" class="tasks-empty-state">No tasks available.</div>
         </div>
       </div>
     </div>
 
-    <div class="resize-handle" title="Breite anpassen" @mousedown.prevent="startResize">
+    <div class="resize-handle" title="Adjust width" @mousedown.prevent="startResize">
       <v-icon size="12">mdi-drag-vertical</v-icon>
     </div>
   </div>

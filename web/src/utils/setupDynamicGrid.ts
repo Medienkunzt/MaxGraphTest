@@ -72,7 +72,7 @@ export function setupDynamicGrid(graph: Ref<Graph | undefined>, canvasGrid: Ref<
       graph.value.container.appendChild(canvas)
     } catch (e) {
       if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.DEV) {
-        console.warn('Konnte Canvas nicht an graph.container anhängen:', e)
+        console.warn('Could not attach canvas to graph.container:', e)
       }
     }
   }

@@ -1,7 +1,7 @@
 <template>
   <div class="sidebar-container" :style="{ width: sidebarWidth + 'px', minWidth: sidebarWidth + 'px' }">
     <div class="sidebar-topbar">
-      <div class="tab-buttons" role="tablist" aria-label="Sidebar Inhalt">
+      <div class="tab-buttons" role="tablist" aria-label="Sidebar content">
         <button v-for="tab in tabs" :key="tab.value" type="button" class="tab-button" :class="{ 'tab-button--active': activeTab === tab.value }" :title="tab.label" :aria-pressed="activeTab === tab.value" @click="activeTab = tab.value">
           <v-icon size="14">{{ tab.icon }}</v-icon>
           <span>{{ tab.label }}</span>
@@ -15,7 +15,7 @@
       <SidebarPersistence v-else />
     </div>
 
-    <div class="resize-handle" title="Breite anpassen" @mousedown.prevent="startResize">
+    <div class="resize-handle" title="Adjust width" @mousedown.prevent="startResize">
       <v-icon size="12">mdi-drag-vertical</v-icon>
     </div>
   </div>
@@ -34,8 +34,8 @@ defineProps<{
 }>()
 
 const tabs: { value: SidebarTab; icon: string; label: string }[] = [
-  { value: 'elements', icon: 'mdi-shape-outline', label: 'Elemente' },
-  { value: 'persistence', icon: 'mdi-database-outline', label: 'Persistenz' },
+  { value: 'elements', icon: 'mdi-shape-outline', label: 'Elements' },
+  { value: 'persistence', icon: 'mdi-database-outline', label: 'Persistence' },
   { value: 'sync', icon: 'mdi-sync', label: 'Sync' }
 ]
 

@@ -15,44 +15,52 @@ const DEFAULT_HIGHLIGHT_COLORS = ['#FFF176', '#C8E6C9', '#BBDEFB', '#F8BBD0', '#
 
 const EXAMPLE_TASKS: Omit<DiagramTask, 'id'>[] = [
   {
-    title: 'A1 – Rechnungsverwaltung',
-    content: `<h2>Aufgabe: Datenmodell für eine Rechnungsverwaltung</h2>
-<p>In einem Unternehmen sollen Rechnungen digital erfasst und verwaltet werden. Analysieren Sie die fachlichen Anforderungen und entwickeln Sie ein geeignetes konzeptionelles Datenmodell.</p>
-<h3>Anforderungen</h3>
+    title: 'A1 – Invoice Management',
+    content: `<h2>Task: Data Model for Invoice Management</h2>
+<p>A company wants to record and manage invoices digitally. Analyze the business requirements and develop an appropriate conceptual data model.</p>
+<h3>Requirements</h3>
 <ul>
-  <li>Jede <strong>Rechnung</strong> wird durch eine eindeutige Rechnungsnummer identifiziert und enthält ein Ausstellungsdatum sowie einen Gesamtbetrag.</li>
-  <li>Eine Rechnung wird an genau einen <strong>Kunden</strong> gestellt. Ein Kunde kann mehrere Rechnungen erhalten haben. Erfassen Sie Name, Adresse und Kontaktdaten des Kunden.</li>
-  <li>Jede Rechnung besteht aus einer oder mehreren <strong>Rechnungspositionen</strong>. Jede Position referenziert einen <strong>Artikel</strong>, gibt die bestellte Menge an und weist einen positionsspezifischen Einzelpreis aus.</li>
-  <li>Ein <strong>Artikel</strong> besitzt eine Artikelnummer, eine Bezeichnung, eine Einheit (z.&nbsp;B. Stück, kg) sowie einen aktuellen Listenpreis.</li>
-  <li>Der Gesamtbetrag einer Rechnung ergibt sich rechnerisch aus den Einzelpositionen; modellieren Sie die dafür notwendigen Attribute.</li>
+  <li>Each <strong>invoice</strong> is identified by a unique invoice number and contains an issue date and a total amount.</li>
+  <li>An invoice is issued to exactly one <strong>customer</strong>. A customer may receive multiple invoices. Record the customer's name, address, and contact details.</li>
+  <li>Each invoice consists of one or more <strong>invoice items</strong>. Each item references a <strong>product</strong>, specifies the ordered quantity, and records an item-specific unit price.</li>
+  <li>A <strong>product</strong> has a product number, description, unit (e.g. item, kg), and current list price.</li>
+  <li>The invoice total is calculated from its individual items; model the attributes required for this calculation.</li>
 </ul>
-<h3>Aufgabenstellung</h3>
+<h3>Assignment</h3>
 <ol>
-  <li>Identifizieren Sie alle relevanten <strong>Entitätstypen</strong> und deren Attribute.</li>
-  <li>Beschreiben Sie die <strong>Beziehungen</strong> zwischen den Entitätstypen und legen Sie jeweils die Kardinalitäten fest.</li>
-  <li>Erstellen Sie das zugehörige <strong>ER-Diagramm</strong> in der Modellierungsumgebung.</li>
+  <li>Identify all relevant <strong>entity types</strong> and their attributes.</li>
+  <li>Describe the <strong>Connections</strong> between the entity types and define their cardinalities.</li>
+  <li>Create the corresponding <strong>ER diagram</strong> in the modeling environment.</li>
 </ol>`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   },
   {
-    title: 'A2 – Personalverwaltung & Gehalt',
-    content: `<h2>Aufgabe: Datenmodell für eine Personalverwaltung</h2>
-<p>Ein Unternehmen möchte seine Personalstruktur – einschließlich Stellen, Gehaltsgruppen und Abteilungszugehörigkeiten – in einer Datenbank abbilden. Analysieren Sie die Anforderungen und entwerfen Sie ein konzeptionelles Datenmodell.</p>
-<h3>Anforderungen</h3>
+    title: 'A2 – Personnel & Salary Management',
+    content: `<h2>Task: Data Model for Personnel Management</h2>
+<p>A company wants to represent its personnel structure—including positions, salary grades, and department assignments—in a database. Analyze the requirements and design a conceptual data model.</p>
+<h3>Requirements</h3>
 <ul>
-  <li>Jeder <strong>Mitarbeiter</strong> wird durch eine Personalnummer eindeutig identifiziert. Erfassen Sie außerdem Vorname, Nachname, Eintrittsdatum und Kontaktdaten.</li>
-  <li>Jeder Mitarbeiter ist genau einer <strong>Abteilung</strong> zugeordnet. Eine Abteilung kann mehrere Mitarbeiter beschäftigen. Jede Abteilung hat eine Bezeichnung und einen verantwortlichen Abteilungsleiter (ebenfalls ein Mitarbeiter).</li>
-  <li>Jedem Mitarbeiter ist genau eine <strong>Stelle</strong> (z.&nbsp;B. „Softwareentwickler", „Projektmanager") zugeordnet. Modellieren Sie Stellenbezeichnung und Verantwortungsbereich.</li>
-  <li>Die <strong>Vergütung</strong> richtet sich nach einer <strong>Gehaltsgruppe</strong>, die der Stelle zugeordnet ist. Eine Gehaltsgruppe definiert ein Mindest- und ein Maximalgehalt sowie eine Bezeichnung (z.&nbsp;B. „EG 10").</li>
-  <li>Das tatsächliche <strong>Gehalt</strong> eines Mitarbeiters liegt innerhalb der Spanne seiner Gehaltsgruppe und wird individuell festgehalten.</li>
+  <li>Each <strong>employee</strong> is uniquely identified by an employee number. Also record first name, last name, start date, and contact details.</li>
+  <li>Each employee belongs to exactly one <strong>department</strong>. A department may employ multiple employees. Each department has a name and a responsible department manager, who is also an employee.</li>
+  <li>Each employee is assigned exactly one <strong>position</strong> (e.g. “Software Developer” or “Project Manager”). Model the job title and area of responsibility.</li>
+  <li><strong>Compensation</strong> is based on a <strong>salary grade</strong> assigned to the position. A salary grade defines a minimum salary, maximum salary, and name (e.g. “EG 10”).</li>
+  <li>An employee's actual <strong>salary</strong> lies within the range of their salary grade and is recorded individually.</li>
 </ul>
-<h3>Aufgabenstellung</h3>
+<h3>Assignment</h3>
 <ol>
-  <li>Identifizieren Sie alle relevanten <strong>Entitätstypen</strong> und deren Attribute.</li>
-  <li>Beschreiben Sie die <strong>Beziehungen</strong> zwischen den Entitätstypen inklusive Kardinalitäten; beachten Sie dabei die Selbstreferenz beim Abteilungsleiter.</li>
-  <li>Erstellen Sie das zugehörige <strong>ER-Diagramm</strong> in der Modellierungsumgebung.</li>
+  <li>Identify all relevant <strong>entity types</strong> and their attributes.</li>
+  <li>Describe the <strong>Connections</strong> between the entity types, including cardinalities, and account for the department manager's self-reference.</li>
+  <li>Create the corresponding <strong>ER diagram</strong> in the modeling environment.</li>
 </ol>`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    title: 'A3 – Order Management',
+    content: `<h2>Task: UML Class Diagram for Order Management</h2>
+<p>A <span style="color: rgb(30, 136, 229);"><strong>Customer</strong></span> with a <span style="color: rgb(67, 160, 71);"><em>customerNumber</em></span> places <span style="color: rgb(30, 136, 229);"><strong>Orders</strong></span>, each identified by an <span style="color: rgb(67, 160, 71);"><em>orderNumber</em></span>. An <span style="color: rgb(30, 136, 229);"><strong>Order</strong></span> consists of at least one <span style="color: rgb(30, 136, 229);"><strong>Order Item</strong></span> with a <span style="color: rgb(67, 160, 71);"><em>quantity</em></span>.<br>
+Each <span style="color: rgb(30, 136, 229);"><strong>Order Item</strong></span> refers to exactly one <span style="color: rgb(30, 136, 229);"><strong>Product</strong></span>, identified by a <span style="color: rgb(67, 160, 71);"><em>productNumber</em></span>. <span style="color: rgb(30, 136, 229);"><strong>Products</strong></span> implement the <span style="color: rgb(251, 140, 0);"><strong>Sellable</strong></span> interface.</p>`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   }
@@ -72,7 +80,7 @@ export const useTaskStore = defineStore('task', () => {
   const createTask = (title?: string): DiagramTask => {
     const task: DiagramTask = {
       id: generateTaskId(),
-      title: title ?? `Aufgabe ${tasks.value.length + 1}`,
+      title: title ?? `Task ${tasks.value.length + 1}`,
       content: '',
       createdAt: now(),
       updatedAt: now()

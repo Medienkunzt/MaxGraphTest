@@ -2,22 +2,22 @@
   <v-dialog v-model="isOpen" max-width="500px" persistent>
     <v-card>
       <v-card-title class="text-h5">
-        {{ isEdit ? 'Sprache bearbeiten' : 'Neue Sprache erstellen' }}
+        {{ isEdit ? 'Edit Language' : 'Create New Language' }}
       </v-card-title>
 
       <v-card-text>
         <v-form ref="form" v-model="valid">
-          <v-text-field v-model="formData.name" label="Name der Sprache" :rules="nameRules" required variant="outlined" class="mb-3" />
+          <v-text-field v-model="formData.name" label="Language Name" :rules="nameRules" required variant="outlined" class="mb-3" />
 
-          <v-combobox v-model="formData.tags" label="Tags" multiple chips closable-chips variant="outlined" hint="Drücken Sie Enter um ein neues Tag hinzuzufügen" persistent-hint />
+          <v-combobox v-model="formData.tags" label="Tags" multiple chips closable-chips variant="outlined" hint="Press Enter to add a new tag" persistent-hint />
         </v-form>
       </v-card-text>
 
       <v-card-actions>
         <v-spacer />
-        <v-btn color="grey" variant="text" @click="closeDialog"> Abbrechen </v-btn>
+        <v-btn color="grey" variant="text" @click="closeDialog"> Cancel </v-btn>
         <v-btn color="primary" :disabled="!valid" @click="saveLanguage">
-          {{ isEdit ? 'Speichern' : 'Erstellen' }}
+          {{ isEdit ? 'Save' : 'Create' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -56,7 +56,7 @@ const isOpen = ref(props.modelValue)
 const isEdit = ref(false)
 
 // Validation Rules
-const nameRules = [(v: string) => !!v || 'Name ist erforderlich', (v: string) => (v && v.length >= 3) || 'Name muss mindestens 3 Zeichen lang sein', (v: string) => (v && v.length <= 50) || 'Name darf maximal 50 Zeichen lang sein']
+const nameRules = [(v: string) => !!v || 'Name is required', (v: string) => (v && v.length >= 3) || 'Name must be at least 3 characters long', (v: string) => (v && v.length <= 50) || 'Name must not exceed 50 characters']
 
 // Watchers
 watch(

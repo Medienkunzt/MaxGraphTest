@@ -4,10 +4,10 @@
     <div v-if="editor && !props.readonly" class="editor-toolbar">
       <!-- Undo / Redo -->
       <v-btn-group size="x-small" density="compact" variant="outlined" class="mr-1">
-        <v-btn :disabled="!editor.can().undo()" title="Rückgängig" @click="editor.chain().focus().undo().run()">
+        <v-btn :disabled="!editor.can().undo()" title="Undo" @click="editor.chain().focus().undo().run()">
           <v-icon>mdi-undo</v-icon>
         </v-btn>
-        <v-btn :disabled="!editor.can().redo()" title="Wiederholen" @click="editor.chain().focus().redo().run()">
+        <v-btn :disabled="!editor.can().redo()" title="Redo" @click="editor.chain().focus().redo().run()">
           <v-icon>mdi-redo</v-icon>
         </v-btn>
       </v-btn-group>
@@ -16,16 +16,16 @@
 
       <!-- Schriftart / Überschriften -->
       <v-btn-group size="x-small" density="compact" variant="outlined" class="mr-1">
-        <v-btn :color="editor.isActive('heading', { level: 1 }) ? 'primary' : undefined" title="Überschrift 1" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()">
+        <v-btn :color="editor.isActive('heading', { level: 1 }) ? 'primary' : undefined" title="Heading 1" @click="editor.chain().focus().toggleHeading({ level: 1 }).run()">
           <v-icon>mdi-format-header-1</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive('heading', { level: 2 }) ? 'primary' : undefined" title="Überschrift 2" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">
+        <v-btn :color="editor.isActive('heading', { level: 2 }) ? 'primary' : undefined" title="Heading 2" @click="editor.chain().focus().toggleHeading({ level: 2 }).run()">
           <v-icon>mdi-format-header-2</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive('heading', { level: 3 }) ? 'primary' : undefined" title="Überschrift 3" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()">
+        <v-btn :color="editor.isActive('heading', { level: 3 }) ? 'primary' : undefined" title="Heading 3" @click="editor.chain().focus().toggleHeading({ level: 3 }).run()">
           <v-icon>mdi-format-header-3</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive('paragraph') ? 'primary' : undefined" title="Absatz" @click="editor.chain().focus().setParagraph().run()">
+        <v-btn :color="editor.isActive('paragraph') ? 'primary' : undefined" title="Paragraph" @click="editor.chain().focus().setParagraph().run()">
           <v-icon>mdi-format-paragraph</v-icon>
         </v-btn>
       </v-btn-group>
@@ -34,16 +34,16 @@
 
       <!-- Fettschrift, kursiv, unterstrichen, durchgestrichen -->
       <v-btn-group size="x-small" density="compact" variant="outlined" class="mr-1">
-        <v-btn :color="editor.isActive('bold') ? 'primary' : undefined" title="Fett (Strg+B)" @click="editor.chain().focus().toggleBold().run()">
+        <v-btn :color="editor.isActive('bold') ? 'primary' : undefined" title="Bold (Ctrl+B)" @click="editor.chain().focus().toggleBold().run()">
           <v-icon>mdi-format-bold</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive('italic') ? 'primary' : undefined" title="Kursiv (Strg+I)" @click="editor.chain().focus().toggleItalic().run()">
+        <v-btn :color="editor.isActive('italic') ? 'primary' : undefined" title="Italic (Ctrl+I)" @click="editor.chain().focus().toggleItalic().run()">
           <v-icon>mdi-format-italic</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive('underline') ? 'primary' : undefined" title="Unterstrichen (Strg+U)" @click="editor.chain().focus().toggleUnderline().run()">
+        <v-btn :color="editor.isActive('underline') ? 'primary' : undefined" title="Underline (Ctrl+U)" @click="editor.chain().focus().toggleUnderline().run()">
           <v-icon>mdi-format-underline</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive('strike') ? 'primary' : undefined" title="Durchgestrichen" @click="editor.chain().focus().toggleStrike().run()">
+        <v-btn :color="editor.isActive('strike') ? 'primary' : undefined" title="Strikethrough" @click="editor.chain().focus().toggleStrike().run()">
           <v-icon>mdi-format-strikethrough</v-icon>
         </v-btn>
       </v-btn-group>
@@ -53,7 +53,7 @@
       <!-- Textfarbe -->
       <v-menu :close-on-content-click="false" location="bottom">
         <template #activator="{ props: menuProps }">
-          <v-btn size="small" variant="outlined" title="Textfarbe" class="mr-1" v-bind="menuProps">
+          <v-btn size="small" variant="outlined" title="Text color" class="mr-1" v-bind="menuProps">
             <span class="toolbar-color-indicator">
               A
               <span class="toolbar-color-dot" :style="{ backgroundColor: activeColor ?? '#616161' }"></span>
@@ -63,7 +63,7 @@
         <v-card class="pa-2 color-picker-card">
           <div class="color-swatches">
             <button v-for="color in textColors" :key="color.value" class="color-swatch" :style="{ background: color.value }" :title="color.label" @click="applyTextColor(color.value)" />
-            <button class="color-swatch color-swatch--reset" title="Farbe zurücksetzen" @click="editor.chain().focus().unsetColor().run()">
+            <button class="color-swatch color-swatch--reset" title="Reset color" @click="editor.chain().focus().unsetColor().run()">
               <v-icon size="14">mdi-close</v-icon>
             </button>
           </div>
@@ -73,7 +73,7 @@
       <!-- Hervorhebung -->
       <v-menu :close-on-content-click="false" location="bottom">
         <template #activator="{ props: menuProps }">
-          <v-btn size="small" variant="outlined" title="Hervorhebungsfarbe" class="mr-1" v-bind="menuProps">
+          <v-btn size="small" variant="outlined" title="Highlight color" class="mr-1" v-bind="menuProps">
             <span class="toolbar-highlight-indicator">
               <v-icon size="14">mdi-marker</v-icon>
               <span class="toolbar-highlight-dot" :style="{ backgroundColor: activeHighlightColor ?? '#e0e0e0' }"></span>
@@ -83,7 +83,7 @@
         <v-card class="pa-2 color-picker-card">
           <div class="color-swatches">
             <button v-for="color in highlightColors" :key="color.value" class="color-swatch" :style="{ background: color.value }" :title="color.label" @click="applyHighlight(color.value)" />
-            <button class="color-swatch color-swatch--reset" title="Hervorhebung entfernen" @click="editor.chain().focus().unsetHighlight().run()">
+            <button class="color-swatch color-swatch--reset" title="Remove highlight" @click="editor.chain().focus().unsetHighlight().run()">
               <v-icon size="14">mdi-close</v-icon>
             </button>
           </div>
@@ -94,16 +94,16 @@
 
       <!-- Ausrichtung -->
       <v-btn-group size="x-small" density="compact" variant="outlined" class="mr-1">
-        <v-btn :color="editor.isActive({ textAlign: 'left' }) ? 'primary' : undefined" title="Linksbündig" @click="editor.chain().focus().setTextAlign('left').run()">
+        <v-btn :color="editor.isActive({ textAlign: 'left' }) ? 'primary' : undefined" title="Align left" @click="editor.chain().focus().setTextAlign('left').run()">
           <v-icon>mdi-format-align-left</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive({ textAlign: 'center' }) ? 'primary' : undefined" title="Zentriert" @click="editor.chain().focus().setTextAlign('center').run()">
+        <v-btn :color="editor.isActive({ textAlign: 'center' }) ? 'primary' : undefined" title="Center" @click="editor.chain().focus().setTextAlign('center').run()">
           <v-icon>mdi-format-align-center</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive({ textAlign: 'right' }) ? 'primary' : undefined" title="Rechtsbündig" @click="editor.chain().focus().setTextAlign('right').run()">
+        <v-btn :color="editor.isActive({ textAlign: 'right' }) ? 'primary' : undefined" title="Align right" @click="editor.chain().focus().setTextAlign('right').run()">
           <v-icon>mdi-format-align-right</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive({ textAlign: 'justify' }) ? 'primary' : undefined" title="Blocksatz" @click="editor.chain().focus().setTextAlign('justify').run()">
+        <v-btn :color="editor.isActive({ textAlign: 'justify' }) ? 'primary' : undefined" title="Justify" @click="editor.chain().focus().setTextAlign('justify').run()">
           <v-icon>mdi-format-align-justify</v-icon>
         </v-btn>
       </v-btn-group>
@@ -112,10 +112,10 @@
 
       <!-- Listen -->
       <v-btn-group size="x-small" density="compact" variant="outlined" class="mr-1">
-        <v-btn :color="editor.isActive('bulletList') ? 'primary' : undefined" title="Aufzählungsliste" @click="editor.chain().focus().toggleBulletList().run()">
+        <v-btn :color="editor.isActive('bulletList') ? 'primary' : undefined" title="Bulleted list" @click="editor.chain().focus().toggleBulletList().run()">
           <v-icon>mdi-format-list-bulleted</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive('orderedList') ? 'primary' : undefined" title="Nummerierte Liste" @click="editor.chain().focus().toggleOrderedList().run()">
+        <v-btn :color="editor.isActive('orderedList') ? 'primary' : undefined" title="Numbered list" @click="editor.chain().focus().toggleOrderedList().run()">
           <v-icon>mdi-format-list-numbered</v-icon>
         </v-btn>
       </v-btn-group>
@@ -127,10 +127,10 @@
         <v-btn :color="editor.isActive('code') ? 'primary' : undefined" title="Code (Inline)" @click="editor.chain().focus().toggleCode().run()">
           <v-icon>mdi-code-tags</v-icon>
         </v-btn>
-        <v-btn :color="editor.isActive('blockquote') ? 'primary' : undefined" title="Zitat" @click="editor.chain().focus().toggleBlockquote().run()">
+        <v-btn :color="editor.isActive('blockquote') ? 'primary' : undefined" title="Quote" @click="editor.chain().focus().toggleBlockquote().run()">
           <v-icon>mdi-format-quote-open</v-icon>
         </v-btn>
-        <v-btn title="Horizontale Linie" @click="editor.chain().focus().setHorizontalRule().run()">
+        <v-btn title="Horizontal line" @click="editor.chain().focus().setHorizontalRule().run()">
           <v-icon>mdi-minus</v-icon>
         </v-btn>
       </v-btn-group>
@@ -159,7 +159,7 @@ const props = withDefaults(
     readonly?: boolean
   }>(),
   {
-    placeholder: 'Aufgabentext hier eingeben …',
+    placeholder: 'Enter task text here…',
     readonly: false
   }
 )
@@ -219,25 +219,25 @@ const applyHighlight = (color: string) => {
 }
 
 const textColors = [
-  { label: 'Schwarz', value: '#000000' },
-  { label: 'Dunkelgrau', value: '#424242' },
-  { label: 'Rot', value: '#E53935' },
+  { label: 'Black', value: '#000000' },
+  { label: 'Dark Gray', value: '#424242' },
+  { label: 'Red', value: '#E53935' },
   { label: 'Pink', value: '#D81B60' },
-  { label: 'Lila', value: '#8E24AA' },
-  { label: 'Blau', value: '#1E88E5' },
+  { label: 'Purple', value: '#8E24AA' },
+  { label: 'Blue', value: '#1E88E5' },
   { label: 'Cyan', value: '#00ACC1' },
-  { label: 'Grün', value: '#43A047' },
+  { label: 'Green', value: '#43A047' },
   { label: 'Orange', value: '#FB8C00' },
-  { label: 'Gelb', value: '#FDD835' }
+  { label: 'Yellow', value: '#FDD835' }
 ]
 
 const highlightColors = [
-  { label: 'Gelb', value: '#FFF176' },
-  { label: 'Grün', value: '#C8E6C9' },
-  { label: 'Blau', value: '#BBDEFB' },
+  { label: 'Yellow', value: '#FFF176' },
+  { label: 'Green', value: '#C8E6C9' },
+  { label: 'Blue', value: '#BBDEFB' },
   { label: 'Pink', value: '#F8BBD0' },
   { label: 'Orange', value: '#FFE0B2' },
-  { label: 'Lila', value: '#E1BEE7' }
+  { label: 'Purple', value: '#E1BEE7' }
 ]
 </script>
 

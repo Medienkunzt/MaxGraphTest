@@ -1,7 +1,7 @@
 <template>
   <div v-if="connections.length > 0" class="connection-toolbar">
     <v-divider vertical class="mr-2" />
-    <span class="text-caption mr-2">Verbindungen:</span>
+    <span class="text-caption mr-2">Connections:</span>
     <button class="display-toggle" type="button" :title="displayToggleTitle" @click="toggleDisplayMode">
       <v-icon size="14">{{ displayToggleIcon }}</v-icon>
     </button>
@@ -45,7 +45,7 @@ const toggleDisplayMode = () => {
   displayMode.value = displayMode.value === 'text' ? 'preview' : 'text'
 }
 
-const displayToggleTitle = computed(() => (displayMode.value === 'text' ? 'Anzeige: nur Text' : 'Anzeige: nur Vorschau'))
+const displayToggleTitle = computed(() => (displayMode.value === 'text' ? 'Display: text only' : 'Display: preview only'))
 const displayToggleIcon = computed(() => (displayMode.value === 'text' ? 'mdi-format-text' : 'mdi-vector-line'))
 
 watch(selectedIndex, (newIndex) => {

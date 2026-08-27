@@ -3,15 +3,15 @@
     <v-btn-group>
       <v-btn density="compact" variant="tonal" :color="mode === 'manual' ? 'primary' : undefined" @click="emit('update:mode', 'manual')">
         <v-icon class="icon-only">mdi-hand-back-left</v-icon>
-        <span class="btn-text">Manuell</span>
+        <span class="btn-text">Manual</span>
       </v-btn>
       <v-btn density="compact" variant="tonal" :color="mode === 'assisted' ? 'primary' : undefined" @click="emit('update:mode', 'assisted')">
         <v-icon class="icon-only">mdi-hand-pointing-up</v-icon>
-        <span class="btn-text">Assistiert</span>
+        <span class="btn-text">Assisted</span>
       </v-btn>
       <v-btn density="compact" variant="tonal" :color="mode === 'strict' ? 'primary' : undefined" @click="emit('update:mode', 'strict')">
         <v-icon class="icon-only">mdi-shield-lock</v-icon>
-        <span class="btn-text">Strikt</span>
+        <span class="btn-text">Strict</span>
       </v-btn>
     </v-btn-group>
   </div>

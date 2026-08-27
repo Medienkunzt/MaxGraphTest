@@ -54,7 +54,7 @@ const connectionMap = computed(() => {
 const getConnectionByType = (type?: string) => (type ? connectionMap.value[type] : undefined)
 
 const formatConnectionLabel = (type?: string) => {
-  if (!type) return 'Verbindung'
+  if (!type) return 'Connection'
   const connection = getConnectionByType(type)
   return connection?.label || type
 }

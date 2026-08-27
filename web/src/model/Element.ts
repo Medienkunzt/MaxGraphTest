@@ -6,6 +6,7 @@ export interface ElementStyle {
   fontSize: number
   fontColor: string
   fontFamily: string
+  fontStyle?: number
   align: string
   verticalAlign: string
   // Swimlane-spezifische Eigenschaften (basierend auf MaxGraph Beispielen)

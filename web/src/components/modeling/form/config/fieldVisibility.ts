@@ -72,28 +72,28 @@ export const complexityLevels: ComplexityLevelMeta[] = [
   {
     value: 'basic',
     label: 'Standard',
-    description: 'Nur häufig genutzte Einstellungen anzeigen.',
+    description: 'Show only frequently used settings.',
     color: 'success',
     icon: 'mdi-tune-variant'
   },
   {
     value: 'advanced',
-    label: 'Fortgeschritten',
-    description: 'Erweiterte Optionen für Layout, Ports und Marker freischalten.',
+    label: 'Advanced',
+    description: 'Enable advanced options for layout, ports, and markers.',
     color: 'amber-darken-2',
     icon: 'mdi-rocket-launch-outline'
   },
   {
     value: 'expert',
-    label: 'Experte',
-    description: 'Alle verfügbaren Parameter, inklusive spezieller Routing- und Typografie-Optionen.',
+    label: 'Expert',
+    description: 'Show every available parameter, including specialized routing and typography options.',
     color: 'deep-purple-accent-4',
     icon: 'mdi-atom-variant'
   },
   {
     value: 'dev',
     label: 'Development',
-    description: 'Experimentelle Features und Optionen in der Entwicklung.',
+    description: 'Experimental features and options under development.',
     color: 'red',
     icon: 'mdi-flask-outline'
   }

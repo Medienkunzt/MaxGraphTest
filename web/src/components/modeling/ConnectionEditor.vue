@@ -4,7 +4,7 @@
       <!-- Liste der Verbindungen (links) -->
       <v-col cols="3" class="pr-2 editor-col">
         <div class="scroll-column">
-          <EditorEntityList title="Verbindungen" add-button-text="Neue Verbindung" :items="connections" :selected-index="selectedConnectionIndex" empty-text="Keine Verbindungen definiert" title-field="type" subtitle-field="label" :show-prepend-icon="false" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
+          <EditorEntityList title="Connections" add-button-text="New Connection" :items="connections" :selected-index="selectedConnectionIndex" empty-text="No Connections defined" title-field="type" subtitle-field="label" :show-prepend-icon="false" @add="addNewConnection" @select="selectConnection" @delete="deleteConnection" />
         </div>
       </v-col>
 
@@ -21,14 +21,14 @@
       <v-col cols="4" class="pl-2 preview-column">
         <v-card class="preview-card">
           <v-card-title class="py-2">
-            <span class="text-h6">Vorschau</span>
+            <span class="text-h6">Preview</span>
           </v-card-title>
           <v-divider />
           <v-card-text>
             <div class="preview-canvas">
               <DrawingCanvas ref="drawingCanvasRef" :show-elements="false" :model="canvasModel" :preview-connection="selectedConnection" :preview-mode="previewMode" :language-connections="connections" :language-elements="elements" :language-syntax="languageSyntaxForCanvas" />
             </div>
-            <v-alert v-if="!selectedConnection" type="info" variant="tonal" class="mt-3"> Wählen Sie eine Verbindung aus, um eine Vorschau zu sehen </v-alert>
+            <v-alert v-if="!selectedConnection" type="info" variant="tonal" class="mt-3"> Select a Connection to see a preview </v-alert>
           </v-card-text>
         </v-card>
       </v-col>
@@ -94,7 +94,7 @@ const addNewConnection = () => {
 
   const newConnection: DiagramConnection = {
     type: `connection_${Date.now()}`,
-    label: 'Neue Verbindung',
+    label: 'New Connection',
     defaultLabel: '',
     connectionType: 'association',
     style: {
@@ -190,9 +190,9 @@ const loadLanguageFromRoute = () => {
     const language = languages.find((lang) => lang.id === languageId)
     if (language) {
       setCurrentLanguage(language)
-      console.log('Sprache aus Route geladen:', language.name)
+      console.log('Language loaded from route:', language.name)
     } else {
-      console.warn('Sprache mit ID nicht gefunden:', languageId)
+      console.warn('Language ID not found:', languageId)
     }
   }
 }

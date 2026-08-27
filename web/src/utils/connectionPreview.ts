@@ -104,17 +104,17 @@ const createActorVertex = (graph: Graph, parent: any, { x, y, label, fill }: { x
 const describeStyleSummary = (style: EdgeStyle): string => {
   const fragments: string[] = []
 
-  if (style.dashed) fragments.push('Gestrichelte Linie')
+  if (style.dashed) fragments.push('Dashed line')
   if (style.rounded) fragments.push('Abgerundete Knicke')
   if (style.curved) fragments.push('Kurvierter Verlauf')
-  if (style.startArrow && style.startArrow !== 'none') fragments.push(`Startpfeil: ${style.startArrow}`)
-  if (style.endArrow && style.endArrow !== 'none') fragments.push(`Endpfeil: ${style.endArrow}`)
-  if (style.strokeWidth) fragments.push(`Linienstärke: ${style.strokeWidth}px`)
-  if (style.strokeColor) fragments.push(`Linienfarbe: ${style.strokeColor}`)
+  if (style.startArrow && style.startArrow !== 'none') fragments.push(`Start arrow: ${style.startArrow}`)
+  if (style.endArrow && style.endArrow !== 'none') fragments.push(`End arrow: ${style.endArrow}`)
+  if (style.strokeWidth) fragments.push(`Line width: ${style.strokeWidth}px`)
+  if (style.strokeColor) fragments.push(`Line color: ${style.strokeColor}`)
   if (style.portConstraint) fragments.push(`Port-Constraint: ${style.portConstraint}`)
 
   if (fragments.length === 0) {
-    return 'Standarddarstellung ohne besondere Optionen.'
+    return 'Default appearance without special options.'
   }
 
   return fragments.join('\n• ')
@@ -131,7 +131,7 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
     const client = createActorVertex(graph, parent, {
       x: 40,
       y: 100,
-      label: 'Client UI\n(Fachbereich)',
+      label: 'Client UI\n(Business Unit)',
       fill: '#e3f2fd'
     })
 
@@ -145,20 +145,20 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
     const service = createActorVertex(graph, parent, {
       x: 250,
       y: 210,
-      label: 'Order Service\n(Domäne)',
+      label: 'Order Service\n(Domain)',
       fill: '#fff8e1'
     })
 
     const eventBus = createActorVertex(graph, parent, {
       x: 460,
       y: 140,
-      label: 'Event Bus\n(Verteilung)',
+      label: 'Event Bus\n(Distribution)',
       fill: '#f3e5f5'
     })
 
     const note = graph.insertVertex({
       parent,
-      value: `Beispielszenario\n\n• Einstieg: Client sendet Anfrage\n• Gateway leitet weiter & antwortet\n• Service publiziert Ereignis\n\nEigenschaften:\n• ${describeStyleSummary(baseStyle)}`,
+      value: `Sample Scenario\n\n• Entry: Client sends a request\n• Gateway forwards and responds\n• Service publishes an event\n\nProperties:\n• ${describeStyleSummary(baseStyle)}`,
       x: 40,
       y: 220,
       width: 200,
@@ -191,7 +191,7 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
       parent,
       source: gateway,
       target: service,
-      value: 'Weiterleitung an Domäne',
+      value: 'Forward to domain',
       style: cloneStyle(baseStyle)
     })
 
@@ -218,7 +218,7 @@ export const renderScenarioConnectionPreview = (graph: Graph, connection: Diagra
       parent,
       source: eventBus,
       target: client,
-      value: 'Benachrichtigung',
+      value: 'Notification',
       style: cloneStyle({
         ...baseStyle,
         curved: true,
@@ -505,7 +505,7 @@ export const renderRoutingConnectionPreview = (graph: Graph, connection: Diagram
     // Info note explaining what to observe
     graph.insertVertex({
       parent,
-      value: `Routing-Demo\n\nÄndern Sie die Routing-Einstellungen und beobachten Sie:\n\n• Wie Kanten um das Hindernis (Firewall) routen\n• Unterschiede bei orthogonalen vs. diagonalen Verbindungen\n• Diagonale Verbindung (Analytics ↔ Monitor)\n• Effekte von 'rounded' und 'curved' Optionen\n• Verhalten bei verschiedenen Edge-Styles`,
+      value: `Routing Demo\n\nChange the routing settings and observe:\n\n• How Connections route around the obstacle (firewall)\n• Differences between orthogonal and diagonal Connections\n• Diagonal Connection (Analytics ↔ Monitor)\n• Effects of the 'rounded' and 'curved' options\n• Behavior with different edge styles`,
       x: 30,
       y: 570,
       width: 700,

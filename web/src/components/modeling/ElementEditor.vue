@@ -4,7 +4,7 @@
       <!-- Element-Liste (links) -->
       <v-col cols="3" class="pr-2 editor-col">
         <div class="scroll-column">
-          <EditorEntityList title="Elemente" add-button-text="Neues Element" :items="elements" :selected-index="selectedElementIndex" empty-text="Keine Elemente definiert" title-field="type" subtitle-field="defaultLabel" icon-field="renderMode" color-field="renderMode" :icon-map="elementIconMap" :color-map="elementColorMap" @add="addNewElement" @select="selectElement" @delete="deleteElement" />
+          <EditorEntityList title="Elements" add-button-text="New Element" :items="elements" :selected-index="selectedElementIndex" empty-text="No Elements defined" title-field="type" subtitle-field="defaultLabel" icon-field="renderMode" color-field="renderMode" :icon-map="elementIconMap" :color-map="elementColorMap" @add="addNewElement" @select="selectElement" @delete="deleteElement" />
         </div>
       </v-col>
 
@@ -21,7 +21,7 @@
       <v-col cols="4" class="pl-2 preview-column">
         <v-card class="preview-card">
           <v-card-title class="py-2">
-            <span class="text-h6">Vorschau</span>
+            <span class="text-h6">Preview</span>
           </v-card-title>
 
           <v-divider />
@@ -31,7 +31,7 @@
               <DrawingCanvas ref="drawingCanvasRef" :show-elements="false" :model="canvasModel" :language-elements="languageElementsForCanvas" :language-connections="languageConnectionsForCanvas" :language-syntax="languageSyntaxForCanvas" />
             </div>
 
-            <v-alert v-if="!selectedElement" type="info" variant="tonal" class="mt-3"> Wählen Sie ein Element aus, um eine Vorschau zu sehen </v-alert>
+            <v-alert v-if="!selectedElement" type="info" variant="tonal" class="mt-3"> Select an Element to see a preview </v-alert>
           </v-card-text>
         </v-card>
       </v-col>
@@ -97,7 +97,7 @@ const addNewElement = () => {
 
   const newElement: DiagramElement = {
     type: `element_${Date.now()}`,
-    defaultLabel: 'Neues Element',
+    defaultLabel: 'New Element',
     renderMode: 'canvas2d',
     x: 50,
     y: 50,
@@ -167,12 +167,12 @@ const renderElementPreview = () => {
   const element = elementDefinition.value || selectedElement.value
 
   if (!element) {
-    console.warn('⚠️ Kein Element zum Rendern vorhanden')
+    console.warn('⚠️ No Element available to render')
     return
   }
 
   if (!drawingCanvasRef.value?.graph) {
-    console.warn('⚠️ Canvas oder Graph noch nicht verfügbar')
+    console.warn('⚠️ Canvas or graph is not available yet')
     return
   }
 
@@ -180,7 +180,7 @@ const renderElementPreview = () => {
   const parent = graph.getDefaultParent()
 
   if (!parent) {
-    console.warn('⚠️ Kein default parent verfügbar')
+    console.warn('⚠️ No default parent available')
     return
   }
 
@@ -195,7 +195,7 @@ const renderElementPreview = () => {
       graph.setSelectionCell(createdCell)
     })
   } catch (error) {
-    console.error('❌ Fehler beim Rendern der Element-Vorschau:', error)
+    console.error('❌ Failed to render Element preview:', error)
   }
 }
 
@@ -251,7 +251,7 @@ const registerCustomShape = (shapeId: string, canvasCommands: string) => {
         const nums = args.map(Number)
 
         if (nums.some((n) => isNaN(n))) {
-          console.warn(`Ungültige Zahlen in: ${line}`)
+          console.warn(`Invalid numbers in: ${line}`)
           continue
         }
 
@@ -335,12 +335,12 @@ const loadLanguageFromRoute = () => {
     const language = languages.find((lang) => lang.id === languageId)
     if (language) {
       setCurrentLanguage(language)
-      console.log('Sprache aus Route geladen:', language.name)
+      console.log('Language loaded from route:', language.name)
 
       // TODO: Hier würden die spezifischen Elemente, Verbindungen und Syntax
       // der geladenen Sprache in den Editor geladen werden
     } else {
-      console.warn('Sprache mit ID nicht gefunden:', languageId)
+      console.warn('Language ID not found:', languageId)
     }
   }
 }

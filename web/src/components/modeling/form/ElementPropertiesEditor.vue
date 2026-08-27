@@ -1,30 +1,30 @@
 <template>
   <div>
     <!-- Grundeinstellungen -->
-    <v-text-field v-model="localElement.type" label="Typ-Identifikator" variant="outlined" density="compact" class="mb-3" hint="Eindeutiger Bezeichner (z.B. 'uml-class')" persistent-hint @input="emitUpdate" />
+    <v-text-field v-model="localElement.type" label="Type Identifier" variant="outlined" density="compact" class="mb-3" hint="Unique identifier (e.g. 'uml-class')" persistent-hint @input="emitUpdate" />
 
-    <v-text-field v-model="localElement.defaultLabel" label="Standard-Label" variant="outlined" density="compact" class="mb-3" hint="Standard-Text für neue Instanzen" persistent-hint @input="emitUpdate" />
+    <v-text-field v-model="localElement.defaultLabel" label="Default Label" variant="outlined" density="compact" class="mb-3" hint="Default text for new instances" persistent-hint @input="emitUpdate" />
 
     <!-- Shape-Typ -->
-    <v-select v-model="localElement.renderMode" :items="shapeTypes" item-title="title" item-value="value" label="Darstellungsart" variant="outlined" density="compact" class="mb-3" @update:model-value="onTypeChange" />
+    <v-select v-model="localElement.renderMode" :items="shapeTypes" item-title="title" item-value="value" label="Render Mode" variant="outlined" density="compact" class="mb-3" @update:model-value="onTypeChange" />
 
     <!-- Canvas2D Editor -->
-    <v-textarea v-if="localElement.renderMode === 'canvas2d'" v-model="localElement.canvas" label="Canvas2D Befehle" variant="outlined" density="compact" rows="4" class="mb-3" hint="Befehle: MOVE x y, LINE x y, RECT x y w h, ELLIPSE x y w h" persistent-hint @input="emitUpdate" />
+    <v-textarea v-if="localElement.renderMode === 'canvas2d'" v-model="localElement.canvas" label="Canvas2D Commands" variant="outlined" density="compact" rows="4" class="mb-3" hint="Commands: MOVE x y, LINE x y, RECT x y w h, ELLIPSE x y w h" persistent-hint @input="emitUpdate" />
 
     <!-- Predefined Shape -->
-    <v-select v-if="localElement.renderMode === 'predefined'" v-model="localElement.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Vordefinierte Shape" variant="outlined" density="compact" class="mb-3" @update:model-value="emitUpdate" />
+    <v-select v-if="localElement.renderMode === 'predefined'" v-model="localElement.predefinedShape" :items="predefinedShapes" item-title="label" item-value="value" label="Predefined Shape" variant="outlined" density="compact" class="mb-3" @update:model-value="emitUpdate" />
 
     <!-- Swimlane Beschreibung -->
     <v-alert v-if="localElement.renderMode === 'swimlane'" type="info" variant="tonal" class="mb-3">
       <v-icon class="mr-2">mdi-view-column</v-icon>
-      <strong>Swimlane Container-Element</strong>
-      <div class="text-caption mt-1">Swimlanes eignen sich perfekt für Container wie Klassendiagramme, Use-Cases und andere strukturierte Elemente.</div>
+      <strong>Swimlane Container Element</strong>
+      <div class="text-caption mt-1">Swimlanes work well for containers such as class diagrams, use cases, and other structured Elements.</div>
     </v-alert>
 
     <!-- Position (nur für Child-Elemente) -->
     <div v-if="isChild && childElementData">
       <v-divider class="my-3" />
-      <div class="text-subtitle-2 mb-2">Positionierung</div>
+      <div class="text-subtitle-2 mb-2">Positioning</div>
       <v-row>
         <v-col cols="3">
           <v-text-field v-model.number="childElementData.position.x" label="X" variant="outlined" density="compact" type="number" step="0.1" @input="emitUpdate" />
@@ -33,22 +33,22 @@
           <v-text-field v-model.number="childElementData.position.y" label="Y" variant="outlined" density="compact" type="number" step="0.1" @input="emitUpdate" />
         </v-col>
         <v-col cols="3">
-          <v-text-field v-model.number="childElementData.position.width" label="Breite" variant="outlined" density="compact" type="number" @input="emitUpdate" />
+          <v-text-field v-model.number="childElementData.position.width" label="Width" variant="outlined" density="compact" type="number" @input="emitUpdate" />
         </v-col>
         <v-col cols="3">
-          <v-text-field v-model.number="childElementData.position.height" label="Höhe" variant="outlined" density="compact" type="number" @input="emitUpdate" />
+          <v-text-field v-model.number="childElementData.position.height" label="Height" variant="outlined" density="compact" type="number" @input="emitUpdate" />
         </v-col>
       </v-row>
-      <v-checkbox v-model="childElementData.position.relative" label="Relative Positionierung" density="compact" class="mb-2" @update:model-value="emitUpdate" />
+      <v-checkbox v-model="childElementData.position.relative" label="Relative Positioning" density="compact" class="mb-2" @update:model-value="emitUpdate" />
     </div>
 
     <!-- Dimensions (nur für Haupt-Elemente) -->
     <v-row v-if="!isChild && diagramElementData">
       <v-col cols="6">
-        <v-text-field v-model.number="diagramElementData.width" label="Breite" variant="outlined" density="compact" type="number" @input="emitUpdate" />
+        <v-text-field v-model.number="diagramElementData.width" label="Width" variant="outlined" density="compact" type="number" @input="emitUpdate" />
       </v-col>
       <v-col cols="6">
-        <v-text-field v-model.number="diagramElementData.height" label="Höhe" variant="outlined" density="compact" type="number" @input="emitUpdate" />
+        <v-text-field v-model.number="diagramElementData.height" label="Height" variant="outlined" density="compact" type="number" @input="emitUpdate" />
       </v-col>
     </v-row>
 
@@ -57,32 +57,32 @@
       <v-expansion-panel>
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-format-paint</v-icon>
-          Style-Einstellungen
+          Style Settings
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <v-row>
             <v-col cols="6">
-              <ColorPickerField v-model="localElement.style.strokeColor" label="Rahmenfarbe" @update:model-value="emitUpdate" />
+              <ColorPickerField v-model="localElement.style.strokeColor" label="Border Color" @update:model-value="emitUpdate" />
             </v-col>
             <v-col cols="6">
-              <ColorPickerField v-model="localElement.style.fillColor" label="Füllfarbe" @update:model-value="emitUpdate" />
+              <ColorPickerField v-model="localElement.style.fillColor" label="Fill Color" @update:model-value="emitUpdate" />
             </v-col>
           </v-row>
 
-          <v-slider v-model="localElement.style.strokeWidth" label="Rahmenstärke" min="1" max="10" step="1" thumb-label class="mb-3" @update:model-value="emitUpdate" />
+          <v-slider v-model="localElement.style.strokeWidth" label="Border Width" min="1" max="10" step="1" thumb-label class="mb-3" @update:model-value="emitUpdate" />
 
-          <v-slider v-model="localElement.style.fontSize" label="Schriftgröße" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="emitUpdate" />
+          <v-slider v-model="localElement.style.fontSize" label="Font Size" min="8" max="24" step="1" thumb-label class="mb-3" @update:model-value="emitUpdate" />
 
-          <ColorPickerField v-model="localElement.style.fontColor" label="Schriftfarbe" class="mb-3" @update:model-value="emitUpdate" />
+          <ColorPickerField v-model="localElement.style.fontColor" label="Font Color" class="mb-3" @update:model-value="emitUpdate" />
 
-          <v-text-field v-model="localElement.style.fontFamily" label="Schriftart" variant="outlined" density="compact" class="mb-3" @input="emitUpdate" />
+          <v-text-field v-model="localElement.style.fontFamily" label="Font Family" variant="outlined" density="compact" class="mb-3" @input="emitUpdate" />
 
           <v-row>
             <v-col cols="6">
-              <v-select v-model="localElement.style.align" :items="alignOptions" label="Horizontale Ausrichtung" variant="outlined" density="compact" @update:model-value="emitUpdate" />
+              <v-select v-model="localElement.style.align" :items="alignOptions" label="Horizontal Alignment" variant="outlined" density="compact" @update:model-value="emitUpdate" />
             </v-col>
             <v-col cols="6">
-              <v-select v-model="localElement.style.verticalAlign" :items="verticalAlignOptions" label="Vertikale Ausrichtung" variant="outlined" density="compact" @update:model-value="emitUpdate" />
+              <v-select v-model="localElement.style.verticalAlign" :items="verticalAlignOptions" label="Vertical Alignment" variant="outlined" density="compact" @update:model-value="emitUpdate" />
             </v-col>
           </v-row>
         </v-expansion-panel-text>
@@ -91,10 +91,10 @@
       <v-expansion-panel>
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-pencil</v-icon>
-          Bearbeitung
+          Editing
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <v-checkbox v-model="localElement.allowLabelEdit" label="Label im Canvas bearbeitbar" density="compact" hint="Doppelklick öffnet den Editor, wenn aktiviert" persistent-hint @update:model-value="emitUpdate" />
+          <v-checkbox v-model="localElement.allowLabelEdit" label="Label Editable on Canvas" density="compact" hint="Double-click opens the editor when enabled" persistent-hint @update:model-value="emitUpdate" />
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -102,34 +102,34 @@
       <v-expansion-panel v-if="!isChild && diagramElementData">
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-target</v-icon>
-          Verbindungspunkte
+          Connection Points
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <div class="d-flex align-center mb-3">
             <span class="text-subtitle-2 mr-3">Anchor Points</span>
-            <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addAnchorPoint"> Hinzufügen </v-btn>
+            <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addAnchorPoint"> Add </v-btn>
           </div>
 
-          <v-switch v-model="showAutoAnchorGenerator" label="Anchor Points automatisch verteilen" density="compact" color="primary" class="mb-2" hint="Optional: Punkte gleichmaessig auf der Aussenlinie der Shape erzeugen" persistent-hint />
+          <v-switch v-model="showAutoAnchorGenerator" label="Distribute Anchor Points Automatically" density="compact" color="primary" class="mb-2" hint="Optionally create evenly distributed points along the shape outline" persistent-hint />
 
           <v-row v-if="showAutoAnchorGenerator" dense class="mb-3">
             <v-col cols="12" md="4">
-              <v-text-field v-model.number="autoAnchorCount" label="Anzahl Punkte" variant="outlined" density="compact" type="number" min="1" max="128" @input="emitUpdate" />
+              <v-text-field v-model.number="autoAnchorCount" label="Number of Points" variant="outlined" density="compact" type="number" min="1" max="128" @input="emitUpdate" />
             </v-col>
             <v-col cols="12" md="4">
-              <v-text-field v-model.number="autoAnchorStartAngle" label="Startwinkel" variant="outlined" density="compact" type="number" suffix="deg" hint="0 = rechts, 90 = oben" persistent-hint @input="emitUpdate" />
+              <v-text-field v-model.number="autoAnchorStartAngle" label="Start Angle" variant="outlined" density="compact" type="number" suffix="deg" hint="0 = right, 90 = top" persistent-hint @input="emitUpdate" />
             </v-col>
             <v-col cols="12" md="4" class="d-flex align-center">
-              <v-btn color="primary" variant="flat" prepend-icon="mdi-auto-fix" @click="generateAnchorPoints"> Generieren </v-btn>
+              <v-btn color="primary" variant="flat" prepend-icon="mdi-auto-fix" @click="generateAnchorPoints"> Generate </v-btn>
             </v-col>
           </v-row>
 
           <div v-if="diagramElementData.anchorPoints && diagramElementData.anchorPoints.length > 0" class="mb-2">
             <div class="d-flex flex-wrap align-center ga-2 mb-2">
               <v-checkbox-btn :model-value="allAnchorRowsSelected" :indeterminate="someAnchorRowsSelected" @update:model-value="toggleSelectAllAnchorRows(Boolean($event))" />
-              <span class="text-body-2">Alle auswählen</span>
-              <v-chip size="small" variant="tonal">Ausgewählt: {{ selectedAnchorRows.length }}</v-chip>
-              <v-btn color="error" variant="tonal" size="small" prepend-icon="mdi-delete" :disabled="selectedAnchorRows.length === 0" @click="removeSelectedAnchorPoints"> Auswahl löschen </v-btn>
+              <span class="text-body-2">Select All</span>
+              <v-chip size="small" variant="tonal">Selected: {{ selectedAnchorRows.length }}</v-chip>
+              <v-btn color="error" variant="tonal" size="small" prepend-icon="mdi-delete" :disabled="selectedAnchorRows.length === 0" @click="removeSelectedAnchorPoints"> Delete Selection </v-btn>
             </div>
 
             <v-table density="compact" class="anchor-table">
@@ -158,7 +158,7 @@
             </v-table>
           </div>
 
-          <v-alert v-if="!diagramElementData.anchorPoints || diagramElementData.anchorPoints.length === 0" type="info" variant="tonal" class="mt-2"> Keine Verbindungspunkte definiert. Standard-Punkte werden verwendet. </v-alert>
+          <v-alert v-if="!diagramElementData.anchorPoints || diagramElementData.anchorPoints.length === 0" type="info" variant="tonal" class="mt-2"> No Connection points defined. Default points will be used. </v-alert>
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -167,12 +167,12 @@
       <v-expansion-panel v-if="!isChild && diagramElementData">
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-cog</v-icon>
-          Verhalten
+          Behavior
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <v-checkbox v-model="diagramElementData.connectable" label="Verbindungen erlauben" density="compact" @update:model-value="emitUpdate" />
-          <v-checkbox v-model="diagramElementData.resizable" label="Größe änderbar" density="compact" @update:model-value="emitUpdate" />
-          <v-checkbox v-model="diagramElementData.movable" label="Verschiebbar" density="compact" @update:model-value="emitUpdate" />
+          <v-checkbox v-model="diagramElementData.connectable" label="Allow Connections" density="compact" @update:model-value="emitUpdate" />
+          <v-checkbox v-model="diagramElementData.resizable" label="Resizable" density="compact" @update:model-value="emitUpdate" />
+          <v-checkbox v-model="diagramElementData.movable" label="Movable" density="compact" @update:model-value="emitUpdate" />
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -180,10 +180,10 @@
       <v-expansion-panel v-if="isChild && childElementData">
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-cog</v-icon>
-          Verhalten
+          Behavior
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <v-checkbox v-model="childElementData.connectable" label="Verbindungen erlauben" density="compact" @update:model-value="emitUpdate" />
+          <v-checkbox v-model="childElementData.connectable" label="Allow Connections" density="compact" @update:model-value="emitUpdate" />
         </v-expansion-panel-text>
       </v-expansion-panel>
 
@@ -191,43 +191,43 @@
       <v-expansion-panel v-if="localElement.renderMode === 'swimlane'">
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-view-column</v-icon>
-          Swimlane-Einstellungen
+          Swimlane Settings
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <v-row dense>
             <v-col cols="6">
-              <v-text-field v-model.number="localElement.style.startSize" label="Start-Größe" variant="outlined" density="compact" type="number" hint="Größe der Kopfzeile/Startspalte" persistent-hint @input="emitUpdate" />
+              <v-text-field v-model.number="localElement.style.startSize" label="Start Size" variant="outlined" density="compact" type="number" hint="Size of the header or start column" persistent-hint @input="emitUpdate" />
             </v-col>
             <v-col cols="6">
-              <v-checkbox v-model="localElement.style.horizontal" label="Horizontal" density="compact" hint="Orientierung der Swimlane" @update:model-value="emitUpdate" />
+              <v-checkbox v-model="localElement.style.horizontal" label="Horizontal" density="compact" hint="Swimlane orientation" @update:model-value="emitUpdate" />
             </v-col>
           </v-row>
 
           <v-divider class="my-4" />
 
-          <div class="text-subtitle-2 mb-3">Auto-Layout Optionen</div>
+          <div class="text-subtitle-2 mb-3">Auto-layout Options</div>
 
           <v-row dense>
             <v-col cols="6">
-              <v-switch v-model="localElement.style.autoFitWidth" label="Volle Breite" color="primary" density="compact" hint="Children auf volle Container-Breite strecken" persistent-hint @update:model-value="emitUpdate" />
+              <v-switch v-model="localElement.style.autoFitWidth" label="Full Width" color="primary" density="compact" hint="Stretch child Elements to the full container width" persistent-hint @update:model-value="emitUpdate" />
             </v-col>
             <v-col cols="6">
-              <v-switch v-model="localElement.style.autoStackY" label="Vertikal stapeln" color="primary" density="compact" hint="Children automatisch untereinander anordnen" persistent-hint @update:model-value="emitUpdate" />
+              <v-switch v-model="localElement.style.autoStackY" label="Stack Vertically" color="primary" density="compact" hint="Arrange child Elements vertically" persistent-hint @update:model-value="emitUpdate" />
             </v-col>
           </v-row>
 
           <v-row dense class="mt-2">
             <v-col cols="6">
-              <v-switch v-model="localElement.style.autoResize" label="Automatische Größe" color="primary" density="compact" hint="Swimlane passt sich an Inhalt an" persistent-hint @update:model-value="emitUpdate" />
+              <v-switch v-model="localElement.style.autoResize" label="Automatic Size" color="primary" density="compact" hint="Resize the swimlane to fit its content" persistent-hint @update:model-value="emitUpdate" />
             </v-col>
           </v-row>
 
           <v-row v-if="localElement.style.autoStackY || localElement.style.autoFitWidth" dense class="mt-2">
             <v-col v-if="localElement.style.autoStackY" cols="6">
-              <v-text-field v-model.number="localElement.style.childSpacing" label="Vertikaler Abstand" type="number" density="compact" variant="outlined" suffix="px" hint="Abstand zwischen Elementen (Y)" persistent-hint @input="emitUpdate" />
+              <v-text-field v-model.number="localElement.style.childSpacing" label="Vertical Spacing" type="number" density="compact" variant="outlined" suffix="px" hint="Spacing between Elements (Y)" persistent-hint @input="emitUpdate" />
             </v-col>
             <v-col cols="6">
-              <v-text-field v-model.number="localElement.style.childSpacingX" label="Horizontaler Abstand" type="number" density="compact" variant="outlined" suffix="px" hint="Abstand links/rechts (X)" persistent-hint @input="emitUpdate" />
+              <v-text-field v-model.number="localElement.style.childSpacingX" label="Horizontal Spacing" type="number" density="compact" variant="outlined" suffix="px" hint="Left/right spacing (X)" persistent-hint @input="emitUpdate" />
             </v-col>
           </v-row>
         </v-expansion-panel-text>
@@ -237,7 +237,7 @@
       <v-expansion-panel>
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-folder-open-outline</v-icon>
-          Collapse / Zusammenklappen
+          Collapse
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <CollapseSettings :element="localElement" @update="emitUpdate" />
@@ -248,12 +248,12 @@
       <v-expansion-panel v-if="depth < maxDepth">
         <v-expansion-panel-title>
           <v-icon class="mr-2">mdi-family-tree</v-icon>
-          Child Elemente
+          Child Elements
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <div class="d-flex align-center mb-3">
-            <span class="text-subtitle-2 mr-3">Verschachtelte Elemente</span>
-            <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addChildElement"> Child hinzufügen </v-btn>
+            <span class="text-subtitle-2 mr-3">Nested Elements</span>
+            <v-btn size="small" color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addChildElement"> Add Child </v-btn>
           </div>
 
           <v-card v-for="(child, index) in localElement.children" :key="index" variant="outlined" class="mb-3">
@@ -268,7 +268,7 @@
             </v-card-text>
           </v-card>
 
-          <v-alert v-if="!localElement.children || localElement.children.length === 0" type="info" variant="tonal" class="mt-2"> Keine Child Elemente definiert </v-alert>
+          <v-alert v-if="!localElement.children || localElement.children.length === 0" type="info" variant="tonal" class="mt-2"> No child Elements defined </v-alert>
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
@@ -316,21 +316,21 @@ const childElementData = computed(() => (isChildElement(localElement.value) ? lo
 
 const shapeTypes = [
   { title: 'Canvas2D Shape', value: 'canvas2d' },
-  { title: 'Vordefinierte Shape', value: 'predefined' },
+  { title: 'Predefined Shape', value: 'predefined' },
   { title: 'Swimlane Container', value: 'swimlane' }
 ]
 
 const predefinedShapes = [
-  { label: 'Rechteck', value: 'rectangle' },
+  { label: 'Rectangle', value: 'rectangle' },
   { label: 'Ellipse', value: 'ellipse' },
-  { label: 'Raute', value: 'rhombus' },
+  { label: 'Diamond', value: 'rhombus' },
   { label: 'Label', value: 'label' },
-  { label: 'Wolke', value: 'cloud' },
-  { label: 'Akteur', value: 'actor' },
-  { label: 'Zylinder', value: 'cylinder' },
+  { label: 'Cloud', value: 'cloud' },
+  { label: 'Actor', value: 'actor' },
+  { label: 'Cylinder', value: 'cylinder' },
   { label: 'Hexagon', value: 'hexagon' },
-  { label: 'Doppelte Ellipse', value: 'doubleEllipse' },
-  { label: 'Dreieck', value: 'triangle' }
+  { label: 'Double Ellipse', value: 'doubleEllipse' },
+  { label: 'Triangle', value: 'triangle' }
 ]
 
 const alignOptions = ['left', 'center', 'right']

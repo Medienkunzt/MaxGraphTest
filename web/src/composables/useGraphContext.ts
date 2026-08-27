@@ -36,7 +36,7 @@ export function useGraphContext(): GraphContext {
   const context = inject<GraphContext>(GraphContextKey)
 
   if (!context) {
-    throw new Error('useGraphContext() wurde außerhalb eines GraphContext-Providers aufgerufen. ' + 'Stelle sicher, dass die Komponente innerhalb von DrawingCanvas verschachtelt ist.')
+    throw new Error('useGraphContext() was called outside a GraphContext provider. ' + 'Ensure the component is nested inside DrawingCanvas.')
   }
 
   return context

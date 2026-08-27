@@ -1,16 +1,16 @@
 <template>
   <div class="sidebar-sync">
     <div class="sync-header">
-      <span class="sync-title">Kooperativer Sync</span>
+      <span class="sync-title">Collaborative Sync</span>
       <div class="sync-status" :class="isConnected ? 'sync-status--connected' : 'sync-status--disconnected'">
         <span class="sync-status-dot" />
-        {{ isConnected ? 'verbunden' : 'getrennt' }}
+        {{ isConnected ? 'connected' : 'disconnected' }}
       </div>
     </div>
 
     <div class="sync-actions">
       <v-btn :color="isConnected ? 'error' : 'primary'" variant="flat" size="small" :prepend-icon="isConnected ? 'mdi-lan-disconnect' : 'mdi-lan-connect'" @click="toggleConnection">
-        {{ isConnected ? 'Trennen' : 'Verbinden' }}
+        {{ isConnected ? 'Disconnect' : 'Connect' }}
       </v-btn>
       <p v-if="errorMessage" class="sync-error">{{ errorMessage }}</p>
     </div>
@@ -18,7 +18,7 @@
     <div class="sync-log">
       <div class="sync-log-header">Event Log</div>
       <div class="sync-log-body">
-        <div v-if="logEntries.length === 0" class="sync-log-empty">Noch keine Events</div>
+        <div v-if="logEntries.length === 0" class="sync-log-empty">No events yet</div>
         <div v-for="(entry, index) in logEntries" :key="index" class="sync-log-entry">{{ entry }}</div>
       </div>
     </div>
@@ -52,7 +52,7 @@ const toggleConnection = () => {
   }
 
   if (!graph.value) {
-    errorMessage.value = 'Kein Graph verfuegbar.'
+    errorMessage.value = 'No graph available.'
     return
   }
 

@@ -1,12 +1,12 @@
 <template>
   <div class="feedback-canvas-config-form">
-    <v-alert type="info" variant="tonal" density="comfortable" class="mb-4"> Konfigurieren Sie Feedback-Elemente und Regeln pro Modellierungssprache. </v-alert>
+    <v-alert type="info" variant="tonal" density="comfortable" class="mb-4"> Configure Feedback Elements and rules for each modeling language. </v-alert>
 
     <v-tabs v-model="activeConfigTab" density="compact" color="primary" class="mb-3">
       <v-tab value="element">Element</v-tab>
-      <v-tab value="element-settings">Elementeinstellungen</v-tab>
-      <v-tab value="connection">Verbindung</v-tab>
-      <v-tab value="rules">Regeln</v-tab>
+      <v-tab value="element-settings">Element Settings</v-tab>
+      <v-tab value="connection">Connection</v-tab>
+      <v-tab value="rules">Rules</v-tab>
     </v-tabs>
 
     <div v-if="selectedElement">
@@ -15,13 +15,13 @@
       </div>
 
       <div v-show="activeConfigTab === 'element-settings'" class="tab-panel">
-        <v-alert type="info" variant="tonal" density="compact" class="mb-3"> Dieser Reiter ist nur im Feedback-Konfigurator sichtbar. </v-alert>
+        <v-alert type="info" variant="tonal" density="compact" class="mb-3"> This tab is only visible in the feedback configurator. </v-alert>
         <v-row dense>
           <v-col cols="12" md="6">
-            <v-select :model-value="feedbackRole" :items="feedbackRoleOptions" label="Element-Rolle" density="compact" variant="outlined" @update:model-value="onFeedbackRoleChanged" />
+            <v-select :model-value="feedbackRole" :items="feedbackRoleOptions" label="Element Role" density="compact" variant="outlined" @update:model-value="onFeedbackRoleChanged" />
           </v-col>
           <v-col cols="12" md="6">
-            <v-switch :model-value="Boolean(selectedElement.element.style.lockToLayer)" color="primary" label="An Feedback-Layer binden" density="comfortable" @update:model-value="onLayerLockChanged" />
+            <v-switch :model-value="Boolean(selectedElement.element.style.lockToLayer)" color="primary" label="Lock to Feedback Layer" density="comfortable" @update:model-value="onLayerLockChanged" />
           </v-col>
         </v-row>
       </div>
@@ -32,12 +32,12 @@
     </div>
 
     <div v-show="activeConfigTab === 'rules'" class="tab-panel">
-      <v-switch v-model="config.rules.onlyFeedbackAsSource" color="primary" label="Nur Feedback als Quelle erlauben" density="comfortable" @update:model-value="emitUpdate" />
-      <v-switch v-model="config.rules.allowTargetElements" color="primary" label="Modell-Elemente als Ziel erlauben" density="comfortable" @update:model-value="emitUpdate" />
-      <v-switch v-model="config.rules.allowTargetConnections" color="primary" label="Modell-Verbindungen als Ziel erlauben" density="comfortable" @update:model-value="emitUpdate" />
-      <v-switch v-model="config.rules.forbidFeedbackAsTarget" color="primary" label="Feedback als Ziel verbieten" density="comfortable" @update:model-value="emitUpdate" />
-      <v-switch v-model="config.rules.enforceDedicatedConnection" color="primary" label="Dedizierte Feedback-Verbindung erzwingen" density="comfortable" @update:model-value="emitUpdate" />
-      <v-switch v-model="config.rules.preventContainerDrop" color="primary" label="Feedback-Element nicht in Container reparenten" density="comfortable" @update:model-value="emitUpdate" />
+      <v-switch v-model="config.rules.onlyFeedbackAsSource" color="primary" label="Allow Only Feedback as Source" density="comfortable" @update:model-value="emitUpdate" />
+      <v-switch v-model="config.rules.allowTargetElements" color="primary" label="Allow Model Elements as Targets" density="comfortable" @update:model-value="emitUpdate" />
+      <v-switch v-model="config.rules.allowTargetConnections" color="primary" label="Allow Model Connections as Targets" density="comfortable" @update:model-value="emitUpdate" />
+      <v-switch v-model="config.rules.forbidFeedbackAsTarget" color="primary" label="Forbid Feedback as Target" density="comfortable" @update:model-value="emitUpdate" />
+      <v-switch v-model="config.rules.enforceDedicatedConnection" color="primary" label="Enforce Dedicated Feedback Connection" density="comfortable" @update:model-value="emitUpdate" />
+      <v-switch v-model="config.rules.preventContainerDrop" color="primary" label="Prevent Reparenting Feedback Elements into Containers" density="comfortable" @update:model-value="emitUpdate" />
     </div>
   </div>
 </template>
@@ -64,7 +64,7 @@ const connectionPreviewMode = ref<ConnectionPreviewMode>('simple')
 
 const feedbackRoleOptions = [
   { title: 'Feedback', value: 'feedback' },
-  { title: 'Modell', value: 'model' }
+  { title: 'Model', value: 'model' }
 ]
 
 const selectedElement = computed<FeedbackCanvasElementConfig | null>(() => {

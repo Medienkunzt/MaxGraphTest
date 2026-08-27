@@ -70,7 +70,7 @@ export const importModelFromJson = (graph: Graph, jsonText: string) => {
     return
   }
 
-  throw new Error('Die JSON-Datei enthält kein unterstütztes maxGraph-Modell.')
+  throw new Error('The JSON file does not contain a supported maxGraph model.')
 }
 
 export const detectFormat = (fileName: string, mimeType: string, content?: string): ImportFormat => {

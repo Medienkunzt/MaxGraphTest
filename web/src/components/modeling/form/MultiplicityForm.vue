@@ -3,12 +3,12 @@
     <section>
       <div class="d-flex align-center font-weight-semibold text-h6 mb-3">
         <v-icon color="primary" class="mr-2">mdi-grid</v-icon>
-        <span>Beziehungs-Matrix</span>
+        <span>Connection Matrix</span>
       </div>
 
-      <p class="text-body-2 text-medium-emphasis mb-3">Stufe 1 legt fest, welche Elementtypen überhaupt miteinander verbunden werden dürfen. Jede Zelle steuert den Zustand zwischen <strong>nicht definiert</strong>, <strong>erlaubt</strong> und <strong>verboten</strong>.</p>
+      <p class="text-body-2 text-medium-emphasis mb-3">Level 1 defines which Element types may be connected. Each cell cycles between <strong>undefined</strong>, <strong>allowed</strong>, and <strong>forbidden</strong>.</p>
 
-      <v-alert v-if="elementOptions.length === 0" type="info" variant="tonal" class="mt-3"> Fügen Sie zunächst Elemente hinzu, um Beziehungsregeln zu definieren. </v-alert>
+      <v-alert v-if="elementOptions.length === 0" type="info" variant="tonal" class="mt-3"> Add Elements first to define Connection rules. </v-alert>
 
       <v-sheet v-else class="matrix-wrapper elevation-1 mt-3 rounded-lg bg-white" border>
         <v-table density="compact" class="relation-matrix">
@@ -16,9 +16,9 @@
             <tr>
               <th class="matrix-corner">
                 <div class="d-flex align-center ga-1 text-caption text-uppercase text-medium-emphasis">
-                  <span>Von</span>
+                  <span>From</span>
                   <span class="font-weight-bold">→</span>
-                  <span>Nach</span>
+                  <span>To</span>
                 </div>
               </th>
               <th v-for="target in elementOptions" :key="`head-${target}`" class="matrix-header matrix-header--column">
@@ -49,26 +49,26 @@
         </v-table>
       </v-sheet>
 
-      <p v-if="elementOptions.length" class="text-body-2 text-medium-emphasis mt-2">Klicken Sie auf eine Zelle, um zwischen <strong>nicht definiert</strong>, <strong>erlaubt</strong> und <strong>verboten</strong> zu wechseln.</p>
+      <p v-if="elementOptions.length" class="text-body-2 text-medium-emphasis mt-2">Click a cell to cycle between <strong>undefined</strong>, <strong>allowed</strong>, and <strong>forbidden</strong>.</p>
     </section>
 
     <section class="d-flex flex-column ga-3 refinement-section">
       <div class="d-flex align-center font-weight-semibold text-h6 mb-0">
         <v-icon color="primary" class="mr-2">mdi-link-variant</v-icon>
-        <span>Verfeinerung erlaubter Beziehungen</span>
+        <span>Allowed Connection Refinement</span>
       </div>
 
-      <v-alert v-if="allowedRelations.length === 0" type="info" variant="tonal" class="mt-3"> Markieren Sie in der Matrix mindestens eine Beziehung als <strong>erlaubt</strong>, um Verbindungstypen und Kardinalitäten zu konfigurieren. </v-alert>
+      <v-alert v-if="allowedRelations.length === 0" type="info" variant="tonal" class="mt-3"> Mark at least one Connection as <strong>allowed</strong> in the matrix to configure Connection types and cardinalities. </v-alert>
 
       <template v-else>
-        <p class="text-body-2 text-medium-emphasis mb-1"><strong>Alle</strong> = alle Verbindungstypen; gezielte Auswahl = nur markierte. Das Preset setzt Min/Max für den aktiven Bereich.</p>
+        <p class="text-body-2 text-medium-emphasis mb-1"><strong>All</strong> = all Connection types; a targeted selection = selected types only. The preset sets min/max for the active range.</p>
         <v-sheet class="matrix-wrapper elevation-1 rounded-lg bg-white" border>
           <v-table density="compact" class="refinement-matrix">
             <thead>
               <tr>
-                <th class="refinement-corner">Beziehung</th>
-                <th class="refinement-kard-header">Kardinalität</th>
-                <th class="refinement-sep text-center">Alle</th>
+                <th class="refinement-corner">Connection</th>
+                <th class="refinement-kard-header">Cardinality</th>
+                <th class="refinement-sep text-center">All</th>
                 <th v-for="connectionType in connectionOptions" :key="`type-head-${connectionType}`" class="text-center">
                   {{ connectionType }}
                 </th>
@@ -108,15 +108,15 @@
     <section class="d-flex flex-column ga-3">
       <div class="d-flex align-center font-weight-semibold text-h6">
         <v-icon color="primary" class="mr-2">mdi-script-text-outline</v-icon>
-        <span>Fehlermeldungs-Template</span>
+        <span>Error Message Template</span>
       </div>
-      <v-textarea v-model="messageTemplate" rows="3" density="compact" variant="outlined" label="Template für dynamische Fehlermeldungen" auto-grow hint="Verwenden Sie Platzhalter wie {source}, {target}, {connection}, {min}, {max}" persistent-hint />
+      <v-textarea v-model="messageTemplate" rows="3" density="compact" variant="outlined" label="Dynamic Error Message Template" auto-grow hint="Use placeholders such as {source}, {target}, {connection}, {min}, {max}" persistent-hint />
     </section>
 
     <section class="d-flex flex-column ga-2">
       <div class="d-flex align-center font-weight-semibold text-h6">
         <v-icon color="primary" class="mr-2">mdi-code-json</v-icon>
-        <span>Syntax-Datenstruktur</span>
+        <span>Syntax Data Structure</span>
       </div>
       <v-sheet border rounded="lg" class="structure-preview">
         <pre class="structure-preview__code">{{ uiStructureExampleJson }}</pre>
@@ -149,7 +149,7 @@ const languageId = computed(() => store.currentLanguage?.id ?? null)
 const elementOptions = computed(() => props.elementOptions)
 const connectionOptions = computed(() => props.connectionOptions)
 
-const DEFAULT_MESSAGE_TEMPLATE = 'Die Beziehung {source} -> {target} mit Verbindungstyp {connection} verletzt die Kardinalitaet ({min}..{max}).'
+const DEFAULT_MESSAGE_TEMPLATE = 'The Connection {source} -> {target} with Connection type {connection} violates the cardinality ({min}..{max}).'
 
 const relationKey = (source: string, target: string): string => `${source}::${target}`
 
@@ -185,9 +185,9 @@ const stateClass = (state: RelationState): string => {
 }
 
 const stateLabel = (state: RelationState): string => {
-  if (state === 'allowed') return 'Erlaubte Beziehung'
-  if (state === 'forbidden') return 'Verbotene Beziehung'
-  return 'Nicht definiert'
+  if (state === 'allowed') return 'Allowed Connection'
+  if (state === 'forbidden') return 'Forbidden Connection'
+  return 'Undefined'
 }
 
 const emitUpdate = () => {

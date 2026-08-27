@@ -3,8 +3,8 @@
     <div class="sidebar-topbar">
       <div class="search-wrapper">
         <v-icon class="search-icon" size="13">mdi-magnify</v-icon>
-        <input v-model="searchQuery" class="search-input" placeholder="Suchen..." />
-        <button v-if="searchQuery" class="search-clear" title="Suche löschen" @click="searchQuery = ''">
+        <input v-model="searchQuery" class="search-input" placeholder="Search..." />
+        <button v-if="searchQuery" class="search-clear" title="Clear search" @click="searchQuery = ''">
           <v-icon size="13">mdi-close</v-icon>
         </button>
       </div>
@@ -14,7 +14,7 @@
             <v-icon size="14">{{ mode.icon }}</v-icon>
           </button>
         </div>
-        <button class="view-toggle" :class="{ 'view-toggle--active': showLabels }" title="Namen ein-/ausblenden" @click="showLabels = !showLabels">
+        <button class="view-toggle" :class="{ 'view-toggle--active': showLabels }" title="Toggle names" @click="showLabels = !showLabels">
           <v-icon size="14">mdi-label{{ showLabels ? '' : '-off' }}</v-icon>
         </button>
       </div>
@@ -26,7 +26,7 @@
       <template v-if="searchQuery.trim()">
         <div class="sidebar-section">
           <div class="sidebar-header sidebar-header--static">
-            <span class="sidebar-title">Suchergebnisse ({{ searchResults.length }})</span>
+            <span class="sidebar-title">Search Results ({{ searchResults.length }})</span>
           </div>
           <div v-if="searchResults.length > 0" class="sidebar-elements" :class="elementsClass">
             <div v-for="item in searchResults" :key="`${item.langId}-${item.element.type}`" class="sidebar-element" :class="elementClass" :style="tileCardStyle" draggable="true" :title="item.element.defaultLabel || item.element.type" @dragstart="onDragStart($event, item.element)">
@@ -36,7 +36,7 @@
               <span v-if="showLabels" class="element-label">{{ item.element.defaultLabel || item.element.type }}</span>
             </div>
           </div>
-          <div v-else class="no-results">Keine Ergebnisse</div>
+          <div v-else class="no-results">No results</div>
         </div>
       </template>
 
@@ -91,9 +91,9 @@ const showLabels = ref(true)
 const expandedMap = reactive<Record<string, boolean>>({})
 
 const viewModes: { value: ViewMode; icon: string; label: string }[] = [
-  { value: 'list', icon: 'mdi-format-list-bulleted', label: 'Liste (nur Vorschau)' },
-  { value: 'preview', icon: 'mdi-card-outline', label: 'Vorschau' },
-  { value: 'tile', icon: 'mdi-view-grid', label: 'Kacheln (2 pro Reihe)' }
+  { value: 'list', icon: 'mdi-format-list-bulleted', label: 'List (preview only)' },
+  { value: 'preview', icon: 'mdi-card-outline', label: 'Preview' },
+  { value: 'tile', icon: 'mdi-view-grid', label: 'Tiles (2 per row)' }
 ]
 
 // Default closed: only true if explicitly set to true

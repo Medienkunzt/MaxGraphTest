@@ -2,18 +2,18 @@
   <div>
     <!-- 1. Label sichtbar? -->
     <FieldWithIndicator>
-      <v-switch v-model="localStyle.noLabel" color="primary" density="compact" class="mb-4" label="Label ausblenden" hint="Unterdrückt die Darstellung des Labels komplett." persistent-hint @update:model-value="emit('update')" />
+      <v-switch v-model="localStyle.noLabel" color="primary" density="compact" class="mb-4" label="Hide Label" hint="Completely suppresses the label display." persistent-hint @update:model-value="emit('update')" />
     </FieldWithIndicator>
 
     <template v-if="!noLabel">
       <!-- 2. Label Text -->
       <FieldWithIndicator>
-        <v-text-field v-model="labelTextValue" label="Label Text" variant="outlined" density="compact" class="mb-4" hint="Angezeigter Text an der Kante." persistent-hint @input="emit('update')" />
+        <v-text-field v-model="labelTextValue" label="Label Text" variant="outlined" density="compact" class="mb-4" hint="Text displayed on the Connection." persistent-hint @input="emit('update')" />
       </FieldWithIndicator>
 
       <!-- 3. Schriftgröße -->
       <FieldWithIndicator>
-        <v-slider v-model.number="localStyle.fontSize" :min="6" :max="48" :step="1" label="Schriftgröße" class="mb-4" hint="Schriftgröße in Pixeln (6-48)." persistent-hint thumb-label @update:model-value="emit('update')">
+        <v-slider v-model.number="localStyle.fontSize" :min="6" :max="48" :step="1" label="Font Size" class="mb-4" hint="Font size in pixels (6–48)." persistent-hint thumb-label @update:model-value="emit('update')">
           <template #append>
             <span class="text-caption">{{ localStyle.fontSize ?? 14 }} px</span>
           </template>
@@ -22,43 +22,43 @@
 
       <!-- Schriftfamilie -->
       <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
-        <v-text-field v-model="fontFamilyValue" label="Schriftfamilie" variant="outlined" density="compact" clearable class="mb-4" hint="Überschreibt die Standardschriftart (z. B. Arial, Roboto)." persistent-hint />
+        <v-text-field v-model="fontFamilyValue" label="Font Family" variant="outlined" density="compact" clearable class="mb-4" hint="Overrides the default font (e.g. Arial, Roboto)." persistent-hint />
       </FieldWithIndicator>
 
       <!-- Schriftstil -->
       <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
         <div class="mb-4">
           <v-btn-toggle v-model="fontStyleSelection" multiple class="d-flex" color="primary" variant="outlined" density="compact" @update:model-value="updateFontStyleSelection">
-            <v-btn :value="1" class="flex-grow-1" title="Fett" icon="mdi-format-bold" />
-            <v-btn :value="2" class="flex-grow-1" title="Kursiv" icon="mdi-format-italic" />
-            <v-btn :value="4" class="flex-grow-1" title="Unterstrichen" icon="mdi-format-underline" />
-            <v-btn :value="8" class="flex-grow-1" title="Durchgestrichen" icon="mdi-format-strikethrough-variant" />
+            <v-btn :value="1" class="flex-grow-1" title="Bold" icon="mdi-format-bold" />
+            <v-btn :value="2" class="flex-grow-1" title="Italic" icon="mdi-format-italic" />
+            <v-btn :value="4" class="flex-grow-1" title="Underlined" icon="mdi-format-underline" />
+            <v-btn :value="8" class="flex-grow-1" title="Strikethrough" icon="mdi-format-strikethrough-variant" />
           </v-btn-toggle>
-          <div class="text-caption mt-1">Kombiniere Fett, Kursiv, Unterstrichen und Durchgestrichen.</div>
+          <div class="text-caption mt-1">Combine bold, italic, underline, and strikethrough.</div>
         </div>
       </FieldWithIndicator>
 
       <!-- 4. Schriftfarbe -->
       <FieldWithIndicator>
-        <ColorPickerField v-model="localStyle.fontColor" label="Schriftfarbe" hint="Farbe des Labeltextes." class="mb-4" @update:model-value="emit('update')" />
+        <ColorPickerField v-model="localStyle.fontColor" label="Font Color" hint="Color of the label text." class="mb-4" @update:model-value="emit('update')" />
       </FieldWithIndicator>
 
       <!-- 5. Textausrichtung (horizontal) -->
       <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
         <div class="mb-4">
-          <div class="text-caption mb-2">Horizontale Textausrichtung</div>
+          <div class="text-caption mb-2">Horizontal Text Alignment</div>
           <v-btn-toggle v-model="textAlignValue" color="primary" mandatory variant="outlined" divided class="d-flex">
             <v-btn value="left" class="flex-grow-1">
               <v-icon>mdi-format-align-left</v-icon>
-              Links
+              Left
             </v-btn>
             <v-btn value="center" class="flex-grow-1">
               <v-icon>mdi-format-align-center</v-icon>
-              Mitte
+              Center
             </v-btn>
             <v-btn value="right" class="flex-grow-1">
               <v-icon>mdi-format-align-right</v-icon>
-              Rechts
+              Right
             </v-btn>
           </v-btn-toggle>
         </div>
@@ -67,19 +67,19 @@
       <!-- 6. Vertikale Ausrichtung -->
       <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
         <div class="mb-4">
-          <div class="text-caption mb-2">Vertikale Textausrichtung</div>
+          <div class="text-caption mb-2">Vertical Text Alignment</div>
           <v-btn-toggle v-model="verticalAlignValue" color="primary" mandatory variant="outlined" divided class="d-flex">
             <v-btn value="top" class="flex-grow-1">
               <v-icon>mdi-arrow-up</v-icon>
-              Oben
+              Top
             </v-btn>
             <v-btn value="middle" class="flex-grow-1">
               <v-icon>mdi-minus</v-icon>
-              Mitte
+              Middle
             </v-btn>
             <v-btn value="bottom" class="flex-grow-1">
               <v-icon>mdi-arrow-down</v-icon>
-              Unten
+              Bottom
             </v-btn>
           </v-btn-toggle>
         </div>
@@ -88,26 +88,26 @@
       <!-- 7. Label Offset X/Y (Positionierung relativ zur Kante) -->
       <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
         <div class="mb-4">
-          <div class="text-caption mb-2">Label-Position auf der Kante</div>
+          <div class="text-caption mb-2">Label Position on the Connection</div>
           <div class="d-flex gap-4">
-            <v-text-field v-model="labelOffsetXValue" label="Offset X" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Horizontal: Negativ = links, 0 = Mitte, Positiv = rechts" persistent-hint />
-            <v-text-field v-model="labelOffsetYValue" label="Offset Y" variant="outlined" density="compact" type="number" step="1" class="flex-grow-1" hint="Vertikal: Negativ = oben, 0 = Mitte, Positiv = unten" persistent-hint />
+            <v-text-field v-model="labelOffsetXValue" label="Offset X" variant="outlined" density="compact" type="number" step="0.1" class="flex-grow-1" hint="Horizontal: negative = left, 0 = center, positive = right" persistent-hint />
+            <v-text-field v-model="labelOffsetYValue" label="Offset Y" variant="outlined" density="compact" type="number" step="1" class="flex-grow-1" hint="Vertical: negative = top, 0 = middle, positive = bottom" persistent-hint />
           </div>
         </div>
       </FieldWithIndicator>
 
       <!-- Label Hintergrund & Rahmen -->
       <FieldWithIndicator :config="{ minComplexity: 'expert' }">
-        <ColorPickerField v-model="localStyle.labelBackgroundColor" label="Label Hintergrund" hint="Hintergrundfarbe hinter dem Label." class="mb-4" @update:model-value="emit('update')" />
+        <ColorPickerField v-model="localStyle.labelBackgroundColor" label="Label Background" hint="Background color behind the label." class="mb-4" @update:model-value="emit('update')" />
       </FieldWithIndicator>
 
       <FieldWithIndicator :config="{ minComplexity: 'expert' }">
-        <ColorPickerField v-model="localStyle.labelBorderColor" label="Label Rahmen" hint="Rahmenfarbe rund um das Label." class="mb-4" @update:model-value="emit('update')" />
+        <ColorPickerField v-model="localStyle.labelBorderColor" label="Label Border" hint="Border color around the label." class="mb-4" @update:model-value="emit('update')" />
       </FieldWithIndicator>
 
       <!-- Text-Deckkraft als Slider -->
       <FieldWithIndicator :config="{ minComplexity: 'expert' }">
-        <v-slider v-model.number="localStyle.textOpacity" :min="0" :max="100" :step="1" label="Text-Deckkraft" class="mb-4" hint="Deckkraft des Labeltextes (0–100%)." persistent-hint thumb-label @update:model-value="emit('update')">
+        <v-slider v-model.number="localStyle.textOpacity" :min="0" :max="100" :step="1" label="Text Opacity" class="mb-4" hint="Label text opacity (0–100%)." persistent-hint thumb-label @update:model-value="emit('update')">
           <template #append>
             <span class="text-caption">{{ localStyle.textOpacity ?? 100 }}%</span>
           </template>

@@ -120,27 +120,39 @@ export function createCellFromElement(element: DiagramElement, x: number, y: num
  * @param parent - Das Parent-Element im Graph
  */
 export function addCellToGraph(graph: Graph, cell: Cell, element: DiagramElement, parent: any): void {
+  const addChildRecursive = (parentCell: Cell, child: any): void => {
+    const childGeometry = new Geometry(child.position.x, child.position.y, child.position.width, child.position.height)
+    childGeometry.relative = child.position.relative
+
+    if (Array.isArray(child.anchorPoints) && child.anchorPoints.length > 0) {
+      const constraints = child.anchorPoints.map((point: { x: number; y: number }) => new ConnectionConstraint(new Point(point.x, point.y), false))
+      ;(childGeometry as any).constraints = constraints
+    }
+
+    const childStyle: any = {
+      ...child.style,
+      shape: child.renderMode === 'swimlane' ? 'swimlane' : child.predefinedShape || 'label'
+    }
+
+    const childCell = new Cell(child.defaultLabel, childGeometry, childStyle)
+    childCell.setVertex(true)
+    childCell.setConnectable(child.connectable ?? false)
+    ;(childCell as any).allowLabelEdit = child.allowLabelEdit !== false
+    ;(childCell as any).diagramElementType = child.type
+
+    graph.addCell(childCell, parentCell)
+
+    if (Array.isArray(child.children) && child.children.length > 0) {
+      child.children.forEach((nestedChild: any) => addChildRecursive(childCell, nestedChild))
+    }
+  }
+
   // Füge Haupt-Element hinzu
   graph.addCell(cell, parent)
 
-  // Child-Elemente hinzufügen
-  if (element.children && element.children.length > 0) {
-    element.children.forEach((child: any) => {
-      const childGeometry = new Geometry(child.position.x, child.position.y, child.position.width, child.position.height)
-      childGeometry.relative = child.position.relative
-
-      const childStyle: any = {
-        ...child.style,
-        shape: child.predefinedShape || 'label'
-      }
-
-      const childCell = new Cell(child.defaultLabel, childGeometry, childStyle)
-      childCell.setVertex(true)
-      childCell.setConnectable(child.connectable ?? false)
-      ;(childCell as any).allowLabelEdit = child.allowLabelEdit !== false
-
-      graph.addCell(childCell, cell)
-    })
+  // Child-Elemente rekursiv hinzufügen
+  if (Array.isArray(element.children) && element.children.length > 0) {
+    element.children.forEach((child: any) => addChildRecursive(cell, child))
   }
 }
 

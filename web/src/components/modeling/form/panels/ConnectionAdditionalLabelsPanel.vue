@@ -1,14 +1,14 @@
 <template>
   <div>
     <div class="d-flex align-center justify-space-between mb-3">
-      <div class="text-subtitle-2 font-weight-medium">Zusätzliche Labels</div>
+      <div class="text-subtitle-2 font-weight-medium">Additional Labels</div>
       <v-btn color="primary" variant="tonal" size="small" class="text-none" @click="addLabel">
         <v-icon size="18" class="mr-1">mdi-plus</v-icon>
-        Label hinzufügen
+        Add Label
       </v-btn>
     </div>
 
-    <v-alert v-if="labels.length === 0" type="info" variant="tonal" density="comfortable" class="mb-4"> Keine zusätzlichen Labels definiert. Nutze "Label hinzufügen", um weitere Text-Beschriftungen entlang der Verbindung zu platzieren. </v-alert>
+    <v-alert v-if="labels.length === 0" type="info" variant="tonal" density="comfortable" class="mb-4"> No additional labels defined. Use “Add Label” to place more text labels along the Connection. </v-alert>
 
     <v-expansion-panels v-else multiple>
       <v-expansion-panel v-for="(label, index) in labels" :key="index" class="mb-3">
@@ -24,31 +24,31 @@
         <v-expansion-panel-text>
           <div class="mb-4">
             <FieldWithIndicator>
-              <v-text-field v-model="label.id" label="Label ID" variant="outlined" density="compact" hint="Eindeutige Kennung (wird als Cell-ID im Canvas verwendet)." persistent-hint />
+              <v-text-field v-model="label.id" label="Label ID" variant="outlined" density="compact" hint="Unique identifier used as the cell ID on the canvas." persistent-hint />
             </FieldWithIndicator>
           </div>
 
           <div class="mb-4">
             <FieldWithIndicator>
-              <v-text-field v-model="label.text" label="Label Text" variant="outlined" density="compact" hint="Angezeigter Text dieses zusätzlichen Labels." persistent-hint />
+              <v-text-field v-model="label.text" label="Label Text" variant="outlined" density="compact" hint="Displayed text of this additional label." persistent-hint />
             </FieldWithIndicator>
           </div>
 
           <div class="mb-4">
             <FieldWithIndicator>
-              <v-switch v-model="label.geometry.relative" color="primary" density="compact" label="Relative Geometrie" hint="Wenn aktiv, nutzt die Position relative Werte entlang der Verbindung." persistent-hint />
+              <v-switch v-model="label.geometry.relative" color="primary" density="compact" label="Relative Geometry" hint="When enabled, the position uses relative values along the Connection." persistent-hint />
             </FieldWithIndicator>
           </div>
 
           <div class="mb-4">
             <FieldWithIndicator>
-              <div class="text-caption mb-2">Relative Position (entlang der Verbindung)</div>
+              <div class="text-caption mb-2">Relative Position (along the Connection)</div>
               <v-row dense>
                 <v-col cols="6">
-                  <v-text-field v-model.number="label.geometry.x" type="number" step="0.05" label="Relativ X" variant="outlined" density="compact" hint="0 = Mittelpunkt, 0.5 = Richtung Ziel, -0.5 = Richtung Quelle." persistent-hint />
+                  <v-text-field v-model.number="label.geometry.x" type="number" step="0.05" label="Relative X" variant="outlined" density="compact" hint="0 = center, 0.5 = toward target, -0.5 = toward source." persistent-hint />
                 </v-col>
                 <v-col cols="6">
-                  <v-text-field v-model.number="label.geometry.y" type="number" step="0.05" label="Relativ Y" variant="outlined" density="compact" hint="Positiv verschiebt nach unten, negativ nach oben relativ zur Verbindung." persistent-hint />
+                  <v-text-field v-model.number="label.geometry.y" type="number" step="0.05" label="Relative Y" variant="outlined" density="compact" hint="Positive moves down and negative moves up relative to the Connection." persistent-hint />
                 </v-col>
               </v-row>
             </FieldWithIndicator>
@@ -59,10 +59,10 @@
               <div class="text-caption mb-2">Pixel-Offset</div>
               <v-row dense>
                 <v-col cols="6">
-                  <v-text-field v-model.number="label.geometry.offsetX" type="number" step="1" label="Offset X" variant="outlined" density="compact" hint="Horizontale Verschiebung in Pixeln." persistent-hint />
+                  <v-text-field v-model.number="label.geometry.offsetX" type="number" step="1" label="Offset X" variant="outlined" density="compact" hint="Horizontal offset in pixels." persistent-hint />
                 </v-col>
                 <v-col cols="6">
-                  <v-text-field v-model.number="label.geometry.offsetY" type="number" step="1" label="Offset Y" variant="outlined" density="compact" hint="Vertikale Verschiebung in Pixeln." persistent-hint />
+                  <v-text-field v-model.number="label.geometry.offsetY" type="number" step="1" label="Offset Y" variant="outlined" density="compact" hint="Vertical offset in pixels." persistent-hint />
                 </v-col>
               </v-row>
             </FieldWithIndicator>
@@ -70,13 +70,13 @@
 
           <div class="mb-4">
             <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
-              <div class="text-caption mb-2">Fixe Größe (optional)</div>
+              <div class="text-caption mb-2">Fixed Size (optional)</div>
               <v-row dense>
                 <v-col cols="6">
-                  <v-text-field v-model.number="label.geometry.width" type="number" step="1" label="Breite" variant="outlined" density="compact" hint="0 = automatische Breite." persistent-hint />
+                  <v-text-field v-model.number="label.geometry.width" type="number" step="1" label="Width" variant="outlined" density="compact" hint="0 = automatic width." persistent-hint />
                 </v-col>
                 <v-col cols="6">
-                  <v-text-field v-model.number="label.geometry.height" type="number" step="1" label="Höhe" variant="outlined" density="compact" hint="0 = automatische Höhe." persistent-hint />
+                  <v-text-field v-model.number="label.geometry.height" type="number" step="1" label="Height" variant="outlined" density="compact" hint="0 = automatic height." persistent-hint />
                 </v-col>
               </v-row>
             </FieldWithIndicator>
@@ -84,13 +84,13 @@
 
           <div class="mb-4">
             <FieldWithIndicator>
-              <ColorPickerField v-model="label.style.fontColor" label="Schriftfarbe" hint="Farbe des Labeltextes." @update:model-value="triggerUpdate" />
+              <ColorPickerField v-model="label.style.fontColor" label="Font Color" hint="Color of the label text." @update:model-value="triggerUpdate" />
             </FieldWithIndicator>
           </div>
 
           <div class="mb-4">
             <FieldWithIndicator>
-              <v-slider v-model.number="label.style.fontSize" :min="6" :max="48" :step="1" label="Schriftgröße" class="mb-2" hint="Schriftgröße in Pixeln (6–48)." persistent-hint thumb-label>
+              <v-slider v-model.number="label.style.fontSize" :min="6" :max="48" :step="1" label="Font Size" class="mb-2" hint="Font size in pixels (6–48)." persistent-hint thumb-label>
                 <template #append>
                   <span class="text-caption">{{ label.style.fontSize ?? 12 }} px</span>
                 </template>
@@ -100,19 +100,19 @@
 
           <div class="mb-4">
             <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
-              <div class="text-caption mb-2">Horizontale Ausrichtung</div>
+              <div class="text-caption mb-2">Horizontal Alignment</div>
               <v-btn-toggle v-model="label.style.align" color="primary" mandatory variant="outlined" divided class="d-flex">
                 <v-btn value="left" class="flex-grow-1">
                   <v-icon>mdi-format-align-left</v-icon>
-                  Links
+                  Left
                 </v-btn>
                 <v-btn value="center" class="flex-grow-1">
                   <v-icon>mdi-format-align-center</v-icon>
-                  Mitte
+                  Center
                 </v-btn>
                 <v-btn value="right" class="flex-grow-1">
                   <v-icon>mdi-format-align-right</v-icon>
-                  Rechts
+                  Right
                 </v-btn>
               </v-btn-toggle>
             </FieldWithIndicator>
@@ -120,19 +120,19 @@
 
           <div class="mb-4">
             <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
-              <div class="text-caption mb-2">Vertikale Ausrichtung</div>
+              <div class="text-caption mb-2">Vertical Alignment</div>
               <v-btn-toggle v-model="label.style.verticalAlign" color="primary" mandatory variant="outlined" divided class="d-flex">
                 <v-btn value="top" class="flex-grow-1">
                   <v-icon>mdi-arrow-up</v-icon>
-                  Oben
+                  Top
                 </v-btn>
                 <v-btn value="middle" class="flex-grow-1">
                   <v-icon>mdi-minus</v-icon>
-                  Mitte
+                  Middle
                 </v-btn>
                 <v-btn value="bottom" class="flex-grow-1">
                   <v-icon>mdi-arrow-down</v-icon>
-                  Unten
+                  Bottom
                 </v-btn>
               </v-btn-toggle>
             </FieldWithIndicator>
@@ -140,19 +140,19 @@
 
           <div class="mb-2">
             <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
-              <ColorPickerField v-model="label.style.labelBackgroundColor" label="Hintergrundfarbe" hint="Optionaler Hintergrund hinter dem zusätzlichen Label." @update:model-value="triggerUpdate" />
+              <ColorPickerField v-model="label.style.labelBackgroundColor" label="Background Color" hint="Optional background behind the additional label." @update:model-value="triggerUpdate" />
             </FieldWithIndicator>
           </div>
 
           <div class="mb-4">
             <FieldWithIndicator :config="{ minComplexity: 'advanced' }">
-              <ColorPickerField v-model="label.style.labelBorderColor" label="Rahmenfarbe" hint="Optionaler Rahmen um das zusätzliche Label." @update:model-value="triggerUpdate" />
+              <ColorPickerField v-model="label.style.labelBorderColor" label="Border Color" hint="Optional border around the additional label." @update:model-value="triggerUpdate" />
             </FieldWithIndicator>
           </div>
 
           <div class="d-flex align-center" style="gap: 16px">
-            <v-switch v-model="label.connectable" color="primary" density="compact" label="Verbindbar" />
-            <v-switch v-model="label.allowLabelEdit" color="primary" density="compact" label="Label editierbar" />
+            <v-switch v-model="label.connectable" color="primary" density="compact" label="Connectable" />
+            <v-switch v-model="label.allowLabelEdit" color="primary" density="compact" label="Label Editable" />
           </div>
         </v-expansion-panel-text>
       </v-expansion-panel>
@@ -317,7 +317,7 @@ const triggerUpdate = () => {
 
 const previewText = (label: NormalizedLabel): string => {
   if (!label.text || label.text.trim().length === 0) {
-    return '(ohne Text)'
+    return '(no text)'
   }
   if (label.text.length > 24) {
     return `${label.text.slice(0, 24)}…`
