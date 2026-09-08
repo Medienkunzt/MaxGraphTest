@@ -23,6 +23,10 @@
         <span> Tasks </span>
         <v-tooltip activator="parent" location="bottom"> Create and manage tasks </v-tooltip>
       </v-btn>
+      <v-btn prepend-icon="mdi-logout" @click="logout">
+        <span> Logout </span>
+        <v-tooltip activator="parent" location="bottom"> Logout </v-tooltip>
+      </v-btn>
     </template>
   </v-app-bar>
 </template>
@@ -30,7 +34,13 @@
 <script setup lang="ts">
 import IconFBS from '@/components/icons/IconFBS.vue'
 
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const logout = () => {
+  router.push('/login')
+}
 </script>
 
 <style scoped lang="scss">

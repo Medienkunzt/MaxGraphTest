@@ -11,7 +11,7 @@ from uuid import UUID
 
 from pymongo.errors import DuplicateKeyError
 
-from modeling_api.core.auth import Actor
+from modeling_api.core.auth import User
 from modeling_api.core.errors import ApiError, conflict, not_found
 from modeling_api.db.client import db
 from modeling_api.db.store import Document, get_or_404, insert, list_page, save_version, to_api
@@ -24,30 +24,30 @@ def same_content(left: Document, right: Document) -> bool:
     return dump(left) == dump(right)
 
 
-def _own(statement_id: str, actor: Actor) -> Document:
-    return {"_id": statement_id, "ownerId": actor.id}
+def _own(statement_id: str, user: User) -> Document:
+    return {"_id": statement_id, "ownerId": user.id}
 
 
 async def list_tasks(
-    skip: int, limit: int, actor: Actor, source: str | None, external_task_id: str | None
+    skip: int, limit: int, user: User, source: str | None, external_task_id: str | None
 ) -> Document:
     if (source is None) != (external_task_id is None):
         raise ApiError(
             400, "INVALID_FILTER", "source und externalTaskId nur gemeinsam angeben."
         )
-    filters: Document = {"ownerId": actor.id}
+    filters: Document = {"ownerId": user.id}
     if source is not None:
         filters = {**filters, "source": source, "externalTaskId": external_task_id}
     return await list_page(db.task_statements, filters, skip, limit)
 
 
-async def create_task(body: CreateTaskStatement, actor: Actor) -> tuple[Document, bool]:
+async def create_task(body: CreateTaskStatement, user: User) -> tuple[Document, bool]:
     """Legt die Zuordnung an; bei Wiederholung kommt (Bestand, False) -> 200."""
     existing = await db.task_statements.find_one(
         {"source": body.source, "externalTaskId": body.external_task_id}
     )
     if existing is not None:
-        if existing["ownerId"] != actor.id:
+        if existing["ownerId"] != user.id:
             raise not_found()
         return to_api(existing), False
     try:
@@ -57,7 +57,7 @@ async def create_task(body: CreateTaskStatement, actor: Actor) -> tuple[Document
                 {
                     "source": body.source,
                     "externalTaskId": body.external_task_id,
-                    "ownerId": actor.id,
+                    "ownerId": user.id,
                     "latestVersionId": None,
                 },
             ),
@@ -68,20 +68,20 @@ async def create_task(body: CreateTaskStatement, actor: Actor) -> tuple[Document
         existing = await db.task_statements.find_one(
             {"source": body.source, "externalTaskId": body.external_task_id}
         )
-        if existing is None or existing["ownerId"] != actor.id:
+        if existing is None or existing["ownerId"] != user.id:
             raise not_found()
         return to_api(existing), False
 
 
-async def get_task(task_statement_id: UUID, actor: Actor) -> Document:
-    result = await db.task_statements.find_one(_own(str(task_statement_id), actor))
+async def get_task(task_statement_id: UUID, user: User) -> Document:
+    result = await db.task_statements.find_one(_own(str(task_statement_id), user))
     if result is None:
         raise not_found()
     return to_api(result)
 
 
-async def list_versions(task_statement_id: UUID, skip: int, limit: int, actor: Actor) -> Document:
-    await get_task(task_statement_id, actor)
+async def list_versions(task_statement_id: UUID, skip: int, limit: int, user: User) -> Document:
+    await get_task(task_statement_id, user)
     return await list_page(
         db.task_statement_versions,
         {"taskStatementId": str(task_statement_id)},
@@ -92,8 +92,8 @@ async def list_versions(task_statement_id: UUID, skip: int, limit: int, actor: A
     )
 
 
-async def get_version(task_statement_id: UUID, version_id: UUID, actor: Actor) -> Document:
-    await get_task(task_statement_id, actor)
+async def get_version(task_statement_id: UUID, version_id: UUID, user: User) -> Document:
+    await get_task(task_statement_id, user)
     version = await db.task_statement_versions.find_one(
         {"_id": str(version_id), "taskStatementId": str(task_statement_id)}
     )
@@ -103,10 +103,10 @@ async def get_version(task_statement_id: UUID, version_id: UUID, actor: Actor) -
 
 
 async def create_version(
-    task_statement_id: UUID, body: CreateTaskStatementVersion, actor: Actor
+    task_statement_id: UUID, body: CreateTaskStatementVersion, user: User
 ) -> tuple[Document, bool]:
     """Speichert eine externe Aufgabenfassung; idempotent je externalVersionId."""
-    await get_task(task_statement_id, actor)
+    await get_task(task_statement_id, user)
     fields = body.model_dump(mode="json", by_alias=True, exclude={"base_version_id"})
 
     existing = await db.task_statement_versions.find_one(
@@ -125,7 +125,7 @@ async def create_version(
             "taskStatementId",
             str(task_statement_id),
             str(body.base_version_id) if body.base_version_id else None,
-            actor.id,
+            user.id,
             fields,
         )
     except DuplicateKeyError:

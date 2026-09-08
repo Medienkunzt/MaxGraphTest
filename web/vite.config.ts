@@ -1,9 +1,9 @@
-import { fileURLToPath, URL } from "url";
+import { fileURLToPath, URL } from 'url'
 
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import eslintPlugin from "vite-plugin-eslint";
-import vuetify from "vite-plugin-vuetify";
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import eslintPlugin from 'vite-plugin-eslint'
+import vuetify from 'vite-plugin-vuetify'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,44 +11,46 @@ export default defineConfig({
     postcss: {
       plugins: [
         {
-          postcssPlugin: "internal:charset-removal",
+          postcssPlugin: 'internal:charset-removal',
           AtRule: {
             charset: (atRule: any) => {
-              if (atRule.name === "charset") {
-                atRule.remove();
+              if (atRule.name === 'charset') {
+                atRule.remove()
               }
-            },
-          },
-        },
-      ],
+            }
+          }
+        }
+      ]
     },
     preprocessorOptions: {
       scss: {
-        additionalData: `@import "@/assets/settings.scss";`,
-      },
-    },
+        additionalData: `@import "@/assets/settings.scss";`
+      }
+    }
   },
   plugins: [
     vue(),
     eslintPlugin(),
     vuetify({
-      autoImport: true,
-    }),
+      autoImport: true
+    })
   ],
   resolve: {
     alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-    },
+      '@': fileURLToPath(new URL('./src', import.meta.url))
+    }
   },
   server: {
     host: true,
     port: 8085,
     proxy: {
-      "/api": {
-        target: "http://localhost:8080",
+      '/api': {
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
-      },
-    },
-  },
-});
+        // Backend registriert seine Routen ohne /api-Präfix (/auth, /v1, /health)
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  }
+})

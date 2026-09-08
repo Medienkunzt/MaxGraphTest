@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Response
 
-from modeling_api.routes.deps import CurrentActor, Limit, Skip, created_response
+from modeling_api.routes.deps import CurrentUser, Limit, Skip, created_response
 from modeling_api.schemas.common import Page
 from modeling_api.schemas.models import (
     CreateModel,
@@ -19,39 +19,39 @@ router = APIRouter(prefix="/models", tags=["Models"])
 
 
 @router.get("", summary="Eigene Modelle auflisten")
-async def list_models(actor: CurrentActor, skip: Skip = 0, limit: Limit = 20) -> Page[Model]:
-    return Page[Model].model_validate(await service.list_models(skip, limit, actor))
+async def list_models(user: CurrentUser, skip: Skip = 0, limit: Limit = 20) -> Page[Model]:
+    return Page[Model].model_validate(await service.list_models(skip, limit, user))
 
 
 @router.post("", status_code=201, summary="Modell anlegen (Identität, noch ohne Version)")
-async def create_model(body: CreateModel, response: Response, actor: CurrentActor) -> Model:
-    result = await service.create_model(body, actor)
+async def create_model(body: CreateModel, response: Response, user: CurrentUser) -> Model:
+    result = await service.create_model(body, user)
     created_response(response, result, "models")
     return Model.model_validate(result)
 
 
 @router.get("/{model_id}", summary="Ein Modell laden")
-async def get_model(model_id: UUID, actor: CurrentActor) -> Model:
-    return Model.model_validate(await service.get_model(model_id, actor))
+async def get_model(model_id: UUID, user: CurrentUser) -> Model:
+    return Model.model_validate(await service.get_model(model_id, user))
 
 
 @router.get("/{model_id}/versions", summary="Speicherlauf auflisten (ohne data/annotations)")
 async def list_versions(
-    model_id: UUID, actor: CurrentActor, skip: Skip = 0, limit: Limit = 20
+    model_id: UUID, user: CurrentUser, skip: Skip = 0, limit: Limit = 20
 ) -> Page[ModelVersionInfo]:
     return Page[ModelVersionInfo].model_validate(
-        await service.list_versions(model_id, skip, limit, actor)
+        await service.list_versions(model_id, skip, limit, user)
     )
 
 
 @router.post("/{model_id}/versions", status_code=201, summary="Vollständigen Speicherstand sichern")
 async def create_version(
-    model_id: UUID, body: CreateModelVersion, actor: CurrentActor
+    model_id: UUID, body: CreateModelVersion, user: CurrentUser
 ) -> ModelVersion:
-    result = await service.create_version(model_id, body, actor)
+    result = await service.create_version(model_id, body, user)
     return ModelVersion.model_validate(result)
 
 
 @router.get("/{model_id}/versions/{version_id}", summary="Einen Speicherstand laden (mit data)")
-async def get_version(model_id: UUID, version_id: UUID, actor: CurrentActor) -> ModelVersion:
-    return ModelVersion.model_validate(await service.get_version(model_id, version_id, actor))
+async def get_version(model_id: UUID, version_id: UUID, user: CurrentUser) -> ModelVersion:
+    return ModelVersion.model_validate(await service.get_version(model_id, version_id, user))

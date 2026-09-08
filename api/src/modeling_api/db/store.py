@@ -78,7 +78,7 @@ async def save_version(
     parent_field: str,
     parent_id: str,
     base_version_id: str | None,
-    actor_id: str,
+    user_id: str,
     fields: Document,
 ) -> Document:
     """Hängt eine neue Version an ein Objekt an (Sprache, Aufgabe oder Modell).
@@ -102,7 +102,7 @@ async def save_version(
         "_id": new_id(),
         parent_field: parent_id,
         "versionNumber": number,
-        "createdBy": actor_id,
+        "createdBy": user_id,
         "createdAt": utcnow(),
         **fields,
     }

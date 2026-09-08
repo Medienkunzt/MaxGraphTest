@@ -10,7 +10,7 @@ from uuid import UUID
 
 from pymongo.errors import DuplicateKeyError
 
-from modeling_api.core.auth import Actor
+from modeling_api.core.auth import User
 from modeling_api.core.errors import conflict, not_found
 from modeling_api.db.client import db
 from modeling_api.db.store import Document, insert, list_page, to_api
@@ -29,9 +29,9 @@ async def _version_exists(model_id: UUID, version_id: UUID) -> None:
 
 
 async def list_feedback(
-    model_id: UUID, version_id: UUID, skip: int, limit: int, actor: Actor
+    model_id: UUID, version_id: UUID, skip: int, limit: int, user: User
 ) -> Document:
-    await get_model_version(model_id, version_id, actor)  # wirft 404 ohne Besitz
+    await get_model_version(model_id, version_id, user)  # wirft 404 ohne Besitz
     return await list_page(
         db.feedback,
         {"modelId": str(model_id), "modelVersionId": str(version_id)},
@@ -42,9 +42,9 @@ async def list_feedback(
 
 
 async def get_feedback(
-    model_id: UUID, version_id: UUID, feedback_id: UUID, actor: Actor
+    model_id: UUID, version_id: UUID, feedback_id: UUID, user: User
 ) -> Document:
-    await get_model_version(model_id, version_id, actor)
+    await get_model_version(model_id, version_id, user)
     result = await db.feedback.find_one(
         {
             "_id": str(feedback_id),
@@ -58,7 +58,7 @@ async def get_feedback(
 
 
 async def create_feedback(
-    model_id: UUID, version_id: UUID, body: CreateFeedback, actor: Actor
+    model_id: UUID, version_id: UUID, body: CreateFeedback, user: User
 ) -> tuple[Document, bool]:
     """Speichert ein Ergebnis; idempotent je (source, externalFeedbackId).
 
@@ -87,7 +87,7 @@ async def create_feedback(
                     **fields,
                     "modelId": str(model_id),
                     "modelVersionId": str(version_id),
-                    "createdBy": actor.id,
+                    "createdBy": user.id,
                 },
             ),
             True,

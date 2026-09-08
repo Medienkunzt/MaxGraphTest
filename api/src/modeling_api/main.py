@@ -10,11 +10,11 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from modeling_api.core.auth import get_actor
+from modeling_api.core.auth import get_user
 from modeling_api.core.config import settings
 from modeling_api.core.errors import ErrorResponse, register_error_handlers
 from modeling_api.db.client import client, create_indexes, db
-from modeling_api.routes import feedback, languages, models, tasks
+from modeling_api.routes import auth, feedback, languages, models, tasks
 
 
 @asynccontextmanager
@@ -43,10 +43,13 @@ app.add_middleware(
     expose_headers=["Location"],
 )
 
+# Öffentliche Route zur Token-Prüfung: bewusst ohne die /v1-Auth-Pflicht
+app.include_router(auth.router)
+
 # Alle fachlichen Routen: /v1-Präfix + verpflichtende JWT-Prüfung
 api = APIRouter(
     prefix="/v1",
-    dependencies=[Depends(get_actor)],
+    dependencies=[Depends(get_user)],
     responses={
         code: {"model": ErrorResponse} for code in (400, 401, 403, 404, 409, 422, 503)
     },

@@ -9,7 +9,7 @@ from uuid import UUID
 
 from pymongo.errors import DuplicateKeyError
 
-from modeling_api.core.auth import Actor
+from modeling_api.core.auth import User
 from modeling_api.core.errors import ApiError, not_found
 from modeling_api.db.client import db
 from modeling_api.db.store import Document, get_or_404, insert, list_page, save_version, to_api
@@ -67,7 +67,7 @@ async def list_languages(skip: int, limit: int) -> Document:
     return await list_page(db.languages, {}, skip, limit)
 
 
-async def create_language(body: CreateLanguage, actor: Actor) -> Document:
+async def create_language(body: CreateLanguage, user: User) -> Document:
     if body.parent is not None:
         # Die Ausgangsversion des Forks muss existieren (lesen ist global erlaubt).
         parent = body.parent
@@ -82,7 +82,7 @@ async def create_language(body: CreateLanguage, actor: Actor) -> Document:
         {
             "name": body.name,
             "parent": body.parent.model_dump(mode="json") if body.parent else None,
-            "ownerId": actor.id,
+            "ownerId": user.id,
             "latestVersionId": None,
         },
     )
@@ -115,10 +115,10 @@ async def get_version(language_id: UUID, version_id: UUID) -> Document:
 
 
 async def create_version(
-    language_id: UUID, body: CreateLanguageVersion, actor: Actor
+    language_id: UUID, body: CreateLanguageVersion, user: User
 ) -> Document:
     language = await get_language(language_id)
-    if language["ownerId"] != actor.id:
+    if language["ownerId"] != user.id:
         # TODO: Sobald Rollen im JWT definiert sind, kann hier z. B. eine
         # Rolle "sprach-admin" das Schreiben auf fremde Sprachen erlauben.
         raise not_found()
@@ -130,6 +130,6 @@ async def create_version(
         "languageId",
         str(language_id),
         str(body.base_version_id) if body.base_version_id else None,
-        actor.id,
+        user.id,
         fields,
     )
