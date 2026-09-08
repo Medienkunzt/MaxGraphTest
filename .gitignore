@@ -1,0 +1,16 @@
+# Local API configuration and generated credentials
+.env
+.secrets/
+
+# Python tooling and build output
+api/.venv/
+api/.tools/
+**/__pycache__/
+**/*.py[cod]
+**/.ruff_cache/
+**/.mypy_cache/
+api/dist/
+api/build/
+api/*.egg-info/
+api/src/*.egg-info/
+api/openapi.json

@@ -1,0 +1,122 @@
+"""Kleine, wiederverwendbare MongoDB-Helfer.
+
+Hier liegt bewusst alles an einem Ort: IDs erzeugen, Dokumente wandeln,
+einzelne Dokumente laden, Listen mit skip/limit blättern und neue Versionen
+konfliktsicher anhängen.
+"""
+
+from datetime import UTC, datetime
+from typing import Any
+from uuid import uuid4
+
+from pymongo.asynchronous.collection import AsyncCollection
+from pymongo.errors import DuplicateKeyError
+
+from modeling_api.core.errors import conflict, not_found
+
+Document = dict[str, Any]
+
+
+def new_id() -> str:
+    """Lokale IDs sind UUID-Strings; in MongoDB werden sie als _id gespeichert."""
+    return str(uuid4())
+
+
+def utcnow() -> datetime:
+    return datetime.now(UTC)
+
+
+def to_api(document: Document) -> Document:
+    """Wandelt _id in id um, damit das JSON-Schema zur API passt."""
+    return {"id": str(document["_id"]), **{k: v for k, v in document.items() if k != "_id"}}
+
+
+async def get_or_404(collection: AsyncCollection, document_id: str) -> Document:
+    """Lädt ein Dokument oder wirft 404."""
+    result = await collection.find_one({"_id": document_id})
+    if result is None:
+        raise not_found()
+    return to_api(result)
+
+
+async def insert(collection: AsyncCollection, fields: Document) -> Document:
+    """Fügt ein Dokument mit frischer ID und Zeitstempel ein."""
+    document = {"_id": new_id(), "createdAt": utcnow(), **fields}
+    await collection.insert_one(document)
+    return to_api(document)
+
+
+async def list_page(
+    collection: AsyncCollection,
+    filters: Document,
+    skip: int,
+    limit: int,
+    *,
+    sort_field: str = "createdAt",
+    omit: tuple[str, ...] = (),
+) -> Document:
+    """Einfaches Blättern: skip Einträge überspringen, limit zurückgeben.
+
+    Antwortform: {"items": [...], "total": Gesamtanzahl}. Große Inhaltsfelder
+    (z. B. data) können über omit weggelassen werden.
+    """
+    projection = {field: 0 for field in omit} if omit else None
+    total = await collection.count_documents(filters)
+    cursor = (
+        collection.find(filters, projection)
+        .sort([(sort_field, -1), ("_id", -1)])
+        .skip(skip)
+        .limit(limit)
+    )
+    items = [to_api(document) async for document in cursor]
+    return {"items": items, "total": total}
+
+
+async def save_version(
+    identities: AsyncCollection,
+    versions: AsyncCollection,
+    parent_field: str,
+    parent_id: str,
+    base_version_id: str | None,
+    actor_id: str,
+    fields: Document,
+) -> Document:
+    """Hängt eine neue Version an ein Objekt an (Sprache, Aufgabe oder Modell).
+
+    Ablauf ohne Transaktion, aber konfliktsicher:
+    1. Prüfen, dass base_version_id noch der aktuelle Stand ist.
+    2. Version einfügen (die Versionsnummer ist fortlaufend ab 1).
+    3. latestVersionId nur dann tauschen, wenn sich seit Schritt 1 nichts
+       geändert hat (ein einzelnes Update ist in MongoDB atomar).
+       War ein paralleler Request schneller, wird die eigene Version wieder
+       entfernt und der Client bekommt 409.
+    """
+    parent = await identities.find_one({"_id": parent_id})
+    if parent is None:
+        raise not_found()
+    if parent["latestVersionId"] != base_version_id:
+        raise conflict()
+
+    number = await versions.count_documents({parent_field: parent_id}) + 1
+    version = {
+        "_id": new_id(),
+        parent_field: parent_id,
+        "versionNumber": number,
+        "createdBy": actor_id,
+        "createdAt": utcnow(),
+        **fields,
+    }
+    try:
+        await versions.insert_one(version)
+    except DuplicateKeyError:
+        # Zwei parallele Requests haben dieselbe Versionsnummer gezogen.
+        raise conflict() from None
+
+    updated = await identities.update_one(
+        {"_id": parent_id, "latestVersionId": base_version_id},
+        {"$set": {"latestVersionId": version["_id"]}},
+    )
+    if updated.matched_count == 0:
+        await versions.delete_one({"_id": version["_id"]})
+        raise conflict()
+    return to_api(version)

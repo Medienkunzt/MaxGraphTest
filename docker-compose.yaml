@@ -1,0 +1,32 @@
+name: modeling-tool
+
+services:
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - mongo-data:/data/db
+    networks: [database]
+
+  api:
+    build: ./api
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      MONGODB_URI: mongodb://admin:admin@mongo:27017/?authSource=admin
+      JWT_SECRET: 8Dsupersecurekeydf0 #Feedbacksystem Dev Secret
+      DOCS_ENABLED: "true"
+      CORS_ORIGINS: http://localhost:5173
+    depends_on: [mongo]
+    restart: unless-stopped
+    networks: [default, database]
+
+volumes:
+  mongo-data:
+
+networks:
+  database:
+    internal: true
