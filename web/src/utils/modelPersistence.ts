@@ -5,7 +5,7 @@ import type { SerializedJsonNode, SerializedModelJson } from '@/model/ModelPersi
 // ---------------------------------------------------------------------------
 // Eigene ModelXmlSerializer-Subklasse
 // ---------------------------------------------------------------------------
-// maxGraph 0.23.0 registriert ConnectionConstraint nicht in registerModelCodecs()
+// maxGraph 0.24.0 registriert ConnectionConstraint nicht in registerModelCodecs()
 // (https://github.com/maxGraph/maxGraph/blob/main/packages/core/src/serialization/register-model-codecs.ts).
 // Ohne registrierten Codec dekodiert Codec.decode() jeden <ConnectionConstraint>-
 // Knoten als rohes DOM-Element-Objekt, was in ConstraintHandler (null.x) und

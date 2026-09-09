@@ -14,3 +14,6 @@ api/build/
 api/*.egg-info/
 api/src/*.egg-info/
 api/openapi.json
+
+# Local MCP browser artifacts
+.playwright-mcp/

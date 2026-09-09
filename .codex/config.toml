@@ -1,0 +1,16 @@
+# Project MCP servers for Codex on Windows. See docs/mcp.md.
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+
+[mcp_servers.vuetify]
+url = "https://mcp.vuetifyjs.com/mcp"
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+
+[mcp_servers.playwright]
+command = "cmd"
+args = ["/d", "/c", "npx", "-y", "@playwright/mcp@0.0.80", "--browser", "msedge", "--headless", "--isolated", "--caps", "vision", "--output-dir", ".playwright-mcp"]
+startup_timeout_sec = 60
+tool_timeout_sec = 60
