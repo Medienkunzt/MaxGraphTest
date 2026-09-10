@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
+import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { DiagramConnection } from '@/model/DiagramLanguage'
 import ConnectionPreviewItem from '@/components/modeling/ConnectionPreviewItem.vue'
 
@@ -40,11 +40,11 @@ defineEmits<{
   'update:modelValue': [value: string | string[]]
 }>()
 
-const store = useDiagramLanguageStore()
+const store = useDiagramLanguages()
 
 const connectionMap = computed(() => {
   const map: Record<string, DiagramConnection> = {}
-  const connections = store.currentLanguage?.connections ?? []
+  const connections = store.definition?.connections ?? []
   connections.forEach((connection) => {
     map[connection.type] = connection
   })

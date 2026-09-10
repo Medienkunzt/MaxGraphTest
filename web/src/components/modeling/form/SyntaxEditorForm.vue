@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import MultiplicityForm from '@/components/modeling/form/MultiplicityForm.vue'
 import type { DiagramSyntax } from '@/model/DiagramLanguage'
-import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
+import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 
 interface Props {
   selectedRule: DiagramSyntax
@@ -19,16 +19,16 @@ const emit = defineEmits<{
   update: []
 }>()
 
-const store = useDiagramLanguageStore()
+const store = useDiagramLanguages()
 const rule = computed(() => props.selectedRule)
 
 const elementOptions = computed(() => {
-  const elements = store.currentLanguage?.elements || []
+  const elements = store.definition?.elements || []
   return elements.map((el) => el.type)
 })
 
 const connectionOptions = computed(() => {
-  const connections = store.currentLanguage?.connections || []
+  const connections = store.definition?.connections || []
   return [...new Set(connections.map((conn) => conn.connectionType || conn.type))]
 })
 

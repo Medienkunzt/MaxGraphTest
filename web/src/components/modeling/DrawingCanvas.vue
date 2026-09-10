@@ -4,51 +4,6 @@
       <!-- Erweiterte Toolbar -->
       <div v-if="props.showToolbar" class="toolbar-actions mb-2">
         <div class="toolbar-primary-row">
-          <!-- Vue Action Buttons -->
-          <v-btn-group size="small" density="compact" class="mr-2">
-            <v-btn title="Select all (Ctrl+A)" @click="selectAll">
-              <v-icon>mdi-select-all</v-icon>
-            </v-btn>
-            <v-btn title="Clear selection (Esc)" @click="clearSelection">
-              <v-icon>mdi-selection-off</v-icon>
-            </v-btn>
-          </v-btn-group>
-
-          <v-btn-group size="small" density="compact">
-            <v-btn title="Delete (Del)" @click="deleteSelected">
-              <v-icon>mdi-delete</v-icon>
-            </v-btn>
-            <v-btn title="Duplicate (Ctrl+D)" @click="duplicateSelected">
-              <v-icon>mdi-content-duplicate</v-icon>
-            </v-btn>
-          </v-btn-group>
-
-          <!-- Alignment Horizontal -->
-          <v-btn-group size="small" density="compact" class="mr-2">
-            <v-btn title="Align left" @click="alignLeft">
-              <v-icon>mdi-format-horizontal-align-left</v-icon>
-            </v-btn>
-            <v-btn title="Center horizontally" @click="alignCenterH">
-              <v-icon>mdi-format-horizontal-align-center</v-icon>
-            </v-btn>
-            <v-btn title="Align right" @click="alignRight">
-              <v-icon>mdi-format-horizontal-align-right</v-icon>
-            </v-btn>
-          </v-btn-group>
-
-          <!-- Alignment Vertikal -->
-          <v-btn-group size="small" density="compact" class="mr-2">
-            <v-btn title="Align top" @click="alignTop">
-              <v-icon>mdi-format-vertical-align-top</v-icon>
-            </v-btn>
-            <v-btn title="Center vertically" @click="alignMiddleV">
-              <v-icon>mdi-format-vertical-align-center</v-icon>
-            </v-btn>
-            <v-btn title="Align bottom" @click="alignBottom">
-              <v-icon>mdi-format-vertical-align-bottom</v-icon>
-            </v-btn>
-          </v-btn-group>
-
           <!-- Validation Button -->
           <v-btn v-if="hasValidationRules" size="small" density="compact" color="primary" class="validation-btn" title="Validate diagram" @click="manualValidate">
             <v-icon start class="validation-icon">mdi-check-circle</v-icon>
@@ -66,26 +21,25 @@
 
         <!-- Connection Toolbar (immer zweite Zeile) -->
         <div v-if="languageConnections.length > 0" class="toolbar-connections-row">
-          <ConnectionToolbar v-model="selectedConnectionIndex" :connections="languageConnections" @select="onConnectionSelected" />
+          <ConnectionToolbar :connections="languageConnections" :connection-groups="props.connectionGroups" @select="onConnectionSelected" />
         </div>
       </div>
 
       <!-- Canvas Area: Sidebar + Graph -->
       <div class="canvas-area">
         <!-- Elements Sidebar -->
-        <SidebarContainer v-if="props.showElements !== false && props.showModelSidebar !== false && props.showToolbar && sidebarLanguages.length > 0" :languages="sidebarLanguages" />
+        <SidebarContainer v-if="props.showElements !== false && props.showModelSidebar !== false && props.showToolbar && sidebarLanguages.length > 0" :languages="sidebarLanguages" :model-management="props.modelManagement" />
 
         <!-- Graph Container -->
         <div ref="graphWrapper" class="graph-wrapper">
-          <TaskTopBar :task="activeTask" :window-open="taskWindowOpen" :content-html="activeTaskMarkupContent" @pop-out="openTaskInWindow" @update:content-html="updateActiveTaskMarkup" />
-
-          <div ref="graphContainer" class="graph-container">
+          <div ref="graphContainer" class="graph-container" tabindex="0" @pointerdown="focusGraphContainer">
             <!-- Separater Grid Container -->
             <div class="grid-container">
               <canvas ref="canvasGrid" class="grid-canvas"></canvas>
             </div>
 
-            <!-- Graph Controls Component -->
+            <CanvasToolsOverlay v-if="props.showToolbar" @select-all="selectAll" @clear-selection="clearSelection" @delete-selected="deleteSelected" @duplicate-selected="duplicateSelected" @align-left="alignLeft" @align-center-h="alignCenterH" @align-right="alignRight" @align-top="alignTop" @align-middle-v="alignMiddleV" @align-bottom="alignBottom" />
+
             <GraphControls :can-undo="canUndo" :can-redo="canRedo" @undo="undoGraph" @redo="redoGraph" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
 
             <!-- Graph Settings Component -->
@@ -117,10 +71,7 @@
 
           <CanvasWindowHost ref="canvasWindowHost" :graph-container="graphContainer ?? null" :windows="props.canvasWindows" @window-removed="onWindowRemoved">
             <template #window-content="slotProps">
-              <div v-if="slotProps.definition.meta?.role === 'task'" class="canvas-task-window-content">
-                <TaskRichEditor v-if="taskById.get(slotProps.definition.meta.taskId as string)" :model-value="getTaskMarkupContent(slotProps.definition.meta.taskId as string)" @update:model-value="(value) => onTaskWindowContentUpdated(slotProps.definition.meta, value)" />
-              </div>
-              <slot v-else name="window-content" v-bind="slotProps">
+              <slot name="window-content" v-bind="slotProps">
                 <div class="canvas-window-default-content">
                   {{ slotProps.definition.placeholder ?? 'Window ready. Content can be provided through the window-content slot or the window definition.' }}
                 </div>
@@ -135,8 +86,6 @@
             {{ overlayTooltip.text }}
           </v-tooltip>
         </div>
-
-        <SidebarFeedbackContainer v-if="props.showElements !== false && props.showFeedbackSidebar !== false && props.showToolbar" :feedback-shapes="feedbackSidebarShapes" @task-selected="onTaskSelected" />
       </div>
       <!-- /canvas-area -->
     </v-card-text>
@@ -164,13 +113,11 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler, FitPlugin, Clipboard, ConnectionConstraint } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
-import { storeToRefs } from 'pinia'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
 import { useZoomOperations } from '@/composables/useZoomOperations'
 import { useGridSettings } from '@/composables/useGridSettings'
 import { useCanvasOverlays } from '@/composables/useCanvasOverlays'
-import { useTaskStore } from '@/stores/task'
 import { setupDynamicGrid } from '@/utils/setupDynamicGrid'
 import { createDefaultShapes, buildShapesFromElements, ensureGraphDropHandlers } from '@/utils/setupToolbar'
 import { setupSwimlaneSupport } from '@/utils/setupSwimlaneSupport'
@@ -181,24 +128,22 @@ import { alignHorizontal, alignVertical } from '@/utils/alignCells'
 import { clearValidationWarningOverlays, getGraphValidationMode, isValidationPassActive, setGraphValidationMode } from '@/utils/graphValidationRuntime'
 import { createCellFromElement } from '@/utils/elementFactory'
 import GraphSettings from './GraphSettings.vue'
+import CanvasToolsOverlay from './CanvasToolsOverlay.vue'
 import GraphControls from './GraphControls.vue'
 import ConnectionToolbar from './ConnectionToolbar.vue'
 import AutonomyControls from './AutonomyControls.vue'
 import CanvasWindowHost from './CanvasWindowHost.vue'
 import SidebarContainer from './SidebarContainer.vue'
-import SidebarFeedbackContainer from './SidebarFeedbackContainer.vue'
-import TaskTopBar from './TaskTopBar.vue'
-import TaskRichEditor from '@/components/tasks/TaskRichEditor.vue'
 import type { SidebarLanguage } from './ElementsSidebar.vue'
 import type { DiagramElement } from '@/model/Element'
-import type { DiagramConnection } from '@/model/Connection'
+import type { DiagramConnection, DiagramConnectionGroup } from '@/model/Connection'
 import type { DiagramSyntax } from '@/model/Syntax'
 import type { CanvasWindowDefinition, CanvasWindowPatch } from '@/model/CanvasWindow'
-import type { DiagramTask } from '@/model/Task'
 import { buildValidationRulesFromSyntax, DiagramValidator } from '@/utils/multiplicity'
 import type { AutonomyMode } from '@/model/Autonomy'
 import type { DiagramFeedbackConfig, FeedbackCanvasOverlayEntry } from '@/model/Feedback'
 import { createDefaultFeedbackCanvasConfig } from '@/utils/feedbackConfig'
+import { exportModelAsXml, importModelFromXml } from '@/utils/modelPersistence'
 
 import img_rectangle from '@/assets/images/rectangle.gif'
 import img_ellipse from '@/assets/images/ellipse.gif'
@@ -339,11 +284,12 @@ const props = withDefaults(
     showToolbar?: boolean
     showElements?: boolean
     showModelSidebar?: boolean
-    showFeedbackSidebar?: boolean
+    modelManagement?: boolean
     contextMenu?: boolean
     languageName?: string
     languageElements?: DiagramElement[]
     languageConnections?: DiagramConnection[]
+    connectionGroups?: DiagramConnectionGroup[]
     languageSyntax?: DiagramSyntax[]
     languages?: SidebarLanguage[]
     autonomyMode?: AutonomyMode
@@ -358,11 +304,12 @@ const props = withDefaults(
     showToolbar: true,
     showElements: true,
     showModelSidebar: true,
-    showFeedbackSidebar: true,
+    modelManagement: false,
     contextMenu: false,
     languageName: undefined,
     languageElements: undefined,
     languageConnections: undefined,
+    connectionGroups: undefined,
     languageSyntax: undefined,
     languages: undefined,
     autonomyMode: 'manual',
@@ -409,7 +356,6 @@ const modelLayerCell = shallowRef<Cell>()
 const feedbackLayerCell = shallowRef<Cell>()
 const keyHandler = shallowRef<KeyHandler>()
 const customConnectionHandler = shallowRef<CustomConnectionHandler>()
-const selectedConnectionIndex = ref(0)
 const plugins = ref<GraphPluginConstructor[]>([MyCustomCellEditorHandler, TooltipHandler, CustomConnectionHandler as unknown as GraphPluginConstructor, PanningHandler, SelectionCellsHandler, SelectionHandler, RubberBandHandler, FitPlugin])
 const toolbarShapes = ref(
   createDefaultShapes({
@@ -423,13 +369,9 @@ const toolbarShapes = ref(
 
 let undoManagerApi: UndoManagerApi | undefined
 let graphContainerKeydownHandler: ((evt: KeyboardEvent) => void) | undefined
-let documentKeydownHandler: ((evt: KeyboardEvent) => void) | undefined
 let graphContainerWheelHandler: ((evt: WheelEvent) => void) | undefined
 const overlayEntries = computed(() => props.overlays ?? [])
 const { overlayTooltip, overlayTooltipAnchorStyle, registerGraph, cleanup: cleanupCanvasOverlays } = useCanvasOverlays(graphWrapper, overlayEntries)
-const taskStore = useTaskStore()
-const { tasks } = storeToRefs(taskStore)
-
 // Zentraler Validator für alle Diagramm-Regeln
 const diagramValidator = new DiagramValidator()
 const strictValidationDialogVisible = ref(false)
@@ -440,6 +382,15 @@ const normalizeErrorLines = (rawMessage: string): string[] =>
     .split('\n')
     .map((line) => line.replace(/<[^>]*>/g, '').trim())
     .filter((line) => line.length > 0)
+
+const focusGraphContainer = (evt: PointerEvent) => {
+  const target = evt.target as Element | null
+  if (target?.closest('button, input, textarea, select, [contenteditable="true"]')) {
+    return
+  }
+
+  graphContainer.value?.focus({ preventScroll: true })
+}
 
 const openStrictValidationDialog = (messages: string[]) => {
   if (messages.length === 0) return
@@ -519,51 +470,6 @@ const feedbackConnectionByElementId = computed<Record<string, DiagramConnection>
   })
   return map
 })
-
-// Task-Topbar State
-const activeTaskId = ref<string | null>(null)
-const taskWindowOpen = ref(false)
-
-const taskById = computed(() => {
-  const map = new Map<string, DiagramTask>()
-  tasks.value.forEach((task) => {
-    map.set(task.id, task)
-  })
-  return map
-})
-
-const activeTask = computed(() => {
-  if (!activeTaskId.value) return null
-  return taskById.value.get(activeTaskId.value) ?? null
-})
-
-const activeTaskMarkupContent = computed(() => {
-  if (!activeTask.value) return ''
-  return activeTask.value.canvasMarkup?.content ?? activeTask.value.content
-})
-
-const CANVAS_TASK_WINDOW_ID = 'canvas-task-window'
-
-const getTaskMarkupContent = (taskId: string): string => {
-  const task = taskById.value.get(taskId)
-  if (!task) return ''
-  return task.canvasMarkup?.content ?? task.content
-}
-
-const updateTaskMarkup = (taskId: string, content: string) => {
-  taskStore.updateTaskCanvasMarkup(taskId, content)
-}
-
-const onTaskWindowContentUpdated = (meta: Record<string, unknown> | undefined, content: string) => {
-  const taskId = typeof meta?.taskId === 'string' ? meta.taskId : null
-  if (!taskId) return
-  updateTaskMarkup(taskId, content)
-}
-
-const updateActiveTaskMarkup = (content: string) => {
-  if (!activeTaskId.value) return
-  taskStore.updateTaskCanvasMarkup(activeTaskId.value, content)
-}
 
 // Alignment-Hilfsfunktionen
 const alignLeft = () => graph.value && alignHorizontal(graph.value, 'left')
@@ -788,10 +694,6 @@ onUnmounted(() => {
     graphContainer.value.removeEventListener('wheel', graphContainerWheelHandler)
   }
   graphContainerWheelHandler = undefined
-  if (documentKeydownHandler) {
-    document.removeEventListener('keydown', documentKeydownHandler)
-  }
-  documentKeydownHandler = undefined
   ;(keyHandler.value as any)?.destroy?.()
   keyHandler.value = undefined
   undoManagerApi?.destroy()
@@ -829,11 +731,7 @@ watch(
       const safeConnections = newConnections ?? []
 
       if (safeConnections.length > 0) {
-        // Setze die erste Verbindung als Standard, falls noch keine ausgewählt ist
-        if (selectedConnectionIndex.value >= safeConnections.length) {
-          selectedConnectionIndex.value = 0
-        }
-        customConnectionHandler.value.setSelectedConnection(safeConnections[selectedConnectionIndex.value])
+        customConnectionHandler.value.setSelectedConnection(safeConnections[0])
       } else {
         customConnectionHandler.value.setSelectedConnection(null)
       }
@@ -934,7 +832,6 @@ const initGraph = () => {
   // Setze die erste Verbindung als Standard, falls vorhanden
   if (customConnectionHandler.value && props.languageConnections && props.languageConnections.length > 0) {
     customConnectionHandler.value.setSelectedConnection(props.languageConnections[0])
-    selectedConnectionIndex.value = 0
   }
   customConnectionHandler.value?.setFeedbackElementConnections(feedbackConnectionByElementId.value)
   customConnectionHandler.value?.setFeedbackConnection(activeFeedbackRules.value.enforceDedicatedConnection ? activeFeedbackConnectionDefinition.value : null)
@@ -1050,24 +947,33 @@ const initGraph = () => {
 
   graph.value.getStylesheet().getDefaultEdgeStyle().edgeStyle = EdgeStyle.OrthConnector
 
-  // Initialisiere KeyHandler (nicht als Plugin, sondern separat wie in den Beispielen)
-  keyHandler.value = new KeyHandler(graph.value)
-  keyHandler.value.bindControlKey(65, () => selectAll())
-  keyHandler.value.bindControlKey(67, () => copySelected())
-  keyHandler.value.bindControlKey(86, () => pasteFromClipboard())
-  keyHandler.value.bindControlKey(68, () => duplicateSelected())
-  keyHandler.value.bindControlKey(90, () => undoGraph())
-  keyHandler.value.bindControlKey(89, () => redoGraph())
-  keyHandler.value.bindKey(27, () => clearSelection())
-  keyHandler.value.bindKey(46, () => deleteSelected())
-  ;(keyHandler.value as any)?.bindControlShiftKey?.(90, () => redoGraph())
+  // Tastaturbefehle nur innerhalb des fokussierten Modellierungsbereichs behandeln.
+  // Ohne explizites Ziel registriert maxGraph den KeyHandler am gesamten Dokument.
+  if (graphContainer.value) {
+    keyHandler.value = new KeyHandler(graph.value, graphContainer.value)
+    keyHandler.value.bindControlKey(65, () => selectAll())
+    keyHandler.value.bindControlKey(67, () => copySelected())
+    keyHandler.value.bindControlKey(86, () => pasteFromClipboard())
+    keyHandler.value.bindControlKey(68, () => duplicateSelected())
+    keyHandler.value.bindControlKey(90, () => undoGraph())
+    keyHandler.value.bindControlKey(89, () => redoGraph())
+    keyHandler.value.bindKey(46, () => deleteSelected())
+    ;(keyHandler.value as any)?.bindControlShiftKey?.(90, () => redoGraph())
+  }
 
   // Escape zusätzlich direkt am Container behandeln, da KeyHandler Escape intern speziell verarbeitet.
   if (graphContainer.value) {
     graphContainerKeydownHandler = (evt: KeyboardEvent) => {
-      if (evt.key === 'Escape') {
-        clearSelection()
+      if (evt.key !== 'Escape' || graph.value?.isEditing()) {
+        return
       }
+
+      const target = evt.target as Element | null
+      if (target?.closest('input, textarea, select, [contenteditable="true"]')) {
+        return
+      }
+
+      clearSelection()
     }
     graphContainer.value.addEventListener('keydown', graphContainerKeydownHandler)
 
@@ -1085,25 +991,6 @@ const initGraph = () => {
     }
     graphContainer.value.addEventListener('wheel', graphContainerWheelHandler, { passive: false })
   }
-
-  documentKeydownHandler = (evt: KeyboardEvent) => {
-    if (evt.key !== 'Escape') {
-      return
-    }
-
-    if (!graph.value || !graph.value.isEnabled() || graph.value.isEditing()) {
-      return
-    }
-
-    const target = evt.target as HTMLElement | null
-    if (target?.closest('input, textarea, select, [contenteditable="true"]')) {
-      return
-    }
-
-    clearSelection()
-    evt.preventDefault()
-  }
-  document.addEventListener('keydown', documentKeydownHandler)
 
   // Swimlane-Unterstützung aktivieren
   setupSwimlaneSupport(graph.value)
@@ -1195,14 +1082,6 @@ const feedbackShapes = computed(() =>
   })
 )
 
-const feedbackSidebarShapes = computed(() =>
-  feedbackShapes.value.map((shape) => ({
-    name: shape.name,
-    label: shape.label ?? shape.name,
-    style: shape.style
-  }))
-)
-
 const initializeToolbar = () => {
   if (!graph.value) {
     return
@@ -1270,43 +1149,30 @@ const setCanvasWindows = (definitions: CanvasWindowDefinition[]) => {
   canvasWindowHost.value?.setWindows(definitions)
 }
 
-const onTaskSelected = (taskId: string) => {
-  activeTaskId.value = taskId
-  // Wenn ein Fenster für eine andere Aufgabe offen ist, Inhalt aktualisieren
-  if (taskWindowOpen.value) {
-    const task = taskById.value.get(taskId)
-    if (task) {
-      removeCanvasWindow(CANVAS_TASK_WINDOW_ID)
-      taskWindowOpen.value = false
-      nextTick(() => openTaskInWindow())
-    }
+const serializeModel = (): Record<string, unknown> => {
+  if (!graph.value) return {}
+  return {
+    format: 'maxgraph-xml',
+    version: 1,
+    xml: exportModelAsXml(graph.value, false)
   }
 }
 
-const openTaskInWindow = () => {
-  const task = activeTask.value
-  if (!task) return
-  addCanvasWindow({
-    id: CANVAS_TASK_WINDOW_ID,
-    title: task.title,
-    behavior: {
-      maximizable: false
-    },
-    meta: { role: 'task', taskId: task.id },
-    x: 60,
-    y: 60,
-    width: 480,
-    height: 340
-  })
-  taskWindowOpen.value = true
-}
-
-const onWindowRemoved = (windowId: string) => {
-  if (windowId === CANVAS_TASK_WINDOW_ID) {
-    taskWindowOpen.value = false
+const loadPersistedModel = (data: Record<string, unknown>) => {
+  if (!graph.value || typeof data.xml !== 'string') return
+  try {
+    importModelFromXml(graph.value, data.xml)
+    syncLayerReferences(graph.value)
+    initializeToolbar()
+  } catch (error) {
+    // A malformed historical snapshot must not prevent the editor shell from
+    // opening. The caller can keep the server data untouched and show a small
+    // recoverable notice instead.
+    console.warn('Unable to import model snapshot.', error)
   }
 }
 
+const onWindowRemoved = () => {}
 defineExpose({
   graph,
   clearCanvas,
@@ -1314,7 +1180,9 @@ defineExpose({
   updateCanvasWindow,
   removeCanvasWindow,
   clearCanvasWindows,
-  setCanvasWindows
+  setCanvasWindows,
+  serializeModel,
+  loadPersistedModel
 })
 </script>
 

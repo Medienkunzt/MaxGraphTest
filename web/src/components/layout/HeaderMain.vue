@@ -7,9 +7,9 @@
     </v-app-bar-title>
 
     <template #append>
-      <v-btn to="/modeling" active-class="active" prepend-icon="mdi-pencil-ruler">
-        <span> Modeling </span>
-        <v-tooltip activator="parent" location="bottom"> Modeling </v-tooltip>
+      <v-btn to="/" active-class="active" prepend-icon="mdi-folder-outline">
+        <span> Modelle </span>
+        <v-tooltip activator="parent" location="bottom"> Meine Modelle </v-tooltip>
       </v-btn>
       <v-btn to="/diagramLanguages" active-class="active" prepend-icon="mdi-view-list">
         <span> Languages </span>

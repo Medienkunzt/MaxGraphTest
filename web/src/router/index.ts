@@ -1,6 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useBearerToken } from '@/composables/useBearerToken'
-import { validateToken } from '@/services/authService'
+import authService from '@/services/auth/auth.service'
 import { useUserStore } from '@/stores/userStore'
 
 const router = createRouter({
@@ -17,7 +17,7 @@ const router = createRouter({
       component: () => import('../views/ViewHome.vue')
     },
     {
-      path: '/modeling/:languageId?',
+      path: '/modeling/:modelId?',
       name: 'Modeling',
       component: () => import('../views/ViewModeling.vue'),
       props: true
@@ -25,8 +25,7 @@ const router = createRouter({
     {
       path: '/diagramLanguageEditor/:id?',
       name: 'DiagramLanguageEditor',
-      component: () => import('../views/ViewDiagramLanguageEditor.vue'),
-      props: true
+      component: () => import('../views/ViewDiagramLanguageEditor.vue')
     },
     {
       path: '/diagramLanguages',
@@ -61,8 +60,8 @@ router.beforeEach(async (to, from, next) => {
   const adminRequired = !nonAdminPages.includes(to.name as string)
   const userStore = useUserStore()
 
-  const loginValid = await validateToken().then((response) => {
-    if (response === true) {
+  const loginValid = await authService.validateToken().then((response) => {
+    if (response.data === true) {
       return true
     } else {
       clearToken()

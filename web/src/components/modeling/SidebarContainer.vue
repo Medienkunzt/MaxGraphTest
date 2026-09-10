@@ -1,5 +1,8 @@
 <template>
   <div class="sidebar-container" :style="{ width: sidebarWidth + 'px', minWidth: sidebarWidth + 'px' }">
+    <div v-if="modelManagement" class="model-title-bar">
+      <span class="model-title-label">Model</span><span class="model-title-value" :title="modelName">{{ modelName }}</span>
+    </div>
     <div class="sidebar-topbar">
       <div class="tab-buttons" role="tablist" aria-label="Sidebar content">
         <button v-for="tab in tabs" :key="tab.value" type="button" class="tab-button" :class="{ 'tab-button--active': activeTab === tab.value }" :title="tab.label" :aria-pressed="activeTab === tab.value" @click="activeTab = tab.value">
@@ -10,9 +13,11 @@
     </div>
 
     <div class="sidebar-body">
-      <ElementsSidebar v-if="activeTab === 'elements'" :languages="languages" :sidebar-width="sidebarWidth" />
+      <SidebarModel v-if="modelManagement && activeTab === 'model'" />
+      <SidebarLibrary v-else-if="modelManagement && activeTab === 'library'" :languages="languages" :sidebar-width="sidebarWidth" />
       <SidebarSync v-else-if="activeTab === 'sync'" />
-      <SidebarPersistence v-else />
+      <SidebarPersistence v-else-if="activeTab === 'files' || activeTab === 'persistence'" />
+      <ElementsSidebar v-else :languages="languages" :sidebar-width="sidebarWidth" />
     </div>
 
     <div class="resize-handle" title="Adjust width" @mousedown.prevent="startResize">
@@ -22,29 +27,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ElementsSidebar, { type SidebarLanguage } from './ElementsSidebar.vue'
+import SidebarModel from './SidebarModel.vue'
+import SidebarLibrary from './SidebarLibrary.vue'
 import SidebarPersistence from './SidebarPersistence.vue'
 import SidebarSync from './SidebarSync.vue'
+import { useModelWorkspaceStore } from '@/stores/modelWorkspace'
 
-type SidebarTab = 'elements' | 'persistence' | 'sync'
+type SidebarTab = 'model' | 'library' | 'files' | 'elements' | 'persistence' | 'sync'
 
-defineProps<{
+const props = defineProps<{
   languages?: SidebarLanguage[]
+  modelManagement?: boolean
 }>()
+const workspace = useModelWorkspaceStore()
+const modelName = computed(() => workspace.model?.name ?? workspace.data.name)
 
-const tabs: { value: SidebarTab; icon: string; label: string }[] = [
-  { value: 'elements', icon: 'mdi-shape-outline', label: 'Elements' },
-  { value: 'persistence', icon: 'mdi-database-outline', label: 'Persistence' },
+const modelTabs: { value: SidebarTab; icon: string; label: string }[] = [
+  { value: 'model', icon: 'mdi-file-document-edit-outline', label: 'Model' },
+  { value: 'library', icon: 'mdi-shape-outline', label: 'Library' },
+  { value: 'files', icon: 'mdi-import', label: 'Import/Export' },
   { value: 'sync', icon: 'mdi-sync', label: 'Sync' }
 ]
+const defaultTabs: { value: SidebarTab; icon: string; label: string }[] = [
+  { value: 'elements', icon: 'mdi-shape-outline', label: 'Elements' },
+  { value: 'persistence', icon: 'mdi-import', label: 'Import/Export' },
+  { value: 'sync', icon: 'mdi-sync', label: 'Sync' }
+]
+const tabs = computed(() => (props.modelManagement ? modelTabs : defaultTabs))
 
 const DEFAULT_WIDTH = 210
 const MIN_WIDTH = Math.round(DEFAULT_WIDTH / 2)
 const MAX_WIDTH = Math.round(DEFAULT_WIDTH * 1.5)
 
 const sidebarWidth = ref(DEFAULT_WIDTH)
-const activeTab = ref<SidebarTab>('elements')
+const activeTab = ref<SidebarTab>(props.modelManagement ? 'model' : 'elements')
 
 const startResize = (event: MouseEvent) => {
   const startX = event.clientX
@@ -92,6 +110,31 @@ const startResize = (event: MouseEvent) => {
   background: #ffffff;
   border-bottom: 1px solid rgba(var(--v-theme-outline), 0.14);
   flex-shrink: 0;
+}
+
+.model-title-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px 9px 10px;
+  border-bottom: 1px solid rgba(var(--v-theme-outline), 0.14);
+  background: rgba(var(--v-theme-primary), 0.035);
+}
+
+.model-title-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+}
+.model-title-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(var(--v-theme-on-surface), 0.9);
 }
 
 .tab-buttons {

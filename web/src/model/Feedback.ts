@@ -67,7 +67,7 @@ export interface FeedbackCanvasConfig {
 export interface DiagramFeedbackConfig {
   elements: Record<string, FeedbackTargetOverlays>
   connections: Record<string, FeedbackTargetOverlays>
-  canvas?: FeedbackCanvasConfig
+  canvas: FeedbackCanvasConfig
 }
 
 export const FEEDBACK_STATES: FeedbackState[] = ['correct', 'incorrect', 'hint']

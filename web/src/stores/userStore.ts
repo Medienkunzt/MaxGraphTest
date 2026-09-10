@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { fetchMe } from '@/services/authService'
+import authService from '@/services/auth/auth.service'
 
 export const useUserStore = defineStore('user', () => {
   const globalRole = ref<string | null>(null)
@@ -9,8 +9,12 @@ export const useUserStore = defineStore('user', () => {
   // Fetches the token claims from the backend only once, then serves them from state
   const ensureGlobalRole = async () => {
     if (!loaded.value) {
-      const claims = await fetchMe()
-      globalRole.value = claims?.globalRole ?? null
+      try {
+        const response = await authService.getMe()
+        globalRole.value = response.data.globalRole ?? null
+      } catch {
+        globalRole.value = null
+      }
       loaded.value = true
     }
     return globalRole.value

@@ -56,6 +56,9 @@ export const importModelFromXml = (graph: Graph, xml: string) => {
   const model = graph.getDataModel()
   model.beginUpdate()
   try {
+    // Decoder lookup tables retain existing cells. Reset first so imports never
+    // merge with the canvas' temporary layers or create duplicate cell IDs.
+    model.clear()
     createModelSerializer(graph).import(xml)
   } finally {
     model.endUpdate()

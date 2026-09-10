@@ -22,6 +22,12 @@ class User:
 
     id: str
     roles: list[str] = field(default_factory=list)
+    global_role: str | None = None
+
+    @property
+    def is_admin(self) -> bool:
+        """Ob der Nutzer globaler Administrator des Feedback-Systems ist."""
+        return self.global_role == "ADMIN"
 
 
 def _decode_claims(token: str) -> dict:
@@ -54,7 +60,12 @@ def get_user(
     except jwt.PyJWTError:
         raise ApiError(401, "INVALID_TOKEN", "Es wird ein gültiges Bearer-Token benötigt.") from None
     roles = claims.get(settings.jwt_roles_claim) or []
-    return User(id=str(claims[settings.jwt_user_claim]), roles=list(roles))
+    global_role = claims.get(settings.jwt_global_role_claim)
+    return User(
+        id=str(claims[settings.jwt_user_claim]),
+        roles=list(roles),
+        global_role=str(global_role) if global_role is not None else None,
+    )
 
 
 def get_claims(

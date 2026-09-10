@@ -38,10 +38,8 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import type { GraphDataModel } from '@maxgraph/core'
-import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import EditorEntityList from './EditorEntityList.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
@@ -50,16 +48,7 @@ import type { DiagramConnection } from '@/model/DiagramLanguage'
 import { clearConnectionPreview, renderScenarioConnectionPreview, renderSimpleConnectionPreview, renderRoutingConnectionPreview, type ConnectionPreviewMode } from '@/utils/connectionPreview'
 
 // Props
-interface Props {
-  languageId?: string
-  id?: string
-}
-
-const props = defineProps<Props>()
-const route = useRoute()
-
-const store = useDiagramLanguageStore()
-const { languages, setCurrentLanguage } = useDiagramLanguages()
+const store = useDiagramLanguages()
 
 // State
 const selectedConnectionIndex = ref<number>(-1)
@@ -68,9 +57,9 @@ const drawingCanvasRef = ref()
 const previewMode = ref<ConnectionPreviewMode>('simple')
 
 // Computed - Verbindungen aus Store
-const connections = computed(() => store.currentLanguage?.connections || [])
-const elements = computed(() => store.currentLanguage?.elements || [])
-const languageSyntaxForCanvas = computed(() => store.currentLanguage?.syntax ?? [])
+const connections = computed(() => store.definition?.connections || [])
+const elements = computed(() => store.definition?.elements || [])
+const languageSyntaxForCanvas = computed(() => store.definition?.syntax ?? [])
 const selectedConnection = computed<DiagramConnection | undefined>(() => {
   if (selectedConnectionIndex.value < 0) return undefined
   return connections.value[selectedConnectionIndex.value]
@@ -90,7 +79,7 @@ const selectConnection = (connectionIndex: number) => {
 }
 
 const addNewConnection = () => {
-  if (!store.currentLanguage) return
+  if (!store.definition) return
 
   const newConnection: DiagramConnection = {
     type: `connection_${Date.now()}`,
@@ -119,17 +108,17 @@ const addNewConnection = () => {
     additionalLabels: []
   }
 
-  store.addConnectionToLanguage(store.currentLanguage.id, newConnection)
+  store.addConnectionToLanguage(newConnection)
   selectedConnectionIndex.value = connections.value.length - 1
 }
 
 const deleteConnection = (connectionIndex: number) => {
-  if (!store.currentLanguage) return
+  if (!store.definition) return
 
   const connection = connections.value[connectionIndex]
   if (!connection) return
 
-  store.removeConnectionFromLanguage(store.currentLanguage.id, connection.type)
+  store.removeConnectionFromLanguage(connection.type)
   selectedConnectionIndex.value = -1
 }
 
@@ -177,23 +166,8 @@ const debouncedUpdate = () => {
 }
 
 const debouncedStoreUpdate = () => {
-  if (selectedConnection.value && store.currentLanguage) {
-    store.updateConnectionInLanguage(store.currentLanguage.id, selectedConnection.value.type, selectedConnection.value)
-  }
-}
-
-// Sprachen-ID aus Route laden
-const loadLanguageFromRoute = () => {
-  const languageId = props.id || (route.params.id as string)
-
-  if (languageId) {
-    const language = languages.find((lang) => lang.id === languageId)
-    if (language) {
-      setCurrentLanguage(language)
-      console.log('Language loaded from route:', language.name)
-    } else {
-      console.warn('Language ID not found:', languageId)
-    }
+  if (selectedConnection.value && store.definition) {
+    store.updateConnectionInLanguage(selectedConnection.value.type, selectedConnection.value)
   }
 }
 
@@ -221,9 +195,6 @@ watch(
 
 // Lifecycle
 onMounted(() => {
-  // Route laden
-  loadLanguageFromRoute()
-
   // Canvas initialisieren mit mehreren Versuchen (wie im ElementEditor)
   const initializeCanvas = (attempts = 0) => {
     if (attempts > 10) {

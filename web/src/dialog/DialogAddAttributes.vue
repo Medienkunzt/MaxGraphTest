@@ -38,12 +38,10 @@
 import { ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { useToolManagementStore } from '../stores/toolManagementStore'
-import { useDiagramStore } from '@/stores/diagramStore'
 
 import type Attribute from '../model/diagram/Attribute'
 
 const toolManagementStore = useToolManagementStore()
-const diagramStore = useDiagramStore()
 
 const drag = ref(false)
 const dialog = ref<boolean>(false)
@@ -65,7 +63,6 @@ const deleteAttribute = (attribute: Attribute) => {
     let index = toolManagementStore.selectedEntity.attributes.indexOf(attribute)
     toolManagementStore.selectedEntity.attributes.splice(index, 1)
 
-    diagramStore.saveHistory()
   }
 }
 
@@ -84,7 +81,6 @@ const addAttribute = () => {
       fkey: false
     })
     newAttributeName.value = ''
-    diagramStore.saveHistory()
   }
 }
 

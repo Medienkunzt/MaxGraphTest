@@ -36,28 +36,17 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import AutonomyModeToggle from '@/components/modeling/AutonomyModeToggle.vue'
 import BasicEditorForm from './form/BasicEditorForm.vue'
 import type { GraphDataModel } from '@maxgraph/core'
 import SyntaxEditorForm from './form/SyntaxEditorForm.vue'
 import type { DiagramSyntax } from '@/model/DiagramLanguage'
-import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 
 // Props
-interface Props {
-  languageId?: string
-  id?: string
-}
-
-const props = defineProps<Props>()
-const route = useRoute()
-
 // Store
-const store = useDiagramLanguageStore()
-const { languages, setCurrentLanguage } = useDiagramLanguages()
+const store = useDiagramLanguages()
 
 // State
 const canvasModel = ref<GraphDataModel>()
@@ -66,16 +55,16 @@ const drawingCanvasRef = ref()
 const autonomyMode = ref<'manual' | 'assisted' | 'strict'>('manual')
 
 // Computed
-const syntaxRules = computed(() => store.currentLanguage?.syntax || [])
+const syntaxRules = computed(() => store.definition?.syntax || [])
 const selectedRule = computed<DiagramSyntax | undefined>(() => syntaxRules.value.find((rule) => rule.ruleType === 'multiplicity'))
-const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
-const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
+const languageElementsForCanvas = computed(() => store.definition?.elements ?? [])
+const languageConnectionsForCanvas = computed(() => store.definition?.connections ?? [])
 
 const ensureMultiplicityRule = () => {
-  if (!store.currentLanguage) return
+  if (!store.definition) return
   if (selectedRule.value) return
 
-  store.addSyntaxToLanguage(store.currentLanguage.id, {
+  store.addSyntaxToLanguage({
     ruleType: 'multiplicity',
     config: {
       relations: [],
@@ -98,8 +87,8 @@ const debouncedUpdate = () => {
 }
 
 const debouncedStoreUpdate = () => {
-  if (selectedRule.value && store.currentLanguage) {
-    store.updateSyntaxInLanguage(store.currentLanguage.id, selectedRule.value)
+  if (selectedRule.value && store.definition) {
+    store.updateSyntaxInLanguage(selectedRule.value)
   }
 }
 
@@ -108,24 +97,9 @@ const updateAll = () => {
   debouncedStoreUpdate()
 }
 
-// Sprachen-ID aus Route laden
-const loadLanguageFromRoute = () => {
-  const languageId = props.id || (route.params.id as string)
-
-  if (languageId) {
-    const language = languages.find((lang) => lang.id === languageId)
-    if (language) {
-      setCurrentLanguage(language)
-      console.log('Language loaded from route:', language.name)
-    } else {
-      console.warn('Language ID not found:', languageId)
-    }
-  }
-}
-
 // Watchers
 watch(
-  () => store.currentLanguage?.id,
+  () => store.currentVersion?.id,
   () => {
     ensureMultiplicityRule()
     debouncedUpdate()
@@ -143,8 +117,6 @@ watch(
 
 // Lifecycle
 onMounted(() => {
-  // Route laden
-  loadLanguageFromRoute()
   ensureMultiplicityRule()
 
   // Canvas initialisieren mit mehreren Versuchen (wie im ElementEditor)

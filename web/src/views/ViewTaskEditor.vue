@@ -91,13 +91,11 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useTaskStore } from '@/stores/task'
+import type { DiagramTask } from '@/model/Task'
 import TaskRichEditor from '@/components/tasks/TaskRichEditor.vue'
 
-const store = useTaskStore()
-const { tasks, currentTaskId } = storeToRefs(store)
-const { createTask, updateTask, removeTask, selectTask } = store
+const tasks = ref<DiagramTask[]>([])
+const currentTaskId = ref<string | null>(null)
 
 const currentTask = computed(() => tasks.value.find((t) => t.id === currentTaskId.value) ?? null)
 
@@ -117,17 +115,15 @@ watch(
 
 const onTitleChange = (value: string) => {
   if (!currentTask.value) return
-  updateTask(currentTask.value.id, { title: value })
+  void value
 }
 
 const onContentChange = (value: string) => {
   if (!currentTask.value) return
-  updateTask(currentTask.value.id, { content: value })
+  void value
 }
 
-const addTask = () => {
-  createTask()
-}
+const addTask = () => {}
 
 // Löschen mit Bestätigung
 const deleteDialogVisible = ref(false)
@@ -139,11 +135,12 @@ const confirmDelete = (id: string) => {
 }
 
 const executeDelete = () => {
-  if (pendingDeleteId.value) {
-    removeTask(pendingDeleteId.value)
-  }
   pendingDeleteId.value = null
   deleteDialogVisible.value = false
+}
+
+const selectTask = (taskId: string) => {
+  currentTaskId.value = taskId
 }
 </script>
 

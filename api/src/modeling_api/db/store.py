@@ -53,6 +53,7 @@ async def list_page(
     limit: int,
     *,
     sort_field: str = "createdAt",
+    sort_desc: bool = True,
     omit: tuple[str, ...] = (),
 ) -> Document:
     """Einfaches Blättern: skip Einträge überspringen, limit zurückgeben.
@@ -64,7 +65,7 @@ async def list_page(
     total = await collection.count_documents(filters)
     cursor = (
         collection.find(filters, projection)
-        .sort([(sort_field, -1), ("_id", -1)])
+        .sort([(sort_field, -1 if sort_desc else 1), ("_id", -1)])
         .skip(skip)
         .limit(limit)
     )

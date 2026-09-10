@@ -14,12 +14,14 @@ from modeling_api.core.auth import get_user
 from modeling_api.core.config import settings
 from modeling_api.core.errors import ErrorResponse, register_error_handlers
 from modeling_api.db.client import client, create_indexes, db
+from modeling_api.db.initial_data import seed_initial_data
 from modeling_api.routes import auth, feedback, languages, models, tasks
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await create_indexes()  # Indizes anlegen (idempotent)
+    await seed_initial_data()  # Startdaten einmalig anlegen (ebenfalls idempotent)
     yield
     await client.close()
 
@@ -38,7 +40,7 @@ register_error_handlers(app)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
     expose_headers=["Location"],
 )

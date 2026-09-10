@@ -106,13 +106,11 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import EditorEntityList from '@/components/modeling/EditorEntityList.vue'
 import BasicEditorForm from '@/components/modeling/form/BasicEditorForm.vue'
 import FeedbackEditorForm from '@/components/modeling/form/FeedbackEditorForm.vue'
 import FeedbackCanvasConfiguratorForm from '@/components/modeling/form/FeedbackCanvasConfiguratorForm.vue'
-import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
 import { clearConnectionPreview, renderSimpleConnectionPreview } from '@/utils/connectionPreview'
@@ -121,16 +119,7 @@ import type { DiagramFeedbackConfig, FeedbackCanvasConfig, FeedbackCanvasOverlay
 import { FEEDBACK_STATE_LABELS } from '@/model/Feedback'
 import { cloneFeedbackCanvasConfig, cloneFeedbackTargetOverlays, createDefaultFeedbackCanvasConfig, createDefaultFeedbackCanvasElementConfig } from '@/utils/feedbackConfig'
 
-interface Props {
-  languageId?: string
-  id?: string
-}
-
-const props = defineProps<Props>()
-const route = useRoute()
-
-const store = useDiagramLanguageStore()
-const { languages, setCurrentLanguage } = useDiagramLanguages()
+const store = useDiagramLanguages()
 
 const drawingCanvasRef = ref()
 const selectedTargetIndex = ref<number>(-1)
@@ -145,9 +134,9 @@ const hydratingCanvasConfig = ref(false)
 let storeUpdateTimeout: ReturnType<typeof setTimeout> | null = null
 let canvasConfigUpdateTimeout: ReturnType<typeof setTimeout> | null = null
 
-const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
-const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
-const languageSyntaxForCanvas = computed(() => store.currentLanguage?.syntax ?? [])
+const languageElementsForCanvas = computed(() => store.definition?.elements ?? [])
+const languageConnectionsForCanvas = computed(() => store.definition?.connections ?? [])
+const languageSyntaxForCanvas = computed(() => store.definition?.syntax ?? [])
 
 const previewCanvasOverlays = computed<FeedbackCanvasOverlayEntry[]>(() => {
   if (activeFeedbackEditorTab.value !== 'overlay') return []
@@ -164,7 +153,7 @@ const previewCanvasOverlays = computed<FeedbackCanvasOverlayEntry[]>(() => {
 })
 
 const previewFeedbackConfig = computed<DiagramFeedbackConfig | undefined>(() => {
-  const feedback = store.currentLanguage?.feedback
+  const feedback = store.definition?.feedback
   if (!feedback) return undefined
 
   return {
@@ -182,7 +171,7 @@ interface FeedbackTargetItem {
 }
 
 const feedbackTargets = computed<FeedbackTargetItem[]>(() => {
-  const language = store.currentLanguage
+  const language = store.definition
   if (!language) return []
 
   const elementTargets = language.elements.map((element) => ({
@@ -218,9 +207,9 @@ const selectedTargetSummary = computed(() => {
 })
 
 const selectedCanvasConfigSummary = computed(() => {
-  if (!store.currentLanguage) return undefined
+  if (!store.language) return undefined
   return {
-    name: `Feedback Elements (${store.currentLanguage.name})`
+    name: `Feedback Elements (${store.language.name})`
   }
 })
 
@@ -304,28 +293,26 @@ const selectTarget = (index: number) => {
 }
 
 const scheduleConfigUpdate = () => {
-  if (hydratingConfig.value || !selectedConfig.value || !store.currentLanguage || !selectedTarget.value) return
+  if (hydratingConfig.value || !selectedConfig.value || !store.definition || !selectedTarget.value) return
   if (storeUpdateTimeout) {
     clearTimeout(storeUpdateTimeout)
   }
-  const languageId = store.currentLanguage.id
   const targetType = selectedTarget.value.targetType
   const targetId = selectedTarget.value.id
   const configSnapshot = cloneFeedbackTargetOverlays(selectedConfig.value)
   storeUpdateTimeout = setTimeout(() => {
-    store.updateFeedbackEntryForLanguage(languageId, targetType, targetId, configSnapshot)
+    store.updateFeedbackEntryForLanguage(targetType, targetId, configSnapshot)
   }, 180)
 }
 
 const scheduleCanvasConfigUpdate = () => {
-  if (hydratingCanvasConfig.value || !selectedCanvasConfig.value || !store.currentLanguage) return
+  if (hydratingCanvasConfig.value || !selectedCanvasConfig.value || !store.definition) return
   if (canvasConfigUpdateTimeout) {
     clearTimeout(canvasConfigUpdateTimeout)
   }
-  const languageId = store.currentLanguage.id
   const canvasConfigSnapshot = cloneFeedbackCanvasConfig(selectedCanvasConfig.value)
   canvasConfigUpdateTimeout = setTimeout(() => {
-    store.updateFeedbackCanvasConfigForLanguage(languageId, canvasConfigSnapshot)
+    store.updateFeedbackCanvasConfigForLanguage(canvasConfigSnapshot)
   }, 180)
 }
 
@@ -377,13 +364,13 @@ const removeCanvasElement = (index: number) => {
 }
 
 const loadSelectedConfig = () => {
-  if (!selectedTarget.value || !store.currentLanguage) {
+  if (!selectedTarget.value || !store.definition) {
     selectedConfig.value = null
     previewCellId.value = null
     return
   }
 
-  const feedback = store.currentLanguage.feedback
+  const feedback = store.definition.feedback
   const container = selectedTarget.value.targetType === 'element' ? feedback?.elements : feedback?.connections
   const source = container?.[selectedTarget.value.id] ?? null
 
@@ -395,7 +382,7 @@ const loadSelectedConfig = () => {
 }
 
 const loadCanvasConfig = () => {
-  const feedback = store.currentLanguage?.feedback
+  const feedback = store.definition?.feedback
 
   hydratingCanvasConfig.value = true
   selectedCanvasConfig.value = cloneFeedbackCanvasConfig(feedback?.canvas)
@@ -430,7 +417,7 @@ const renderPreview = () => {
   }
 
   const target = selectedTarget.value
-  const language = store.currentLanguage
+  const language = store.definition
   if (!target || !language) return
 
   if (target.targetType === 'element') {
@@ -450,16 +437,6 @@ const renderPreview = () => {
     if (edge) {
       previewCellId.value = edge.getId?.() ?? null
       canvas.graph.setSelectionCell(edge)
-    }
-  }
-}
-
-const loadLanguageFromRoute = () => {
-  const languageId = props.id || (route.params.id as string)
-  if (languageId) {
-    const language = languages.find((lang) => lang.id === languageId)
-    if (language) {
-      setCurrentLanguage(language)
     }
   }
 }
@@ -495,7 +472,7 @@ watch(activeFeedbackEditorTab, () => {
 })
 
 watch(
-  () => store.currentLanguage?.id,
+  () => store.currentVersion?.id,
   () => {
     if (storeUpdateTimeout) {
       clearTimeout(storeUpdateTimeout)
@@ -532,7 +509,6 @@ watch(
 )
 
 onMounted(() => {
-  loadLanguageFromRoute()
   const initializeCanvas = (attempts = 0) => {
     if (attempts > 10) {
       console.warn('Feedback preview could not be initialized')
@@ -564,13 +540,6 @@ onUnmounted(() => {
     canvasConfigUpdateTimeout = null
   }
 })
-
-watch(
-  () => route.params.id,
-  () => {
-    loadLanguageFromRoute()
-  }
-)
 </script>
 
 <style scoped>

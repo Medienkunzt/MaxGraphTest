@@ -21,8 +21,9 @@ class Settings(BaseSettings):
 
     # JWT (HS256 = symmetrischer Schlüssel, reicht für die lokale Entwicklung)
     jwt_secret: str = "dev-only-secret-change-me-0123456789abcdef"
-    jwt_user_claim: str = "sub"  # Feld im Token, das die Nutzer-ID enthält
+    jwt_user_claim: str = "id"  # Numerische Nutzer-ID aus dem Token
     jwt_roles_claim: str = "roles"  # Feld im Token mit Rollen-Liste (später definiert)
+    jwt_global_role_claim: str = "globalRole"  # globale Rolle des Feedback-Systems
 
     # Sonstiges
     docs_enabled: bool = True  # Swagger unter /docs anzeigen

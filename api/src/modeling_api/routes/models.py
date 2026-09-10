@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
 
 from modeling_api.routes.deps import CurrentUser, Limit, Skip, created_response
 from modeling_api.schemas.common import Page
@@ -10,8 +10,11 @@ from modeling_api.schemas.models import (
     CreateModel,
     CreateModelVersion,
     Model,
+    ModelSortField,
     ModelVersion,
     ModelVersionInfo,
+    SortOrder,
+    UpdateModel,
 )
 from modeling_api.services import models as service
 
@@ -19,8 +22,18 @@ router = APIRouter(prefix="/models", tags=["Models"])
 
 
 @router.get("", summary="Eigene Modelle auflisten")
-async def list_models(user: CurrentUser, skip: Skip = 0, limit: Limit = 20) -> Page[Model]:
-    return Page[Model].model_validate(await service.list_models(skip, limit, user))
+async def list_models(
+    user: CurrentUser,
+    skip: Skip = 0,
+    limit: Limit = 20,
+    q: str | None = Query(default=None, max_length=256),
+    archived: bool = False,
+    sort: ModelSortField = "updatedAt",
+    order: SortOrder = "desc",
+) -> Page[Model]:
+    return Page[Model].model_validate(
+        await service.list_models(skip, limit, user, q, archived, sort, order)
+    )
 
 
 @router.post("", status_code=201, summary="Modell anlegen (Identität, noch ohne Version)")
@@ -33,6 +46,16 @@ async def create_model(body: CreateModel, response: Response, user: CurrentUser)
 @router.get("/{model_id}", summary="Ein Modell laden")
 async def get_model(model_id: UUID, user: CurrentUser) -> Model:
     return Model.model_validate(await service.get_model(model_id, user))
+
+
+@router.patch("/{model_id}", summary="Modell umbenennen, archivieren oder reaktivieren")
+async def update_model(model_id: UUID, body: UpdateModel, user: CurrentUser) -> Model:
+    return Model.model_validate(await service.update_model(model_id, body, user))
+
+
+@router.delete("/{model_id}", status_code=204, summary="Modell und seine Speicherstände löschen")
+async def delete_model(model_id: UUID, user: CurrentUser) -> None:
+    await service.delete_model(model_id, user)
 
 
 @router.get("/{model_id}/versions", summary="Speicherlauf auflisten (ohne data/annotations)")

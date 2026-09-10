@@ -32,3 +32,9 @@ export interface DiagramConnection {
   points?: { x: number; y: number }[]
   additionalLabels?: ConnectionLabelCell[]
 }
+
+export interface DiagramConnectionGroup {
+  id: string
+  label: string
+  connections: DiagramConnection[]
+}

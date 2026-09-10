@@ -35,7 +35,7 @@
                     <div class="d-flex align-center justify-center" v-bind="relationProps">
                       <v-tooltip :text="stateLabel(getRelationState(source, target))">
                         <template #activator="{ props: tooltipProps }">
-                          <v-btn v-bind="tooltipProps" :disabled="!languageId" variant="elevated" class="matrix-button rounded-lg" :class="stateClass(getRelationState(source, target))" size="small" @click="cycleRelationState(source, target)">
+                          <v-btn v-bind="tooltipProps" :disabled="!hasLanguageVersion" variant="elevated" class="matrix-button rounded-lg" :class="stateClass(getRelationState(source, target))" size="small" @click="cycleRelationState(source, target)">
                             <v-icon size="18">{{ stateIcon(getRelationState(source, target)) }}</v-icon>
                           </v-btn>
                         </template>
@@ -78,21 +78,21 @@
               <tr v-for="relation in allowedRelations" :key="`refinement-${relationKey(relation.sourceType, relation.targetType)}`">
                 <th class="refinement-header">{{ relation.sourceType }} → {{ relation.targetType }}</th>
                 <td class="refinement-cell refinement-cell--cardinality">
-                  <v-btn-toggle density="compact" mandatory rounded="lg" :model-value="selectedCardinalityPresetId(relation)" :disabled="!languageId" @update:model-value="(id: string) => setCardinalityPresetById(relation, id)">
+                  <v-btn-toggle density="compact" mandatory rounded="lg" :model-value="selectedCardinalityPresetId(relation)" :disabled="!hasLanguageVersion" @update:model-value="(id: string) => setCardinalityPresetById(relation, id)">
                     <v-btn v-for="preset in cardinalityPresets" :key="`preset-${relationKey(relation.sourceType, relation.targetType)}-${preset.id}`" :value="preset.id" size="x-small" class="preset-btn">
                       {{ preset.label }}
                     </v-btn>
                   </v-btn-toggle>
                 </td>
                 <td class="refinement-cell refinement-sep text-center">
-                  <v-btn variant="elevated" class="matrix-button rounded-lg" :class="connectionTypeCellClass(relation, '__all__')" size="small" :disabled="!languageId" @click="setAllConnectionTypes(relation)">
+                  <v-btn variant="elevated" class="matrix-button rounded-lg" :class="connectionTypeCellClass(relation, '__all__')" size="small" :disabled="!hasLanguageVersion" @click="setAllConnectionTypes(relation)">
                     <v-icon size="16">mdi-select-all</v-icon>
                   </v-btn>
                 </td>
                 <td v-for="connectionType in connectionOptions" :key="`type-cell-${relationKey(relation.sourceType, relation.targetType)}-${connectionType}`" class="refinement-cell text-center">
                   <v-tooltip :text="`${relation.sourceType} → ${relation.targetType} (${connectionType})`" location="bottom">
                     <template #activator="{ props: typeProps }">
-                      <v-btn v-bind="typeProps" variant="elevated" class="matrix-button rounded-lg" :class="connectionTypeCellClass(relation, connectionType)" size="small" :disabled="!languageId" @click="toggleConnectionType(relation, connectionType)">
+                      <v-btn v-bind="typeProps" variant="elevated" class="matrix-button rounded-lg" :class="connectionTypeCellClass(relation, connectionType)" size="small" :disabled="!hasLanguageVersion" @click="toggleConnectionType(relation, connectionType)">
                         <v-icon size="16">{{ connectionTypeCellIcon(relation, connectionType) }}</v-icon>
                       </v-btn>
                     </template>
@@ -127,7 +127,7 @@
 
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
+import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { MultiplicityConfig, MultiplicityRelation, MultiplicityRelationState } from '@/model/Syntax'
 
 type RelationState = MultiplicityRelationState | 'unset'
@@ -143,9 +143,9 @@ const emit = defineEmits<{
   update: []
 }>()
 
-const store = useDiagramLanguageStore()
+const store = useDiagramLanguages()
 
-const languageId = computed(() => store.currentLanguage?.id ?? null)
+const hasLanguageVersion = computed(() => store.currentVersion !== null)
 const elementOptions = computed(() => props.elementOptions)
 const connectionOptions = computed(() => props.connectionOptions)
 
@@ -195,11 +195,11 @@ const emitUpdate = () => {
 }
 
 const cycleRelationState = (source: string, target: string) => {
-  if (!languageId.value) return
+  if (!hasLanguageVersion.value) return
   const current = getRelationState(source, target)
   const next: RelationState = current === 'unset' ? 'allowed' : current === 'allowed' ? 'forbidden' : 'unset'
 
-  store.setMultiplicityRelationState(languageId.value, source, target, next === 'unset' ? 'unset' : next)
+  store.setMultiplicityRelationState(source, target, next === 'unset' ? 'unset' : next)
 
   emitUpdate()
 }

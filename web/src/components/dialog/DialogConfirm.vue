@@ -1,10 +1,21 @@
 <template>
-  <v-dialog v-model="deleteDialog" width="500px">
-    <v-card :title="deleteTitle" :text="deleteMessage">
+  <v-dialog v-model="confirmDialog" width="500px" persistent>
+    <v-card :title="confirmTitle" :text="confirmMessage">
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn variant="text" @click="_cancel"> Close </v-btn>
-        <v-btn variant="text" @click="_confirm"> {{ deleteConfirmBtnText }} </v-btn>
+        <v-btn variant="text" @click="resolveConfirmation(false)">Cancel</v-btn>
+        <v-btn color="primary" variant="text" @click="resolveConfirmation(true)">{{ confirmButtonText }}</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="unsavedChangesDialog" width="500px" persistent>
+    <v-card title="Unsaved changes" text="Save the current language version before leaving the editor?">
+      <v-card-actions>
+        <v-btn variant="text" @click="resolveUnsavedChangesChoice('cancel')"> Cancel </v-btn>
+        <v-spacer />
+        <v-btn variant="text" @click="resolveUnsavedChangesChoice('discard')"> Discard </v-btn>
+        <v-btn color="primary" variant="text" @click="resolveUnsavedChangesChoice('save')"> Save </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -13,43 +24,49 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-const deleteDialog = ref<boolean>(false)
-const deleteTitle = ref<string>('')
-const deleteMessage = ref<string | undefined>(undefined)
-const deleteConfirmBtnText = ref<string | undefined>('Delete')
+const confirmDialog = ref(false)
+const confirmTitle = ref('')
+const confirmMessage = ref<string>()
+const confirmButtonText = ref('Confirm')
+const unsavedChangesDialog = ref(false)
+let resolveConfirm: ((confirmed: boolean) => void) | undefined
+let resolveUnsavedChanges: ((choice: 'save' | 'discard' | 'cancel') => void) | undefined
 
-// Promis
-const resolvePromise: any = ref(undefined)
-const rejectPromise: any = ref(undefined)
+const openDialog = (title: string, message?: string, buttonText = 'Confirm'): Promise<boolean> => {
+  resolveConfirm?.(false)
+  confirmTitle.value = title
+  confirmMessage.value = message
+  confirmButtonText.value = buttonText
+  confirmDialog.value = true
 
-const openDialog = (title: string, message: string | undefined, confirmBtnText: string | undefined) => {
-  deleteTitle.value = title
-  deleteMessage.value = message
-  deleteDialog.value = true
-
-  if (confirmBtnText != undefined) {
-    deleteConfirmBtnText.value = confirmBtnText
-  }
-
-  return new Promise((resolve, reject) => {
-    resolvePromise.value = resolve
-    rejectPromise.value = reject
+  return new Promise<boolean>((resolve) => {
+    resolveConfirm = resolve
   })
 }
 
-const _confirm = () => {
-  deleteDialog.value = false
-  resolvePromise.value(true)
+const resolveConfirmation = (confirmed: boolean) => {
+  confirmDialog.value = false
+  resolveConfirm?.(confirmed)
+  resolveConfirm = undefined
 }
 
-const _cancel = () => {
-  deleteDialog.value = false
-  resolvePromise.value(false)
+const openUnsavedChangesDialog = () => {
+  unsavedChangesDialog.value = true
+  return new Promise<'save' | 'discard' | 'cancel'>((resolve) => {
+    resolveUnsavedChanges = resolve
+  })
+}
+
+const resolveUnsavedChangesChoice = (choice: 'save' | 'discard' | 'cancel') => {
+  unsavedChangesDialog.value = false
+  resolveUnsavedChanges?.(choice)
+  resolveUnsavedChanges = undefined
 }
 
 // define expose
 defineExpose({
-  openDialog
+  openDialog,
+  openUnsavedChangesDialog
 })
 </script>
 

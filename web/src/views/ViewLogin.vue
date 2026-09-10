@@ -45,7 +45,8 @@ import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBearerToken } from '@/composables/useBearerToken'
 import { useUserStore } from '@/stores/userStore'
-import { validateToken, fetchMe, type TokenClaims } from '@/services/authService'
+import authService from '@/services/auth/auth.service'
+import type { TokenClaims } from '@/services/api/types/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -59,8 +60,14 @@ let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
 const checkToken = async () => {
   isChecking.value = true
-  isValid.value = await validateToken()
-  claims.value = isValid.value ? await fetchMe() : null
+  try {
+    const validation = await authService.validateToken()
+    isValid.value = validation.data
+    claims.value = isValid.value ? (await authService.getMe()).data : null
+  } catch {
+    isValid.value = false
+    claims.value = null
+  }
   isChecking.value = false
 }
 

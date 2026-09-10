@@ -41,13 +41,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
 import DrawingCanvas from '@/components/modeling/DrawingCanvas.vue'
 import { Shape, AbstractCanvas2D } from '@maxgraph/core'
 import { createCellFromElement, addCellToGraph } from '@/utils/elementFactory'
 import { ShapeRegistry } from '@maxgraph/core'
 import type { GraphDataModel } from '@maxgraph/core'
-import { useDiagramLanguageStore } from '@/stores/diagramLanguage'
 import { useDiagramLanguages } from '@/composables/useDiagramLanguages'
 import type { DiagramElement, ChildElement } from '@/model/Element'
 import EditorEntityList from './EditorEntityList.vue'
@@ -55,16 +53,7 @@ import BasicEditorForm from './form/BasicEditorForm.vue'
 import ElementPropertiesEditor from './form/ElementPropertiesEditor.vue'
 
 // Props
-interface Props {
-  languageId?: string
-  id?: string
-}
-
-const props = defineProps<Props>()
-const route = useRoute()
-
-const store = useDiagramLanguageStore()
-const { languages, setCurrentLanguage } = useDiagramLanguages()
+const store = useDiagramLanguages()
 
 // State
 const selectedElementIndex = ref<number>(-1)
@@ -75,11 +64,11 @@ const drawingCanvasRef = ref()
 const elementDefinition = ref<DiagramElement | null>(null)
 
 // Computed
-const elements = computed(() => store.currentLanguage?.elements || [])
+const elements = computed(() => store.definition?.elements || [])
 
-const languageElementsForCanvas = computed(() => store.currentLanguage?.elements ?? [])
-const languageConnectionsForCanvas = computed(() => store.currentLanguage?.connections ?? [])
-const languageSyntaxForCanvas = computed(() => store.currentLanguage?.syntax ?? [])
+const languageElementsForCanvas = computed(() => store.definition?.elements ?? [])
+const languageConnectionsForCanvas = computed(() => store.definition?.connections ?? [])
+const languageSyntaxForCanvas = computed(() => store.definition?.syntax ?? [])
 
 const selectedElement = computed(() => elements.value[selectedElementIndex.value])
 
@@ -93,7 +82,7 @@ const selectElement = (elementIndex: number) => {
 }
 
 const addNewElement = () => {
-  if (!store.currentLanguage) return
+  if (!store.definition) return
 
   const newElement: DiagramElement = {
     type: `element_${Date.now()}`,
@@ -126,15 +115,15 @@ const addNewElement = () => {
     movable: true
   }
 
-  store.addElementToLanguage(store.currentLanguage.id, newElement)
+  store.addElementToLanguage(newElement)
   selectedElementIndex.value = elements.value.length - 1
 }
 
 const deleteElement = (elementIndex: number) => {
-  if (!store.currentLanguage) return
+  if (!store.definition) return
 
   const element = elements.value[elementIndex]
-  store.removeElementFromLanguage(store.currentLanguage.id, element.type)
+  store.removeElementFromLanguage(element.type)
 
   // Auswahl zurücksetzen
   selectedElementIndex.value = -1
@@ -166,10 +155,7 @@ const elementColorMap = {
 const renderElementPreview = () => {
   const element = elementDefinition.value || selectedElement.value
 
-  if (!element) {
-    console.warn('⚠️ No Element available to render')
-    return
-  }
+  if (!element) return
 
   if (!drawingCanvasRef.value?.graph) {
     console.warn('⚠️ Canvas or graph is not available yet')
@@ -327,24 +313,6 @@ const registerCustomShape = (shapeId: string, canvasCommands: string) => {
 // getCustomGeometry wurde entfernt - nicht mehr benötigt.
 // Anchor Points werden jetzt in elementFactory.ts als ConnectionConstraints gesetzt.
 
-// Sprachen-ID aus Route laden
-const loadLanguageFromRoute = () => {
-  const languageId = props.id || (route.params.id as string)
-
-  if (languageId) {
-    const language = languages.find((lang) => lang.id === languageId)
-    if (language) {
-      setCurrentLanguage(language)
-      console.log('Language loaded from route:', language.name)
-
-      // TODO: Hier würden die spezifischen Elemente, Verbindungen und Syntax
-      // der geladenen Sprache in den Editor geladen werden
-    } else {
-      console.warn('Language ID not found:', languageId)
-    }
-  }
-}
-
 // Watchers mit Debouncing
 let updateTimeout: number | null = null
 
@@ -358,8 +326,8 @@ const debouncedUpdate = () => {
 }
 
 const debouncedStoreUpdate = () => {
-  if (selectedElement.value && store.currentLanguage) {
-    store.updateElementInLanguage(store.currentLanguage.id, selectedElement.value.type, selectedElement.value)
+  if (selectedElement.value && store.definition) {
+    store.updateElementInLanguage(selectedElement.value.type, selectedElement.value)
   }
 }
 
@@ -391,9 +359,6 @@ watch(
 )
 
 onMounted(() => {
-  // Route laden
-  loadLanguageFromRoute()
-
   // Canvas initialisieren mit mehreren Versuchen
   const initializeCanvas = (attempts = 0) => {
     if (attempts > 10) {

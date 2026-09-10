@@ -40,8 +40,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useTaskStore } from '@/stores/task'
+import { computed } from 'vue'
+import type { DiagramTask } from '@/model/Task'
 import FeedbackSidebar from './FeedbackSidebar.vue'
 
 withDefaults(
@@ -63,11 +63,10 @@ const emit = defineEmits<{
 
 const activeTab = ref<'feedback' | 'tasks'>('feedback')
 
-const taskStore = useTaskStore()
-const { tasks, currentTaskId } = storeToRefs(taskStore)
+const tasks = computed<DiagramTask[]>(() => [])
+const currentTaskId = computed<string | null>(() => null)
 
 const selectTaskInSidebar = (taskId: string) => {
-  taskStore.selectTask(taskId)
   emit('task-selected', taskId)
 }
 

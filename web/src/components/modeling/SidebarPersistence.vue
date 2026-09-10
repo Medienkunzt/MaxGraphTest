@@ -2,11 +2,11 @@
   <div class="sidebar-persistence">
     <div class="sidebar-section">
       <div class="sidebar-header sidebar-header--static">
-        <span class="sidebar-title">Model Persistence</span>
+        <span class="sidebar-title">Import / Export</span>
       </div>
 
       <div class="sidebar-section-body">
-        <p class="sidebar-description">Export the current model as XML or JSON, or load a saved file into the editor.</p>
+        <p class="sidebar-description">Export the current model as XML or load an XML file into the editor.</p>
 
         <div class="sidebar-action-buttons">
           <v-btn color="primary" variant="flat" size="small" prepend-icon="mdi-download" @click="openDialog('download')"> Download </v-btn>
@@ -25,19 +25,13 @@
 
         <v-card-text class="sidebar-dialog-body">
           <template v-if="dialogMode === 'download'">
-            <p class="sidebar-description">Select the target format for the download.</p>
-            <v-btn-toggle v-model="downloadFormat" color="primary" mandatory density="comfortable" class="format-toggle">
-              <v-btn value="xml">XML</v-btn>
-              <v-btn value="json">JSON</v-btn>
-            </v-btn-toggle>
-
-            <p class="sidebar-hint">XML is the native maxGraph format. JSON contains the same structure in a JSON representation.</p>
+            <p class="sidebar-description">Download the current model in the native maxGraph XML format.</p>
           </template>
 
           <template v-else>
-            <p class="sidebar-description">Select a previously exported XML or JSON file.</p>
+            <p class="sidebar-description">Select a previously exported XML model file.</p>
 
-            <input ref="fileInput" class="file-input" type="file" accept=".xml,.json,application/xml,application/json,text/xml,text/json" @change="onFileSelected" />
+            <input ref="fileInput" class="file-input" type="file" accept=".xml,application/xml,text/xml" @change="onFileSelected" />
 
             <div class="sidebar-action-buttons">
               <v-btn variant="tonal" size="small" prepend-icon="mdi-folder-open" @click="chooseFile"> Select File </v-btn>
@@ -46,7 +40,7 @@
               </span>
             </div>
 
-            <p v-if="selectedFileName" class="sidebar-hint">Detected format: {{ detectedFileFormat.toUpperCase() }}</p>
+            <p v-if="selectedFileName" class="sidebar-hint">Format: XML</p>
           </template>
 
           <p v-if="errorMessage" class="sidebar-error">{{ errorMessage }}</p>
@@ -65,9 +59,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { detectFormat, exportModelAsJson, exportModelAsXml, importModelFromJson, importModelFromXml, saveTextFile } from '@/utils/modelPersistence'
+import { exportModelAsXml, importModelFromXml, saveTextFile } from '@/utils/modelPersistence'
 import { useGraphContext } from '@/composables/useGraphContext'
-import type { ExportFormat, ImportFormat } from '@/enums/ModelPersistenceFormat'
 
 type DialogMode = 'download' | 'upload'
 
@@ -75,10 +68,8 @@ const { graph } = useGraphContext()
 
 const isDialogOpen = ref(false)
 const dialogMode = ref<DialogMode>('download')
-const downloadFormat = ref<ExportFormat>('xml')
 const selectedFile = ref<File | null>(null)
 const selectedFileName = ref('')
-const detectedFileFormat = ref<ImportFormat>('xml')
 const errorMessage = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -87,7 +78,6 @@ const openDialog = (mode: DialogMode) => {
   errorMessage.value = ''
   selectedFile.value = null
   selectedFileName.value = ''
-  detectedFileFormat.value = 'xml'
   if (fileInput.value) {
     fileInput.value.value = ''
   }
@@ -113,12 +103,7 @@ const downloadModel = () => {
   }
 
   try {
-    if (downloadFormat.value === 'xml') {
-      saveTextFile(exportModelAsXml(currentGraph), 'model.xml', 'application/xml')
-      return
-    }
-
-    saveTextFile(exportModelAsJson(currentGraph), 'model.json', 'application/json')
+    saveTextFile(exportModelAsXml(currentGraph), 'model.xml', 'application/xml')
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Export failed.'
   }
@@ -134,7 +119,6 @@ const onFileSelected = async (event: Event) => {
 
   selectedFile.value = file
   selectedFileName.value = file.name
-  detectedFileFormat.value = detectFormat(file.name, file.type)
   errorMessage.value = ''
 }
 
@@ -149,13 +133,7 @@ const importModel = async () => {
 
   try {
     const text = await file.text()
-    const format = detectFormat(file.name, file.type, text)
-
-    if (format === 'xml') {
-      importModelFromXml(currentGraph, text)
-    } else {
-      importModelFromJson(currentGraph, text)
-    }
+    importModelFromXml(currentGraph, text)
 
     // Nach dem Import: Handler-Zustände zurücksetzen und View neu aufbauen,
     // damit keine veralteten MouseMove-States oder CellStates verbleiben.

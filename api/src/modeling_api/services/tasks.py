@@ -14,6 +14,7 @@ from pymongo.errors import DuplicateKeyError
 from modeling_api.core.auth import User
 from modeling_api.core.errors import ApiError, conflict, not_found
 from modeling_api.db.client import db
+from modeling_api.db.initial_data import SYSTEM_OWNER_ID
 from modeling_api.db.store import Document, get_or_404, insert, list_page, save_version, to_api
 from modeling_api.schemas.tasks import CreateTaskStatement, CreateTaskStatementVersion
 
@@ -24,10 +25,6 @@ def same_content(left: Document, right: Document) -> bool:
     return dump(left) == dump(right)
 
 
-def _own(statement_id: str, user: User) -> Document:
-    return {"_id": statement_id, "ownerId": user.id}
-
-
 async def list_tasks(
     skip: int, limit: int, user: User, source: str | None, external_task_id: str | None
 ) -> Document:
@@ -35,7 +32,8 @@ async def list_tasks(
         raise ApiError(
             400, "INVALID_FILTER", "source und externalTaskId nur gemeinsam angeben."
         )
-    filters: Document = {"ownerId": user.id}
+    # Initialdaten (leere ownerId) sind für alle Nutzer lesbar, private Aufgaben bleiben privat.
+    filters: Document = {"ownerId": {"$in": [user.id, SYSTEM_OWNER_ID]}}
     if source is not None:
         filters = {**filters, "source": source, "externalTaskId": external_task_id}
     return await list_page(db.task_statements, filters, skip, limit)
@@ -74,7 +72,9 @@ async def create_task(body: CreateTaskStatement, user: User) -> tuple[Document, 
 
 
 async def get_task(task_statement_id: UUID, user: User) -> Document:
-    result = await db.task_statements.find_one(_own(str(task_statement_id), user))
+    result = await db.task_statements.find_one(
+        {"_id": str(task_statement_id), "ownerId": {"$in": [user.id, SYSTEM_OWNER_ID]}}
+    )
     if result is None:
         raise not_found()
     return to_api(result)
@@ -106,7 +106,9 @@ async def create_version(
     task_statement_id: UUID, body: CreateTaskStatementVersion, user: User
 ) -> tuple[Document, bool]:
     """Speichert eine externe Aufgabenfassung; idempotent je externalVersionId."""
-    await get_task(task_statement_id, user)
+    task = await get_task(task_statement_id, user)
+    if task["ownerId"] != user.id:
+        raise not_found()
     fields = body.model_dump(mode="json", by_alias=True, exclude={"base_version_id"})
 
     existing = await db.task_statement_versions.find_one(

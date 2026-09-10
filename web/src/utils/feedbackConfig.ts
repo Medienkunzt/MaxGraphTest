@@ -248,7 +248,7 @@ export const createEmptyFeedbackConfig = (): DiagramFeedbackConfig => ({
 })
 
 export const ensureFeedbackTargets = (config: DiagramFeedbackConfig, targetType: FeedbackTargetType, keys: string[]): void => {
-  const container = targetType === 'element' ? config.elements : config.connections
+  const container = targetType === 'element' ? (config.elements ??= {}) : (config.connections ??= {})
 
   keys.forEach((key) => {
     if (!container[key]) {
