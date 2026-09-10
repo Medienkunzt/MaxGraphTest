@@ -3,9 +3,9 @@
     <div class="d-flex align-center mb-6 ga-3">
       <div>
         <h1 class="text-h4">My Models</h1>
-        <p class="text-medium-emphasis mb-0">Models, saves, and named versions.</p>
+        <p class="text-medium-emphasis mb-0">Models, checkpoints, and releases.</p>
       </div>
-      <v-spacer /><v-btn color="primary" prepend-icon="mdi-plus" @click="createDialog = true">New Model</v-btn>
+      <v-spacer /><v-btn color="primary" prepend-icon="mdi-plus" :loading="creating" @click="createModel">New Model</v-btn>
     </div>
     <v-tabs v-model="archiveTab" class="mb-3"><v-tab :value="false">My Models</v-tab><v-tab :value="true">Archive</v-tab></v-tabs>
     <v-text-field v-model="query" label="Search models" density="compact" prepend-inner-icon="mdi-magnify" clearable class="mb-3" @update:model-value="searchModels" />
@@ -18,24 +18,15 @@
       <template #expanded-row="{ columns, item }"
         ><tr>
           <td :colspan="columns.length" class="pa-4">
-            <v-tabs v-model="expandedTabs[asModel(item).id]" density="compact"><v-tab value="versions">Versions</v-tab><v-tab value="saves">All Saves</v-tab></v-tabs
+            <v-tabs v-model="expandedTabs[asModel(item).id]" density="compact"><v-tab value="versions">Releases</v-tab><v-tab value="saves">All Saves</v-tab></v-tabs
             ><v-window v-model="expandedTabs[asModel(item).id]" class="pt-2"
-              ><v-window-item value="versions"><ModelSnapshotList :entries="namedVersions(asModel(item).id)" @preview="openPreview(asModel(item), $event)" @branch="branch(asModel(item), $event)" /></v-window-item
+              ><v-window-item value="versions"><ModelSnapshotList :entries="releaseVersions(asModel(item).id)" empty-text="No releases yet." @preview="openPreview(asModel(item), $event)" @branch="branch(asModel(item), $event)" /></v-window-item
               ><v-window-item value="saves"><ModelSnapshotList :entries="versions[asModel(item).id] ?? []" @preview="openPreview(asModel(item), $event)" @branch="branch(asModel(item), $event)" /></v-window-item
             ></v-window>
           </td></tr
       ></template>
     </v-data-table-server>
 
-    <v-dialog v-model="createDialog" max-width="560"
-      ><v-card
-        ><v-card-title>New Model</v-card-title
-        ><v-card-text
-          ><v-text-field v-model="newName" label="Name" autofocus /><v-select v-model="selectedLanguages" :items="languageOptions" item-title="title" item-value="value" label="Languages" multiple chips />
-          <div class="text-caption text-medium-emphasis">Creating a model immediately stores a valid, empty initial save.</div></v-card-text
-        ><v-card-actions><v-spacer /><v-btn @click="createDialog = false">Cancel</v-btn><v-btn color="primary" :loading="creating" :disabled="!newName.trim() || selectedLanguages.length === 0" @click="createModel">Create model</v-btn></v-card-actions></v-card
-      ></v-dialog
-    >
     <v-dialog v-model="renameDialog" max-width="520"
       ><v-card
         ><v-card-title>Change model name</v-card-title><v-card-text><v-text-field v-model="editedName" label="Model name" autofocus /></v-card-text><v-card-actions><v-spacer /><v-btn @click="renameDialog = false">Cancel</v-btn><v-btn color="primary" :disabled="!editedName.trim()" @click="saveName">Change name</v-btn></v-card-actions></v-card
@@ -57,7 +48,6 @@ import { useRouter } from 'vue-router'
 import ModelSnapshotPreview from '@/components/modeling/ModelSnapshotPreview.vue'
 import ModelSnapshotList from '@/components/modeling/ModelSnapshotList.vue'
 import modelService from '@/services/model/model.service'
-import languageService from '@/services/language/language.service'
 import { useModelWorkspaceStore } from '@/stores/modelWorkspace'
 import type { JsonObject } from '@/services/api/types/common'
 import type { Model, ModelSortField, ModelVersionInfo, SortOrder } from '@/services/api/types/model'
@@ -78,12 +68,8 @@ const total = ref(0)
 const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref<ModelTableOptions['sortBy']>([{ key: 'updatedAt', order: 'desc' }])
-const languageOptions = ref<{ title: string; value: string }[]>([])
-const selectedLanguages = ref<string[]>([])
-const newName = ref('')
 const query = ref('')
 const archiveTab = ref(false)
-const createDialog = ref(false)
 const creating = ref(false)
 const renameDialog = ref(false)
 const selectedModel = ref<Model | null>(null)
@@ -103,13 +89,7 @@ const headers = [
 const formattedDate = (value: string) => new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 const asModel = (item: Model | { raw: Model }) => ('raw' in item ? item.raw : item)
 const previewTitle = computed(() => previewModel.value?.name ?? '')
-const namedVersions = (modelId: string) => (versions.value[modelId] ?? []).filter((entry) => entry.kind === 'named')
-const initialWorkspaceLanguages = computed(() =>
-  selectedLanguages.value.map((value) => {
-    const [languageId, versionId] = value.split(':')
-    return { languageId, versionId, source: 'additional' as const }
-  })
-)
+const releaseVersions = (modelId: string) => (versions.value[modelId] ?? []).filter((entry) => entry.kind === 'release')
 
 const loadModels = async (options?: ModelTableOptions) => {
   if (options) {
@@ -136,10 +116,6 @@ const searchModels = () => {
   if (searchTimer) clearTimeout(searchTimer)
   searchTimer = setTimeout(() => void loadModels({ page: 1, itemsPerPage: itemsPerPage.value, sortBy: sortBy.value }), 250)
 }
-const loadLanguages = async () => {
-  const result = (await languageService.list(0, 100)).data.items
-  languageOptions.value = result.filter((item) => item.latestVersionId).map((item) => ({ title: `${item.name}${item.versionNumber ? ` · v${item.versionNumber}` : ''}`, value: `${item.id}:${item.latestVersionId}` }))
-}
 const loadVersions = async (modelId: string) => {
   if (versions.value[modelId]) return
   versions.value[modelId] = (await modelService.listVersions(modelId, 0, 100)).data.items
@@ -159,9 +135,8 @@ const createModel = async () => {
   creating.value = true
   error.value = null
   try {
-    await workspace.startNew(newName.value.trim(), initialWorkspaceLanguages.value)
+    await workspace.startNew('Untitled model', [])
     await workspace.save()
-    createDialog.value = false
     await router.push(`/modeling/${workspace.model!.id}`)
   } catch {
     error.value = 'The initial model save could not be created.'
@@ -221,10 +196,9 @@ const branch = async (model: Model, entry: ModelVersionInfo) => {
     error.value = 'The save could not be continued as a new model.'
   }
 }
-const snapshotLabel = (entry: ModelVersionInfo) => (entry.kind === 'named' ? `${entry.versionName} · Save #${entry.versionNumber}` : `Save #${entry.versionNumber}`)
+const snapshotLabel = (entry: ModelVersionInfo) => (entry.kind === 'release' && entry.releaseName ? `${entry.releaseName} · v${entry.versionNumber}` : `v${entry.versionNumber}`)
 watch(archiveTab, () => void loadModels({ page: 1, itemsPerPage: itemsPerPage.value, sortBy: sortBy.value }))
 onMounted(() => {
   void loadModels()
-  void loadLanguages()
 })
 </script>

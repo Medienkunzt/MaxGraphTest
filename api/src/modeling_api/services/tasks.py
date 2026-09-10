@@ -87,7 +87,6 @@ async def list_versions(task_statement_id: UUID, skip: int, limit: int, user: Us
         {"taskStatementId": str(task_statement_id)},
         skip,
         limit,
-        sort_field="versionNumber",
         omit=("data",),
     )
 

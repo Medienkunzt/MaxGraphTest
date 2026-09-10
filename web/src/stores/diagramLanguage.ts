@@ -5,7 +5,7 @@ import type { FeedbackCanvasConfig, FeedbackTargetOverlays, FeedbackTargetType }
 import type { MultiplicityRelation, MultiplicityRelationState, MultiplicityRule } from '@/model/Syntax'
 import languageService from '@/services/language/language.service'
 import type { ApiId } from '@/services/api/types/common'
-import type { Language, LanguageVersion } from '@/services/api/types/language'
+import type { Language, LanguageVersion, LanguageVersionKind, LanguageVersionInfo } from '@/services/api/types/language'
 import { cloneFeedbackCanvasConfig, createDefaultTargetOverlays, ensureFeedbackTargets } from '@/utils/feedbackConfig'
 
 const DEFAULT_MULTIPLICITY_MESSAGE_TEMPLATE = 'The Connection {source} -> {target} with Connection type {connection} violates the cardinality ({min}..{max}).'
@@ -15,13 +15,14 @@ const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   const language = ref<Language | null>(null)
   const currentVersion = ref<LanguageVersion<DiagramLanguage> | null>(null)
+  const restoredFromVersion = ref<LanguageVersionInfo | null>(null)
   const savedSnapshot = ref<string | null>(null)
   const loading = ref(false)
   const saving = ref(false)
   const error = ref<string | null>(null)
 
   const definition = computed(() => currentVersion.value?.data ?? null)
-  const isDirty = computed(() => definition.value !== null && savedSnapshot.value !== JSON.stringify(definition.value))
+  const isDirty = computed(() => restoredFromVersion.value !== null || (definition.value !== null && savedSnapshot.value !== JSON.stringify(definition.value)))
 
   const loadLanguage = async (languageId: ApiId, versionId?: ApiId) => {
     loading.value = true
@@ -34,6 +35,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       const loadedVersion = (await languageService.getVersion<DiagramLanguage>(languageId, selectedVersionId)).data
       language.value = loadedLanguage
       currentVersion.value = loadedVersion
+      restoredFromVersion.value = null
       savedSnapshot.value = JSON.stringify(loadedVersion.data)
     } catch (caught) {
       error.value = caught instanceof Error ? caught.message : 'Failed to load diagram language.'
@@ -43,8 +45,9 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     }
   }
 
-  const saveCurrentLanguage = async (versionName?: string) => {
+  const saveCurrentLanguage = async (kind: LanguageVersionKind = 'checkpoint', releaseName?: string, description?: string) => {
     if (!language.value || !currentVersion.value) throw new Error('No language version is loaded.')
+    if (kind === 'release' && !releaseName?.trim()) throw new Error('A release needs a name.')
 
     saving.value = true
     error.value = null
@@ -52,7 +55,8 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
       const savedVersion = (
         await languageService.createVersion<DiagramLanguage>(language.value.id, {
           baseVersionId: currentVersion.value.id,
-          versionName: versionName?.trim() || `Version ${currentVersion.value.versionNumber + 1}`,
+          kind,
+          ...(kind === 'release' ? { releaseName: releaseName!.trim(), description: description?.trim() || null } : {}),
           includedLanguageVersions: clone(currentVersion.value.includedLanguageVersions),
           data: clone(currentVersion.value.data)
         })
@@ -60,6 +64,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
 
       currentVersion.value = savedVersion
       language.value.latestVersionId = savedVersion.id
+      restoredFromVersion.value = null
       savedSnapshot.value = JSON.stringify(savedVersion.data)
       return savedVersion
     } catch (caught) {
@@ -72,6 +77,30 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
 
   const discardCurrentChanges = async () => {
     if (language.value && currentVersion.value) await loadLanguage(language.value.id, currentVersion.value.id)
+  }
+
+  const restoreVersion = async (versionId: ApiId) => {
+    if (!language.value?.latestVersionId) throw new Error('This language has no saved version yet.')
+
+    loading.value = true
+    error.value = null
+    try {
+      const latestVersionId = language.value.latestVersionId
+      const latestRequest = languageService.getVersion<DiagramLanguage>(language.value.id, latestVersionId)
+      const snapshotRequest = versionId === latestVersionId ? latestRequest : languageService.getVersion<DiagramLanguage>(language.value.id, versionId)
+      const [latestResponse, snapshotResponse] = await Promise.all([latestRequest, snapshotRequest])
+      const latestVersion = latestResponse.data
+      const snapshot = snapshotResponse.data
+
+      currentVersion.value = { ...latestVersion, data: clone(snapshot.data) }
+      restoredFromVersion.value = versionId === latestVersionId ? null : snapshot
+      savedSnapshot.value = JSON.stringify(latestVersion.data)
+    } catch (caught) {
+      error.value = caught instanceof Error ? caught.message : 'Failed to restore the language version.'
+      throw caught
+    } finally {
+      loading.value = false
+    }
   }
 
   const synchronizeFeedbackTargets = () => {
@@ -191,6 +220,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
   return {
     language,
     currentVersion,
+    restoredFromVersion,
     definition,
     loading,
     saving,
@@ -199,6 +229,7 @@ export const useDiagramLanguageStore = defineStore('diagramLanguage', () => {
     loadLanguage,
     saveCurrentLanguage,
     discardCurrentChanges,
+    restoreVersion,
     addElementToLanguage,
     updateElementInLanguage,
     removeElementFromLanguage,

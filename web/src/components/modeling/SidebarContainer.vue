@@ -1,7 +1,17 @@
 <template>
   <div class="sidebar-container" :style="{ width: sidebarWidth + 'px', minWidth: sidebarWidth + 'px' }">
     <div v-if="modelManagement" class="model-title-bar">
-      <span class="model-title-label">Model</span><span class="model-title-value" :title="modelName">{{ modelName }}</span>
+      <span class="model-title-label">Model</span>
+      <div class="d-flex align-center ga-1">
+        <span class="model-title-value" :title="modelName">{{ modelName }}</span>
+        <v-spacer />
+        <v-btn icon="mdi-pencil" size="x-small" variant="text" aria-label="Change model name" @click="openRename" />
+      </div>
+      <div class="model-save-row">
+        <span class="model-save-state">{{ stateLabel }}</span>
+        <v-btn size="x-small" color="primary" :loading="workspace.syncState === 'saving'" :disabled="!canSave" @click="saveCheckpoint">Save</v-btn>
+      </div>
+      <v-alert v-if="saveError" density="compact" type="error" variant="tonal" class="mt-2">{{ saveError }}</v-alert>
     </div>
     <div class="sidebar-topbar">
       <div class="tab-buttons" role="tablist" aria-label="Sidebar content">
@@ -23,6 +33,17 @@
     <div class="resize-handle" title="Adjust width" @mousedown.prevent="startResize">
       <v-icon size="12">mdi-drag-vertical</v-icon>
     </div>
+
+    <v-dialog v-model="renameDialog" max-width="460">
+      <v-card>
+        <v-card-title>Change model name</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="editedName" label="Model name" autofocus @keyup.enter="saveName" />
+          <v-alert v-if="renameError" density="compact" type="error" variant="tonal">{{ renameError }}</v-alert>
+        </v-card-text>
+        <v-card-actions><v-spacer /><v-btn @click="renameDialog = false">Cancel</v-btn><v-btn color="primary" :disabled="!editedName.trim()" @click="saveName">Save</v-btn></v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -34,6 +55,8 @@ import SidebarLibrary from './SidebarLibrary.vue'
 import SidebarPersistence from './SidebarPersistence.vue'
 import SidebarSync from './SidebarSync.vue'
 import { useModelWorkspaceStore } from '@/stores/modelWorkspace'
+import { useGraphContext } from '@/composables/useGraphContext'
+import { exportModelAsXml } from '@/utils/modelPersistence'
 
 type SidebarTab = 'model' | 'library' | 'files' | 'elements' | 'persistence' | 'sync'
 
@@ -42,11 +65,18 @@ const props = defineProps<{
   modelManagement?: boolean
 }>()
 const workspace = useModelWorkspaceStore()
+const { graph } = useGraphContext()
 const modelName = computed(() => workspace.model?.name ?? workspace.data.name)
+const renameDialog = ref(false)
+const editedName = ref('')
+const renameError = ref<string | null>(null)
+const saveError = ref<string | null>(null)
+const stateLabel = computed(() => ({ synced: 'Saved', dirty: 'Unsaved changes', saving: 'Saving…', offline: 'Offline · saved locally', conflict: 'Conflict' })[workspace.syncState])
+const canSave = computed(() => workspace.dirty && workspace.syncState !== 'saving' && workspace.syncState !== 'conflict')
 
 const modelTabs: { value: SidebarTab; icon: string; label: string }[] = [
-  { value: 'model', icon: 'mdi-file-document-edit-outline', label: 'Model' },
-  { value: 'library', icon: 'mdi-shape-outline', label: 'Library' },
+  { value: 'library', icon: 'mdi-shape-outline', label: 'Elements' },
+  { value: 'model', icon: 'mdi-history', label: 'History' },
   { value: 'files', icon: 'mdi-import', label: 'Import/Export' },
   { value: 'sync', icon: 'mdi-sync', label: 'Sync' }
 ]
@@ -62,7 +92,40 @@ const MIN_WIDTH = Math.round(DEFAULT_WIDTH / 2)
 const MAX_WIDTH = Math.round(DEFAULT_WIDTH * 1.5)
 
 const sidebarWidth = ref(DEFAULT_WIDTH)
-const activeTab = ref<SidebarTab>(props.modelManagement ? 'model' : 'elements')
+const activeTab = ref<SidebarTab>(props.modelManagement ? 'library' : 'elements')
+
+const saveCheckpoint = async () => {
+  try {
+    saveError.value = null
+    if (graph.value) {
+      workspace.setData({
+        format: 'maxgraph-xml',
+        version: 1,
+        xml: exportModelAsXml(graph.value, false),
+        name: modelName.value
+      })
+    }
+    await workspace.save()
+  } catch {
+    saveError.value = 'Unable to save this model.'
+  }
+}
+
+const openRename = () => {
+  editedName.value = modelName.value
+  renameError.value = null
+  renameDialog.value = true
+}
+const saveName = async () => {
+  if (!editedName.value.trim() || !workspace.model) return
+  try {
+    renameError.value = null
+    await workspace.rename(editedName.value)
+    renameDialog.value = false
+  } catch {
+    renameError.value = 'Unable to change the model name.'
+  }
+}
 
 const startResize = (event: MouseEvent) => {
   const startX = event.clientX
@@ -129,12 +192,28 @@ const startResize = (event: MouseEvent) => {
   color: rgba(var(--v-theme-on-surface), 0.5);
 }
 .model-title-value {
+  min-width: 0;
+  flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
   font-weight: 600;
   color: rgba(var(--v-theme-on-surface), 0.9);
+}
+.model-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+.model-save-state {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.55);
 }
 
 .tab-buttons {

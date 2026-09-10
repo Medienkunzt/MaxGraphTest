@@ -13,7 +13,7 @@ export interface CreateTaskStatement {
 
 export interface TaskStatementVersionInfo extends ApiVersionInfo {
   taskStatementId: ApiId
-  versionName: string
+  releaseName: string
   externalVersionId: string
 }
 
@@ -23,7 +23,7 @@ export interface TaskStatementVersion extends TaskStatementVersionInfo {
 
 export interface CreateTaskStatementVersion {
   baseVersionId: ApiId | null
-  versionName: string
+  releaseName: string
   externalVersionId: string
   data: JsonObject
 }

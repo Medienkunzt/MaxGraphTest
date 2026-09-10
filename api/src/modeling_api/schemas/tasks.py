@@ -18,7 +18,7 @@ class CreateTaskStatement(ApiSchema):
 
 class TaskStatementVersionInfo(VersionInfo):
     task_statement_id: UUID
-    version_name: Name
+    release_name: Name
     external_version_id: Name  # Versionskennung des externen Systems
 
 
@@ -28,6 +28,6 @@ class TaskStatementVersion(TaskStatementVersionInfo):
 
 class CreateTaskStatementVersion(ApiSchema):
     base_version_id: UUID | None
-    version_name: Name
+    release_name: Name
     external_version_id: Name
     data: JsonObject

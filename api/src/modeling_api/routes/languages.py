@@ -2,14 +2,13 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Query, Response
 
 from modeling_api.routes.deps import CurrentUser, Limit, Skip, created_response
 from modeling_api.schemas.common import Page
 from modeling_api.schemas.languages import (
     CreateLanguage,
     CreateLanguageVersion,
-    LanguageDeletionDependency,
     Language,
     LanguageOverview,
     LanguageVersion,
@@ -22,8 +21,14 @@ router = APIRouter(prefix="/languages", tags=["Languages"])
 
 
 @router.get("", summary="Alle Sprachen auflisten (global lesbar)")
-async def list_languages(user: CurrentUser, skip: Skip = 0, limit: Limit = 20) -> Page[LanguageOverview]:
-    return Page[LanguageOverview].model_validate(await service.list_languages(skip, limit))
+async def list_languages(
+    user: CurrentUser,
+    skip: Skip = 0,
+    limit: Limit = 20,
+    q: str | None = Query(default=None, max_length=256),
+    archived: bool = False,
+) -> Page[LanguageOverview]:
+    return Page[LanguageOverview].model_validate(await service.list_languages(skip, limit, q, archived))
 
 
 @router.post("", status_code=201, summary="Sprache anlegen (Identität, noch ohne Version)")
@@ -43,21 +48,6 @@ async def update_language(
     language_id: UUID, body: UpdateLanguage, user: CurrentUser
 ) -> Language:
     return Language.model_validate(await service.update_language(language_id, body, user))
-
-
-@router.get("/{language_id}/deletion-dependencies", summary="Löschabhängigkeiten einer Sprache prüfen")
-async def get_deletion_dependencies(
-    language_id: UUID, user: CurrentUser
-) -> list[LanguageDeletionDependency]:
-    return [
-        LanguageDeletionDependency.model_validate(dependency)
-        for dependency in await service.get_deletion_dependencies(language_id)
-    ]
-
-
-@router.delete("/{language_id}", status_code=204, summary="Sprache löschen, wenn keine Abhängigkeiten bestehen")
-async def delete_language(language_id: UUID, user: CurrentUser) -> None:
-    await service.delete_language(language_id, user)
 
 
 @router.get("/{language_id}/versions", summary="Versionsliste (ohne data)")

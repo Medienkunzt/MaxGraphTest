@@ -14,7 +14,7 @@ export interface ApiIdentity {
 
 export interface ApiVersionInfo {
   id: ApiId
-  versionNumber: number
+  versionNumber: string
   createdAt: string
   createdBy: string
 }

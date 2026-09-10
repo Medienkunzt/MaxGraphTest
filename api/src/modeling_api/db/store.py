@@ -86,7 +86,7 @@ async def save_version(
 
     Ablauf ohne Transaktion, aber konfliktsicher:
     1. Prüfen, dass base_version_id noch der aktuelle Stand ist.
-    2. Version einfügen (die Versionsnummer ist fortlaufend ab 1).
+    2. Version mit der gemeinsamen Checkpoint-/Release-Nummer einfügen.
     3. latestVersionId nur dann tauschen, wenn sich seit Schritt 1 nichts
        geändert hat (ein einzelnes Update ist in MongoDB atomar).
        War ein paralleler Request schneller, wird die eigene Version wieder
@@ -98,7 +98,8 @@ async def save_version(
     if parent["latestVersionId"] != base_version_id:
         raise conflict()
 
-    number = await versions.count_documents({parent_field: parent_id}) + 1
+    previous = await versions.find_one({"_id": base_version_id}) if base_version_id else None
+    number = next_version_number(previous.get("versionNumber") if previous else None, fields.get("kind"))
     version = {
         "_id": new_id(),
         parent_field: parent_id,
@@ -121,3 +122,16 @@ async def save_version(
         await versions.delete_one({"_id": version["_id"]})
         raise conflict()
     return to_api(version)
+
+
+def next_version_number(previous: object, kind: object) -> str:
+    """Calculates semantic save numbers shared by models, languages and tasks."""
+    raw = str(previous or "0.0")
+    try:
+        major, minor = (int(part) for part in (raw.split(".", 1) + ["0"])[:2])
+    except ValueError:
+        major, minor = 0, 0
+
+    if kind == "checkpoint":
+        return f"{max(major, 1)}.{minor + 1}"
+    return f"{major + 1}.0"

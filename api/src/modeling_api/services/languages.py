@@ -6,6 +6,7 @@ Administrator anhängen; für eine eigene Variante legt man stattdessen einen
 Fork mit parent an.
 """
 
+from re import escape
 from uuid import UUID
 
 from pymongo.errors import DuplicateKeyError
@@ -13,7 +14,7 @@ from pymongo.errors import DuplicateKeyError
 from modeling_api.core.auth import User
 from modeling_api.core.errors import ApiError, not_found
 from modeling_api.db.client import db
-from modeling_api.db.store import Document, get_or_404, insert, list_page, save_version, to_api
+from modeling_api.db.store import Document, get_or_404, insert, list_page, save_version, to_api, utcnow
 from modeling_api.schemas.languages import (
     CreateLanguage,
     CreateLanguageVersion,
@@ -65,10 +66,14 @@ async def check_language_refs(
         await visit(key)
 
 
-async def list_languages(skip: int, limit: int) -> Document:
-    total = await db.languages.count_documents({})
+async def list_languages(skip: int, limit: int, q: str | None = None, archived: bool = False) -> Document:
+    filters: Document = {"archivedAt": {"$ne": None} if archived else None}
+    if q and q.strip():
+        filters["name"] = {"$regex": escape(q.strip()), "$options": "i"}
+    total = await db.languages.count_documents(filters)
     cursor = await db.languages.aggregate(
         [
+            {"$match": filters},
             {"$sort": {"createdAt": -1, "_id": -1}},
             {"$skip": skip},
             {"$limit": limit},
@@ -78,7 +83,7 @@ async def list_languages(skip: int, limit: int) -> Document:
                     "let": {"latestVersionId": "$latestVersionId"},
                     "pipeline": [
                         {"$match": {"$expr": {"$eq": ["$_id", "$$latestVersionId"]}}},
-                        {"$project": {"versionName": 1, "versionNumber": 1}},
+                        {"$project": {"releaseName": 1, "versionNumber": 1}},
                     ],
                     "as": "latestVersion",
                 }
@@ -89,8 +94,9 @@ async def list_languages(skip: int, limit: int) -> Document:
                     "name": 1,
                     "ownerId": 1,
                     "latestVersionId": 1,
-                    "latestVersionName": {"$ifNull": ["$latestVersion.versionName", None]},
+                    "latestReleaseName": {"$ifNull": ["$latestVersion.releaseName", None]},
                     "versionNumber": {"$ifNull": ["$latestVersion.versionNumber", None]},
+                    "archivedAt": 1,
                 }
             },
         ]
@@ -118,6 +124,7 @@ async def create_language(body: CreateLanguage, user: User) -> Document:
             "parent": body.parent.model_dump(mode="json", by_alias=True) if body.parent else None,
             "ownerId": user.id,
             "latestVersionId": None,
+            "archivedAt": None,
         },
     )
     if parent_version is None:
@@ -132,7 +139,9 @@ async def create_language(body: CreateLanguage, user: User) -> Document:
             None,
             user.id,
             {
-                "versionName": "Initial version",
+                "kind": "release",
+                "releaseName": "Initial release",
+                "description": None,
                 "includedLanguageVersions": parent_version.get("includedLanguageVersions", []),
                 "data": parent_version["data"],
             },
@@ -151,88 +160,15 @@ async def update_language(language_id: UUID, body: UpdateLanguage, user: User) -
     language = await get_language(language_id)
     if language["ownerId"] != user.id and not user.is_admin:
         raise not_found()
-    await db.languages.update_one(
-        {"_id": str(language_id)},
-        {"$set": {"name": body.name, "ownerId": body.owner_id}},
-    )
+    changes: Document = {}
+    if "name" in body.model_fields_set:
+        changes["name"] = body.name
+    if "owner_id" in body.model_fields_set:
+        changes["ownerId"] = body.owner_id
+    if "archived" in body.model_fields_set:
+        changes["archivedAt"] = utcnow() if body.archived else None
+    await db.languages.update_one({"_id": str(language_id)}, {"$set": changes})
     return await get_language(language_id)
-
-
-async def get_deletion_dependencies(language_id: UUID) -> list[Document]:
-    """Liefert alle Objekte, die eine Sprache oder eine ihrer Versionen verwenden."""
-    await get_language(language_id)
-    language_id_str = str(language_id)
-    dependencies: list[Document] = []
-
-    async for language in db.languages.find(
-        {
-            "$or": [
-                {"parent.languageId": language_id_str},
-                {"parent.language_id": language_id_str},
-            ]
-        },
-        {"name": 1},
-    ):
-        dependencies.append(
-            {
-                "kind": "childLanguage",
-                "id": str(language["_id"]),
-                "label": f"Sprache: {language['name']}",
-            }
-        )
-
-    async for version in db.language_versions.find(
-        {
-            "languageId": {"$ne": language_id_str},
-            "includedLanguageVersions.languageId": language_id_str,
-        },
-        {"versionName": 1, "versionNumber": 1},
-    ):
-        dependencies.append(
-            {
-                "kind": "languageVersion",
-                "id": str(version["_id"]),
-                "label": f"Sprachversion {version['versionNumber']}: {version['versionName']}",
-            }
-        )
-
-    model_versions = [
-        version
-        async for version in db.model_versions.find(
-            {"languageVersions.languageId": language_id_str},
-            {"modelId": 1, "versionNumber": 1},
-        )
-    ]
-    model_ids = {version["modelId"] for version in model_versions}
-    models = {
-        model["_id"]: model["name"]
-        async for model in db.models.find({"_id": {"$in": list(model_ids)}}, {"name": 1})
-    }
-    for version in model_versions:
-        model_name = models.get(version["modelId"], version["modelId"])
-        dependencies.append(
-            {
-                "kind": "modelVersion",
-                "id": str(version["_id"]),
-                "label": f"Modell {model_name}, Version {version['versionNumber']}",
-            }
-        )
-
-    return dependencies
-
-
-async def delete_language(language_id: UUID, user: User) -> None:
-    language = await get_language(language_id)
-    if language["ownerId"] != user.id and not user.is_admin:
-        raise not_found()
-    if await get_deletion_dependencies(language_id):
-        raise ApiError(
-            409,
-            "LANGUAGE_HAS_DEPENDENCIES",
-            "Die Sprache wird noch von anderen Objekten verwendet.",
-        )
-    await db.language_versions.delete_many({"languageId": str(language_id)})
-    await db.languages.delete_one({"_id": str(language_id)})
 
 
 async def list_versions(language_id: UUID, skip: int, limit: int) -> Document:
@@ -242,7 +178,6 @@ async def list_versions(language_id: UUID, skip: int, limit: int) -> Document:
         {"languageId": str(language_id)},
         skip,
         limit,
-        sort_field="versionNumber",
         omit=("data",),
     )
 

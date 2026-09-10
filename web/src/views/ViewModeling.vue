@@ -2,7 +2,7 @@
   <v-container fluid class="pa-4 modeling-view">
     <v-progress-linear v-if="loading" indeterminate class="model-loading" />
     <v-alert v-if="loadError" type="error" variant="tonal" density="compact" closable class="model-load-error" @click:close="loadError = null">{{ loadError }}</v-alert>
-    <DrawingCanvas ref="canvas" v-model:model="graphModel" class="editor-canvas" model-management :languages="workspace.editorLanguages" :language-connections="connections" :connection-groups="connectionGroups" :language-syntax="syntax" @update:model="captureCanvas" />
+    <DrawingCanvas ref="canvas" v-model:model="graphModel" class="editor-canvas" model-management :languages="workspace.editorLanguages" :language-connections="connections" :connection-groups="connectionGroups" :connection-preferences="workspace.preferences" :language-syntax="syntax" @update:model="captureCanvas" @update:connection-preferences="workspace.updatePreferences" />
     <v-dialog v-model="recoveryDialog" max-width="1000" persistent
       ><v-card
         ><v-card-title>Unsaved changes found</v-card-title
@@ -43,7 +43,7 @@ const connectionGroups = computed(() =>
   workspace.editorLanguages
     .filter((language) => language.connections.length > 0)
     .map((language) => ({
-      id: `${language.id}:${language.version.id}`,
+      id: language.id,
       label: `${language.name} · v${language.version.versionNumber}`,
       connections: language.connections
     }))
@@ -97,7 +97,8 @@ onMounted(async () => {
 <style scoped>
 .modeling-view {
   position: relative;
-  height: calc(100vh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
+  /* Keep the editor usable even when the footer extends below the viewport. */
+  height: max(900px, calc(100vh - var(--v-layout-top, 0px)));
   display: flex;
   flex-direction: column;
   overflow: hidden;

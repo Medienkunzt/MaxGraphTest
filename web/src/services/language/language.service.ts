@@ -1,11 +1,11 @@
 import type { AxiosResponse } from 'axios'
 import httpClient from '@/services/api/httpClient'
 import type { ApiId, ApiPage, JsonObject } from '@/services/api/types/common'
-import type { CreateLanguage, CreateLanguageVersion, Language, LanguageDeletionDependency, LanguageOverview, LanguageVersion, LanguageVersionInfo, UpdateLanguage } from '@/services/api/types/language'
+import type { CreateLanguage, CreateLanguageVersion, Language, LanguageListOptions, LanguageOverview, LanguageVersion, LanguageVersionInfo, UpdateLanguage } from '@/services/api/types/language'
 
 class LanguageService {
-  list(skip = 0, limit = 20): Promise<AxiosResponse<ApiPage<LanguageOverview>>> {
-    return httpClient.get('/v1/languages', { params: { skip, limit } })
+  list(skip = 0, limit = 20, options: LanguageListOptions = {}): Promise<AxiosResponse<ApiPage<LanguageOverview>>> {
+    return httpClient.get('/v1/languages', { params: { skip, limit, ...options } })
   }
 
   get(languageId: ApiId): Promise<AxiosResponse<Language>> {
@@ -18,14 +18,6 @@ class LanguageService {
 
   update(languageId: ApiId, language: UpdateLanguage): Promise<AxiosResponse<Language>> {
     return httpClient.patch(`/v1/languages/${languageId}`, language)
-  }
-
-  getDeletionDependencies(languageId: ApiId): Promise<AxiosResponse<LanguageDeletionDependency[]>> {
-    return httpClient.get(`/v1/languages/${languageId}/deletion-dependencies`)
-  }
-
-  delete(languageId: ApiId): Promise<AxiosResponse<void>> {
-    return httpClient.delete(`/v1/languages/${languageId}`)
   }
 
   listVersions(languageId: ApiId, skip = 0, limit = 20): Promise<AxiosResponse<ApiPage<LanguageVersionInfo>>> {

@@ -5,7 +5,7 @@ Namen in JSON sind camelCase (z. B. createdAt), im Python-Code snake_case
 """
 
 from datetime import datetime
-from typing import Annotated, Any, Generic, TypeVar
+from typing import Annotated, Any, Generic, Literal, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
@@ -20,6 +20,7 @@ class ApiSchema(BaseModel):
 
 # Kurze, nicht leere Texte (Namen, externe IDs, ...)
 Name = Annotated[str, Field(min_length=1, max_length=256, pattern=r"\S")]
+VersionKind = Literal["checkpoint", "release"]
 
 
 def _check_json_object(value: Any) -> Any:
@@ -56,7 +57,7 @@ class VersionInfo(ApiSchema):
     """Felder einer Version, ohne den großen Inhaltsblock data."""
 
     id: UUID
-    version_number: int
+    version_number: Annotated[str, BeforeValidator(str)]
     created_at: datetime
     created_by: str
 

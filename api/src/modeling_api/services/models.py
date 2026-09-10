@@ -51,6 +51,7 @@ async def create_model(body: CreateModel, user: User) -> Document:
             "name": body.name,
             "ownerId": user.id,
             "latestVersionId": None,
+            "preferences": {},
             "updatedAt": utcnow(),
             "archivedAt": None,
         },
@@ -64,6 +65,7 @@ async def get_model(model_id: UUID, user: User) -> Document:
     missing_metadata = {
         "updatedAt": result.get("createdAt", utcnow()),
         "archivedAt": None,
+        "preferences": {},
     }
     changes = {key: value for key, value in missing_metadata.items() if key not in result}
     if changes:
@@ -79,6 +81,8 @@ async def update_model(model_id: UUID, body: UpdateModel, user: User) -> Documen
         changes["name"] = body.name
     if "archived" in body.model_fields_set:
         changes["archivedAt"] = utcnow() if body.archived else None
+    if "preferences" in body.model_fields_set:
+        changes["preferences"] = body.preferences
     await db.models.update_one({"_id": str(model_id), "ownerId": user.id}, {"$set": changes})
     return await get_model(model_id, user)
 
@@ -99,7 +103,6 @@ async def list_versions(model_id: UUID, skip: int, limit: int, user: User) -> Do
         {"modelId": str(model_id)},
         skip,
         limit,
-        sort_field="versionNumber",
         omit=("data", "annotations"),
     )
 
@@ -116,9 +119,9 @@ async def get_version(model_id: UUID, version_id: UUID, user: User) -> Document:
 
 async def create_version(model_id: UUID, body: CreateModelVersion, user: User) -> Document:
     await get_model(model_id, user)
-    # Die Liste muss alle tatsächlich verwendeten Sprachversionen enthalten,
-    # inklusive derer, die nur über Einbindungen hereinkommen.
-    await check_language_refs(body.language_versions, require_complete=True)
+    # Das Modell speichert nur seine direkte Sprachauswahl. Abhängigkeiten
+    # werden bei Bedarf aus den jeweiligen Sprachversionen aufgelöst.
+    await check_language_refs(body.workspace_languages)
     if body.task_version is not None:
         task_ref = body.task_version
         version = await db.task_statement_versions.find_one(

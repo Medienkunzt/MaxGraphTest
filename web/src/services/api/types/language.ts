@@ -1,9 +1,17 @@
 import type { ApiId, ApiIdentity, ApiVersionInfo, JsonObject, LanguageVersionReference } from './common'
 
+export type LanguageVersionKind = 'checkpoint' | 'release'
+
 export interface Language extends ApiIdentity {
   name: string
   parent: LanguageVersionReference | null
   latestVersionId: ApiId | null
+  archivedAt: string | null
+}
+
+export interface LanguageListOptions {
+  q?: string
+  archived?: boolean
 }
 
 export interface LanguageOverview {
@@ -11,8 +19,9 @@ export interface LanguageOverview {
   name: string
   ownerId: string
   latestVersionId: ApiId | null
-  latestVersionName: string | null
-  versionNumber: number | null
+  latestReleaseName: string | null
+  versionNumber: string | null
+  archivedAt: string | null
 }
 
 export interface CreateLanguage {
@@ -21,21 +30,16 @@ export interface CreateLanguage {
 }
 
 export interface UpdateLanguage {
-  name: string
-  ownerId: string
-}
-
-export type LanguageDeletionDependencyKind = 'childLanguage' | 'languageVersion' | 'modelVersion'
-
-export interface LanguageDeletionDependency {
-  kind: LanguageDeletionDependencyKind
-  id: ApiId
-  label: string
+  name?: string
+  ownerId?: string
+  archived?: boolean
 }
 
 export interface LanguageVersionInfo extends ApiVersionInfo {
   languageId: ApiId
-  versionName: string
+  kind: LanguageVersionKind
+  releaseName: string | null
+  description: string | null
   includedLanguageVersions: LanguageVersionReference[]
 }
 
@@ -45,7 +49,9 @@ export interface LanguageVersion<TData = JsonObject> extends LanguageVersionInfo
 
 export interface CreateLanguageVersion<TData = JsonObject> {
   baseVersionId: ApiId | null
-  versionName: string
+  kind?: LanguageVersionKind
+  releaseName?: string | null
+  description?: string | null
   includedLanguageVersions?: LanguageVersionReference[]
   data: TData
 }

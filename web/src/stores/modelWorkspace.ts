@@ -24,7 +24,7 @@ interface WorkspaceDraftPayload extends JsonObject {
   data: ModelSnapshot
 }
 
-const selectedLanguagesFrom = (version: ModelVersion): WorkspaceLanguage[] => (version.workspaceLanguages.length ? cloneJson(version.workspaceLanguages) : version.languageVersions.map((reference) => ({ ...reference, source: 'additional' })))
+const selectedLanguagesFrom = (version: ModelVersion): WorkspaceLanguage[] => cloneJson(version.workspaceLanguages)
 
 const dirtySyncState = (): ModelSyncState => (typeof navigator === 'undefined' || navigator.onLine ? 'dirty' : 'offline')
 const responseStatus = (error: unknown) => (error as { response?: { status?: number } }).response?.status
@@ -36,13 +36,16 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
   const effectiveLanguages = ref<LanguageVersionReference[]>([])
   const languageDefinitions = ref<Record<string, ResolvedLanguageVersion>>({})
   const data = ref<ModelSnapshot>(createEmptyModelSnapshot('Untitled model'))
+  const pendingPreferences = ref<JsonObject>({})
   const dirty = ref(false)
   const syncState = ref<ModelSyncState>('synced')
 
   let draftTimer: ReturnType<typeof setTimeout> | undefined
   let initialDraftKey: string | null = null
+  let preferenceSave = Promise.resolve()
 
   const draftKey = computed(() => model.value?.id ?? 'new-model')
+  const preferences = computed<JsonObject>(() => model.value?.preferences ?? pendingPreferences.value)
   const resolvedLanguages = computed(() => effectiveLanguages.value.map((reference) => languageDefinitions.value[languageReferenceKey(reference)]).filter((entry): entry is ResolvedLanguageVersion => Boolean(entry)))
   const editorLanguages = computed<WorkspaceDiagramLanguage[]>(() =>
     resolvedLanguages.value.map(({ language, version }) => ({
@@ -63,7 +66,7 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
   const applyVersion = async (version: ModelVersion, modelName: string) => {
     languages.value = selectedLanguagesFrom(version)
     data.value = normalizeModelSnapshot(version.data, modelName)
-    await loadLanguages(version.languageVersions)
+    await loadLanguages(version.workspaceLanguages)
   }
 
   const persistDraft = async () => {
@@ -100,6 +103,7 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
   const resetIdentity = () => {
     model.value = null
     baseVersionId.value = null
+    pendingPreferences.value = {}
     initialDraftKey = null
   }
 
@@ -118,6 +122,7 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
 
     const version = (await modelService.getVersion(modelId, targetVersionId)).data
     model.value = currentModel
+    pendingPreferences.value = currentModel.preferences
     baseVersionId.value = version.id
     initialDraftKey = null
     await applyVersion(version, currentModel.name)
@@ -129,12 +134,66 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
     const language = (await languageService.get(languageId)).data
     const selectedVersionId = versionId ?? language.latestVersionId
     if (!selectedVersionId) throw new Error('The selected language has no version.')
-    if (languages.value.some((item) => item.languageId === languageId && item.versionId === selectedVersionId)) return
+    if (languages.value.some((item) => item.languageId === languageId)) return
 
     const updatedLanguages: WorkspaceLanguage[] = [...languages.value, { languageId, versionId: selectedVersionId, source: 'additional' }]
     await loadLanguages(updatedLanguages)
     languages.value = updatedLanguages
     markDirty()
+  }
+
+  const changeLanguageVersion = async (languageId: ApiId, versionId: ApiId) => {
+    const index = languages.value.findIndex((item) => item.languageId === languageId)
+    if (index < 0 || languages.value[index].versionId === versionId) return
+
+    // TODO: Validate compatibility and migrate existing model elements before changing a language release.
+    const updatedLanguages = cloneJson(languages.value)
+    updatedLanguages[index] = { ...updatedLanguages[index], versionId }
+    await loadLanguages(updatedLanguages)
+    languages.value = updatedLanguages
+    markDirty()
+  }
+
+  const removeLanguage = async (languageId: ApiId) => {
+    const updatedLanguages = languages.value.filter((item) => item.languageId !== languageId)
+    if (updatedLanguages.length === languages.value.length) return
+    await loadLanguages(updatedLanguages)
+    languages.value = updatedLanguages
+    markDirty()
+  }
+
+  const moveLanguage = async (languageId: ApiId, offset: -1 | 1) => {
+    const from = languages.value.findIndex((item) => item.languageId === languageId)
+    const to = from + offset
+    if (from < 0 || to < 0 || to >= languages.value.length) return
+    const updatedLanguages = cloneJson(languages.value)
+    const [moved] = updatedLanguages.splice(from, 1)
+    updatedLanguages.splice(to, 0, moved)
+    await loadLanguages(updatedLanguages)
+    languages.value = updatedLanguages
+    markDirty()
+  }
+
+  const rename = async (name: string) => {
+    if (!model.value) throw new Error('No model is loaded.')
+    const updated = (await modelService.update(model.value.id, { name: name.trim() })).data
+    model.value = updated
+    data.value = { ...data.value, name: updated.name }
+    markDirty()
+  }
+
+  const updatePreferences = (preferences: JsonObject) => {
+    pendingPreferences.value = preferences
+    if (!model.value) return
+    const modelId = model.value.id
+    model.value = { ...model.value, preferences }
+    preferenceSave = preferenceSave.catch(() => undefined).then(async () => {
+      const updated = (await modelService.update(modelId, { preferences })).data
+      if (model.value?.id === modelId && model.value.preferences === preferences) {
+        model.value = updated
+      }
+    })
+    return preferenceSave
   }
 
   const restoreVersion = async (versionId: ApiId) => {
@@ -153,8 +212,8 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
     markDirty()
   }
 
-  const save = async (kind: ModelVersionKind = 'checkpoint', versionName?: string, description?: string) => {
-    if (kind === 'named' && !versionName?.trim()) throw new Error('A named version needs a name.')
+  const save = async (kind: ModelVersionKind = 'checkpoint', releaseName?: string, description?: string) => {
+    if (kind === 'release' && !releaseName?.trim()) throw new Error('A release needs a name.')
     syncState.value = 'saving'
 
     try {
@@ -163,17 +222,20 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
         initialDraftKey ??= draftKey.value
         currentModel = (await modelService.create({ name: data.value.name })).data
         model.value = currentModel
+        if (Object.keys(pendingPreferences.value).length > 0) {
+          currentModel = (await modelService.update(currentModel.id, { preferences: pendingPreferences.value })).data
+          model.value = currentModel
+        }
       }
 
       data.value = { ...data.value, name: currentModel.name }
       const savedVersion = (
         await modelService.createVersion(currentModel.id, {
           baseVersionId: baseVersionId.value,
-          languageVersions: cloneJson(effectiveLanguages.value),
           workspaceLanguages: cloneJson(languages.value),
           data: cloneJson(data.value),
           kind,
-          ...(kind === 'named' ? { versionName: versionName!.trim(), description: description?.trim() || null } : {})
+          ...(kind === 'release' ? { releaseName: releaseName!.trim(), description: description?.trim() || null } : {})
         })
       ).data
 
@@ -210,6 +272,7 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
 
   return {
     model,
+    preferences,
     languages,
     data,
     dirty,
@@ -218,6 +281,11 @@ export const useModelWorkspaceStore = defineStore('modelWorkspace', () => {
     startNew,
     load,
     addLanguage,
+    changeLanguageVersion,
+    removeLanguage,
+    moveLanguage,
+    rename,
+    updatePreferences,
     restoreVersion,
     branchVersion,
     setData,

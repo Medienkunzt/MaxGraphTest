@@ -18,17 +18,12 @@
 
           <AutonomyControls :mode="autonomyMode" @update:mode="updateAutonomyMode" />
         </div>
-
-        <!-- Connection Toolbar (immer zweite Zeile) -->
-        <div v-if="languageConnections.length > 0" class="toolbar-connections-row">
-          <ConnectionToolbar :connections="languageConnections" :connection-groups="props.connectionGroups" @select="onConnectionSelected" />
-        </div>
       </div>
 
       <!-- Canvas Area: Sidebar + Graph -->
       <div class="canvas-area">
         <!-- Elements Sidebar -->
-        <SidebarContainer v-if="props.showElements !== false && props.showModelSidebar !== false && props.showToolbar && sidebarLanguages.length > 0" :languages="sidebarLanguages" :model-management="props.modelManagement" />
+        <SidebarContainer v-if="props.showElements !== false && props.showModelSidebar !== false && props.showToolbar && (props.modelManagement || sidebarLanguages.length > 0)" :languages="sidebarLanguages" :model-management="props.modelManagement" />
 
         <!-- Graph Container -->
         <div ref="graphWrapper" class="graph-wrapper">
@@ -38,7 +33,7 @@
               <canvas ref="canvasGrid" class="grid-canvas"></canvas>
             </div>
 
-            <CanvasToolsOverlay v-if="props.showToolbar" @select-all="selectAll" @clear-selection="clearSelection" @delete-selected="deleteSelected" @duplicate-selected="duplicateSelected" @align-left="alignLeft" @align-center-h="alignCenterH" @align-right="alignRight" @align-top="alignTop" @align-middle-v="alignMiddleV" @align-bottom="alignBottom" />
+            <CanvasToolsOverlay v-if="props.showToolbar" ref="canvasToolsOverlay" :connections="languageConnections" :connection-groups="props.connectionGroups" :connection-preferences="props.connectionPreferences" @select-all="selectAll" @clear-selection="clearSelection" @delete-selected="deleteSelected" @duplicate-selected="duplicateSelected" @align-left="alignLeft" @align-center-h="alignCenterH" @align-right="alignRight" @align-top="alignTop" @align-middle-v="alignMiddleV" @align-bottom="alignBottom" @select-connection="onConnectionSelected" @update:connection-preferences="updateConnectionPreferences" />
 
             <GraphControls :can-undo="canUndo" :can-redo="canRedo" @undo="undoGraph" @redo="redoGraph" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit-to-window="fitToWindow" @toggle-grid="toggleGrid" @force-grid-repaint="forceGridRepaint" />
 
@@ -113,6 +108,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 import { Graph, InternalEvent, RubberBandHandler, Cell, CellOverlay, CellEditorHandler, SelectionCellsHandler, SelectionHandler, CellState, EdgeStyle, GraphDataModel, PanningHandler, ImageBox, Client, KeyHandler, TooltipHandler, FitPlugin, Clipboard, ConnectionConstraint } from '@maxgraph/core'
 import type { GraphPluginConstructor } from '@maxgraph/core'
+import type { JsonObject } from '@/services/api/types/common'
 import { provideGraphContext } from '@/composables/useGraphContext'
 import { useGraphOperations } from '@/composables/useGraphOperations'
 import { useZoomOperations } from '@/composables/useZoomOperations'
@@ -130,7 +126,6 @@ import { createCellFromElement } from '@/utils/elementFactory'
 import GraphSettings from './GraphSettings.vue'
 import CanvasToolsOverlay from './CanvasToolsOverlay.vue'
 import GraphControls from './GraphControls.vue'
-import ConnectionToolbar from './ConnectionToolbar.vue'
 import AutonomyControls from './AutonomyControls.vue'
 import CanvasWindowHost from './CanvasWindowHost.vue'
 import SidebarContainer from './SidebarContainer.vue'
@@ -277,6 +272,10 @@ interface CanvasWindowHostApi {
   setWindows: (definitions: CanvasWindowDefinition[]) => void
 }
 
+interface CanvasToolsOverlayApi {
+  closeConnectionPalette: () => void
+}
+
 const props = withDefaults(
   defineProps<{
     model?: GraphDataModel
@@ -290,6 +289,7 @@ const props = withDefaults(
     languageElements?: DiagramElement[]
     languageConnections?: DiagramConnection[]
     connectionGroups?: DiagramConnectionGroup[]
+    connectionPreferences?: JsonObject
     languageSyntax?: DiagramSyntax[]
     languages?: SidebarLanguage[]
     autonomyMode?: AutonomyMode
@@ -310,6 +310,7 @@ const props = withDefaults(
     languageElements: undefined,
     languageConnections: undefined,
     connectionGroups: undefined,
+    connectionPreferences: undefined,
     languageSyntax: undefined,
     languages: undefined,
     autonomyMode: 'manual',
@@ -324,6 +325,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   'update:model': [GraphDataModel]
   'update:autonomyMode': [AutonomyMode]
+  'update:connectionPreferences': [preferences: JsonObject]
 }>()
 
 type CanvasLayerView = 'both' | 'model' | 'feedback'
@@ -344,6 +346,7 @@ const graphWrapper = ref<HTMLElement | null>(null)
 const graphContainer = ref<HTMLElement>()
 const canvasGrid = ref<HTMLCanvasElement>()
 const canvasWindowHost = ref<CanvasWindowHostApi | null>(null)
+const canvasToolsOverlay = ref<CanvasToolsOverlayApi | null>(null)
 // shallowRef verhindert, dass Vue die Graph-Instanz in einen reactive()-Proxy einwickelt.
 // Vue's deep reactive Proxy würde Cell-Objekte als Proxy zurückgeben, deren Identität
 // von den originalen Cell-Objekten abweicht. maxGraph speichert CellStates in einer
@@ -389,6 +392,7 @@ const focusGraphContainer = (evt: PointerEvent) => {
     return
   }
 
+  canvasToolsOverlay.value?.closeConnectionPalette()
   graphContainer.value?.focus({ preventScroll: true })
 }
 
@@ -625,6 +629,10 @@ const onConnectionSelected = (connection: DiagramConnection) => {
     customConnectionHandler.value.setFeedbackConnection(activeFeedbackRules.value.enforceDedicatedConnection ? activeFeedbackConnectionDefinition.value : null)
     customConnectionHandler.value.setFeedbackRules(activeFeedbackRules.value)
   }
+}
+
+const updateConnectionPreferences = (preferences: JsonObject) => {
+  emit('update:connectionPreferences', preferences)
 }
 
 // Manuelle Validierung
@@ -1317,11 +1325,6 @@ defineExpose({
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-}
-
-.toolbar-connections-row {
-  width: 100%;
-  min-width: 0;
 }
 
 .maxgraph-toolbar {

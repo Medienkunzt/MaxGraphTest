@@ -1,18 +1,10 @@
 <template>
   <div class="model-sidebar">
-    <div class="model-section">
-      <span class="field-label">Save model</span>
-      <div class="save-row">
-        <span class="sync-state">{{ stateLabel }}</span
-        ><v-btn size="small" color="primary" :loading="workspace.syncState === 'saving'" :disabled="!canSave" @click="saveCheckpoint">Save</v-btn>
-      </div>
-    </div>
-    <v-divider />
     <div class="model-section versions-section">
-      <div class="section-title">Versions</div>
-      <v-btn size="small" variant="tonal" block prepend-icon="mdi-tag-plus-outline" @click="versionDialog = true">Create Version</v-btn>
+      <div class="section-title">Releases</div>
+      <v-btn size="small" variant="tonal" block prepend-icon="mdi-tag-plus-outline" @click="releaseDialog = true">Release version</v-btn>
       <div class="versions-scroll">
-        <ModelSnapshotList :entries="namedVersions" empty-text="No named versions." :show-branch="false" @preview="previewRestore($event.id)" />
+        <ModelSnapshotList :entries="releaseVersions" empty-text="No releases." :show-branch="false" @preview="previewRestore($event.id)" />
       </div>
     </div>
     <v-divider />
@@ -23,10 +15,10 @@
       </div>
     </div>
     <v-alert v-if="error" density="compact" type="error" variant="tonal" class="ma-2">{{ error }}</v-alert>
-    <v-dialog v-model="versionDialog" max-width="520"
+    <v-dialog v-model="releaseDialog" max-width="520"
       ><v-card
-        ><v-card-title>Create Version</v-card-title><v-card-text><v-text-field v-model="versionName" label="Version name" /><v-textarea v-model="description" label="Description (optional)" /></v-card-text
-        ><v-card-actions><v-spacer /><v-btn @click="versionDialog = false">Cancel</v-btn><v-btn color="primary" :disabled="!versionName.trim()" @click="saveNamed">Create version</v-btn></v-card-actions></v-card
+        ><v-card-title>Release version</v-card-title><v-card-text><v-text-field v-model="releaseName" label="Release name" /><v-textarea v-model="description" label="Description (optional)" /></v-card-text
+        ><v-card-actions><v-spacer /><v-btn @click="releaseDialog = false">Cancel</v-btn><v-btn color="primary" :disabled="!releaseName.trim()" @click="saveRelease">Release</v-btn></v-card-actions></v-card
       ></v-dialog
     >
     <v-dialog v-model="restoreDialog" max-width="1000"
@@ -54,8 +46,8 @@ import type { ModelVersionInfo } from '@/services/api/types/model'
 
 const workspace = useModelWorkspaceStore()
 const { graph } = useGraphContext()
-const versionDialog = ref(false)
-const versionName = ref('')
+const releaseDialog = ref(false)
+const releaseName = ref('')
 const description = ref('')
 const history = ref<ModelVersionInfo[]>([])
 const historyOpen = ref(false)
@@ -64,36 +56,24 @@ const restoreDialog = ref(false)
 const restoreVersionId = ref<string | null>(null)
 const restoreData = ref<JsonObject | null>(null)
 const snapshotName = computed(() => workspace.model?.name ?? workspace.data.name)
-const namedVersions = computed(() => history.value.filter((entry) => entry.kind === 'named'))
-const stateLabel = computed(() => ({ synced: 'Saved', dirty: 'Unsaved changes', saving: 'Saving…', offline: 'Offline · saved locally', conflict: 'Conflict' })[workspace.syncState])
-const canSave = computed(() => workspace.dirty && workspace.syncState !== 'saving' && workspace.syncState !== 'conflict')
+const releaseVersions = computed(() => history.value.filter((entry) => entry.kind === 'release'))
 const capture = () => {
   if (graph.value) workspace.setData({ format: 'maxgraph-xml', version: 1, xml: exportModelAsXml(graph.value, false), name: snapshotName.value })
 }
 const loadHistory = async () => {
   if (workspace.model) history.value = (await modelService.listVersions(workspace.model.id, 0, 100)).data.items
 }
-const saveCheckpoint = async () => {
+const saveRelease = async () => {
   try {
     error.value = null
     capture()
-    await workspace.save()
-    await loadHistory()
-  } catch {
-    error.value = 'Unable to save this model.'
-  }
-}
-const saveNamed = async () => {
-  try {
-    error.value = null
-    capture()
-    await workspace.save('named', versionName.value, description.value)
-    versionDialog.value = false
-    versionName.value = ''
+    await workspace.save('release', releaseName.value, description.value)
+    releaseDialog.value = false
+    releaseName.value = ''
     description.value = ''
     await loadHistory()
   } catch {
-    error.value = 'Unable to create this version.'
+    error.value = 'Unable to release this version.'
   }
 }
 const previewRestore = async (versionId: string) => {
@@ -149,14 +129,6 @@ watch(
   color: rgba(var(--v-theme-on-surface), 0.78);
   margin-bottom: 7px;
 }
-.save-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-  gap: 8px;
-}
-.sync-state,
 .empty-state {
   font-size: 11px;
   color: rgba(var(--v-theme-on-surface), 0.55);

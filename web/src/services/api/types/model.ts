@@ -1,6 +1,6 @@
 import type { ApiId, ApiIdentity, ApiVersionInfo, JsonObject, LanguageVersionReference, TaskVersionReference } from './common'
 
-export type ModelVersionKind = 'checkpoint' | 'named'
+export type ModelVersionKind = 'checkpoint' | 'release'
 export type ModelSortField = 'updatedAt' | 'createdAt' | 'name'
 export type SortOrder = 'asc' | 'desc'
 
@@ -18,6 +18,7 @@ export interface WorkspaceLanguageReference extends LanguageVersionReference {
 export interface Model extends ApiIdentity {
   name: string
   latestVersionId: ApiId | null
+  preferences: JsonObject
   updatedAt: string
   archivedAt: string | null
 }
@@ -29,16 +30,16 @@ export interface CreateModel {
 export interface UpdateModel {
   name?: string
   archived?: boolean
+  preferences?: JsonObject
 }
 
 export interface ModelVersionInfo extends ApiVersionInfo {
   modelId: ApiId
   previousVersionId: ApiId | null
-  languageVersions: LanguageVersionReference[]
   workspaceLanguages: WorkspaceLanguageReference[]
   taskVersion: TaskVersionReference | null
   kind: ModelVersionKind
-  versionName: string | null
+  releaseName: string | null
   description: string | null
 }
 
@@ -49,12 +50,11 @@ export interface ModelVersion extends ModelVersionInfo {
 
 export interface CreateModelVersion {
   baseVersionId: ApiId | null
-  languageVersions: LanguageVersionReference[]
   workspaceLanguages?: WorkspaceLanguageReference[]
   taskVersion?: TaskVersionReference | null
   data: JsonObject
   annotations?: JsonObject | null
   kind?: ModelVersionKind
-  versionName?: string | null
+  releaseName?: string | null
   description?: string | null
 }

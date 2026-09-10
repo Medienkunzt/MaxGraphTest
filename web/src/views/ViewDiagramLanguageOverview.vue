@@ -1,267 +1,258 @@
 <template>
-  <v-container fluid>
-    <v-row>
-      <v-col cols="12">
-        <v-card>
-          <v-card-title class="d-flex align-center justify-space-between">
-            <span>Diagram Language Overview</span>
-            <v-btn color="primary" prepend-icon="mdi-plus" @click="createNewLanguage"> New Language </v-btn>
-          </v-card-title>
+  <v-container class="py-8" max-width="1200">
+    <div class="d-flex align-center mb-6 ga-3">
+      <div>
+        <h1 class="text-h4">Diagram Languages</h1>
+        <p class="text-medium-emphasis mb-0">Languages, checkpoints, and releases.</p>
+      </div>
+      <v-spacer />
+      <v-btn color="primary" prepend-icon="mdi-plus" @click="createNewLanguage">New Language</v-btn>
+    </div>
 
-          <v-card-text>
-            <v-data-table-server v-model:items-per-page="itemsPerPage" :headers="headers" :items="languages" :items-length="totalLanguages" :loading="loading" class="elevation-1" no-data-text="No diagram languages available" loading-text="Loading diagram languages..." @update:options="loadLanguages">
-              <!-- Name Spalte -->
-              <template #[`item.name`]="{ item }">
-                <div class="font-weight-medium">
-                  {{ item.name }}
-                </div>
-              </template>
+    <v-tabs v-model="archiveTab" class="mb-3"><v-tab :value="false">Languages</v-tab><v-tab :value="true">Archive</v-tab></v-tabs>
+    <v-text-field v-model="query" label="Search languages" density="compact" prepend-inner-icon="mdi-magnify" clearable class="mb-3" @update:model-value="searchLanguages" />
+    <v-alert v-if="error" type="error" variant="tonal" closable class="mb-3" @click:close="error = null">{{ error }}</v-alert>
 
-              <template #[`item.latestVersionName`]="{ item }">
-                <span v-if="item.latestVersionName">{{ item.latestVersionName }}</span>
-                <span v-else class="text-grey-500">-</span>
-              </template>
+    <v-data-table-server v-model:items-per-page="itemsPerPage" v-model:expanded="expanded" :headers="headers" :items="languages" :items-length="totalLanguages" :loading="loading" item-value="id" show-expand hover no-data-text="No diagram languages available" loading-text="Loading diagram languages..." @click:row="toggleExpanded" @update:expanded="setExpanded" @update:options="loadLanguages">
+      <template #[`item.name`]="{ item }">
+        <div class="font-weight-medium">{{ asLanguage(item).name }}</div>
+      </template>
 
-              <template #[`item.versionNumber`]="{ item }">
-                <span v-if="item.versionNumber !== null">{{ item.versionNumber }}</span>
-                <span v-else class="text-grey-500">-</span>
-              </template>
+      <template #[`item.ownerId`]="{ item }">{{ asLanguage(item).ownerId || 'System' }}</template>
 
-              <!-- Aktionen Spalte -->
-              <template #[`item.actions`]="{ item }">
-                <v-btn size="small" variant="text" color="success" @click="tryLanguage(item)">
-                  <v-icon>mdi-play</v-icon>
-                  <v-tooltip activator="parent" location="top"> Try </v-tooltip>
-                </v-btn>
-                <v-btn size="small" variant="text" color="primary" @click="editLanguage(item)">
-                  <v-icon>mdi-pencil</v-icon>
-                  <v-tooltip activator="parent" location="top"> Edit </v-tooltip>
-                </v-btn>
-                <v-btn v-if="item.latestVersionId" size="small" variant="text" color="info" @click="openInEditor(item)">
-                  <v-icon>mdi-application-edit</v-icon>
-                  <v-tooltip activator="parent" location="top"> Open Editor </v-tooltip>
-                </v-btn>
-                <v-btn v-else size="small" variant="text" color="info" @click="createInitialVersion(item)">
-                  <v-icon>mdi-file-plus-outline</v-icon>
-                  <v-tooltip activator="parent" location="top"> Create Initial Version </v-tooltip>
-                </v-btn>
-                <v-btn size="small" variant="text" color="error" @click="deleteLanguage(item)">
-                  <v-icon>mdi-delete</v-icon>
-                  <v-tooltip activator="parent" location="top"> Delete </v-tooltip>
-                </v-btn>
-              </template>
-            </v-data-table-server>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+      <template #[`item.latestSave`]="{ item }">
+        <div v-if="asLanguage(item).versionNumber !== null">
+          <div class="font-weight-medium">{{ asLanguage(item).latestReleaseName || `v${asLanguage(item).versionNumber}` }}</div>
+          <div v-if="asLanguage(item).latestReleaseName" class="text-caption text-medium-emphasis">v{{ asLanguage(item).versionNumber }}</div>
+        </div>
+        <span v-else class="text-medium-emphasis">No saves</span>
+      </template>
 
-    <!-- Dialoge -->
+      <template #[`item.actions`]="{ item }">
+        <div class="d-flex justify-end ga-1">
+          <v-btn v-if="asLanguage(item).latestVersionId" size="small" color="primary" @click.stop="openInEditor(asLanguage(item))">Open</v-btn>
+          <v-btn v-else size="small" color="primary" variant="tonal" @click.stop="createInitialVersion(asLanguage(item))">Create first save</v-btn>
+          <v-btn v-if="asLanguage(item).latestVersionId" size="small" variant="text" prepend-icon="mdi-play" @click.stop="tryLanguage(asLanguage(item))">Try</v-btn>
+          <v-menu>
+            <template #activator="{ props }">
+              <v-btn icon="mdi-dots-vertical" size="small" variant="text" v-bind="props" @click.stop />
+            </template>
+            <v-list density="compact">
+              <v-list-item prepend-icon="mdi-pencil" title="Change details" @click="editLanguage(asLanguage(item))" />
+              <v-list-item :prepend-icon="archiveTab ? 'mdi-archive-arrow-up-outline' : 'mdi-archive-outline'" :title="archiveTab ? 'Restore' : 'Archive'" @click="setArchived(asLanguage(item), !archiveTab)" />
+            </v-list>
+          </v-menu>
+        </div>
+      </template>
+
+      <template #expanded-row="{ columns, item }">
+        <tr>
+          <td :colspan="columns.length" class="pa-4">
+            <v-tabs v-model="expandedTabs[asLanguage(item).id]" density="compact">
+              <v-tab value="versions">Releases</v-tab>
+              <v-tab value="saves">All Saves</v-tab>
+            </v-tabs>
+            <v-window v-model="expandedTabs[asLanguage(item).id]" class="pt-2">
+              <v-window-item value="versions">
+                <LanguageVersionList :entries="releaseVersions(asLanguage(item).id)" :current-version-id="asLanguage(item).latestVersionId" :disable-current-action="false" action-label="Open" show-try show-fork empty-text="No releases yet." @restore="openVersion(asLanguage(item), $event)" @try="tryVersion(asLanguage(item), $event)" @fork="forkVersion(asLanguage(item), $event)" />
+              </v-window-item>
+              <v-window-item value="saves">
+                <LanguageVersionList :entries="versions[asLanguage(item).id] ?? []" :current-version-id="asLanguage(item).latestVersionId" :disable-current-action="false" action-label="Open" show-try show-fork @restore="openVersion(asLanguage(item), $event)" @try="tryVersion(asLanguage(item), $event)" @fork="forkVersion(asLanguage(item), $event)" />
+              </v-window-item>
+            </v-window>
+          </td>
+        </tr>
+      </template>
+    </v-data-table-server>
+
     <DialogLanguageEditor v-model="showLanguageDialog" :language="selectedLanguage" @create="createLanguage" @update="updateLanguage" />
-
-    <DialogConfirm ref="confirmDialog" />
-
-    <v-dialog v-model="showDependencyDialog" max-width="620px">
-      <v-card>
-        <v-card-title>Language cannot be deleted</v-card-title>
-        <v-card-text>
-          <p class="mb-3">{{ blockingLanguageName }} is still used by the following objects:</p>
-          <v-list density="compact" border rounded>
-            <v-list-item v-for="dependency in blockingDependencies" :key="`${dependency.kind}-${dependency.id}`" :title="dependency.label">
-              <template #prepend>
-                <v-icon>mdi-link-variant</v-icon>
-              </template>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" @click="showDependencyDialog = false">Close</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import DialogLanguageEditor from '@/components/dialog/DialogLanguageEditor.vue'
+import LanguageVersionList from '@/components/modeling/LanguageVersionList.vue'
+import { createEmptyDiagramLanguage } from '@/model/DiagramLanguage'
 import languageService from '@/services/language/language.service'
 import type { ApiId } from '@/services/api/types/common'
-import type { CreateLanguage, LanguageDeletionDependency, LanguageOverview, UpdateLanguage } from '@/services/api/types/language'
-import DialogLanguageEditor from '@/components/dialog/DialogLanguageEditor.vue'
-import DialogConfirm from '@/components/dialog/DialogConfirm.vue'
+import type { CreateLanguage, LanguageOverview, LanguageVersionInfo, UpdateLanguage } from '@/services/api/types/language'
 import { useModelWorkspaceStore } from '@/stores/modelWorkspace'
-import { createEmptyDiagramLanguage } from '@/model/DiagramLanguage'
-
-const router = useRouter()
-
-type LanguageOverviewItem = LanguageOverview
-
-const languages = ref<LanguageOverviewItem[]>([])
-const totalLanguages = ref(0)
-const itemsPerPage = ref(10)
-const loading = ref(false)
-const workspace = useModelWorkspaceStore()
-
-// Dialog States
-const showLanguageDialog = ref(false)
-const selectedLanguage = ref<LanguageOverviewItem | null>(null)
-const confirmDialog = ref<InstanceType<typeof DialogConfirm>>()
-const showDependencyDialog = ref(false)
-const blockingLanguageName = ref('')
-const blockingDependencies = ref<LanguageDeletionDependency[]>([])
-
-// DataTable Headers
-const headers = [
-  {
-    title: 'Name',
-    key: 'name',
-    sortable: true
-  },
-  {
-    title: 'Owner ID',
-    key: 'ownerId',
-    sortable: true,
-    align: 'start' as const
-  },
-  {
-    title: 'Latest Version Name',
-    key: 'latestVersionName',
-    sortable: false
-  },
-  {
-    title: 'Version Number',
-    key: 'versionNumber',
-    sortable: false,
-    align: 'center' as const
-  },
-  {
-    title: 'Actions',
-    key: 'actions',
-    sortable: false,
-    align: 'center' as const
-  }
-]
 
 interface TableOptions {
   page: number
   itemsPerPage: number
 }
 
-const loadLanguages = ({ page, itemsPerPage: requestedItemsPerPage }: TableOptions) => {
-  const limit = requestedItemsPerPage === -1 ? 100 : requestedItemsPerPage
-  const skip = (page - 1) * limit
+const router = useRouter()
+const workspace = useModelWorkspaceStore()
+const languages = ref<LanguageOverview[]>([])
+const versions = ref<Record<string, LanguageVersionInfo[]>>({})
+const expandedTabs = ref<Record<string, 'versions' | 'saves'>>({})
+const expanded = ref<string[]>([])
+const totalLanguages = ref(0)
+const itemsPerPage = ref(10)
+const currentPage = ref(1)
+const archiveTab = ref(false)
+const query = ref('')
+const loading = ref(false)
+const error = ref<string | null>(null)
+const showLanguageDialog = ref(false)
+const selectedLanguage = ref<LanguageOverview | null>(null)
 
+const headers = [
+  { title: 'Language', key: 'name', sortable: true },
+  { title: 'Owner', key: 'ownerId', sortable: true },
+  { title: 'Latest save', key: 'latestSave', sortable: false },
+  { title: 'Actions', key: 'actions', sortable: false, align: 'end' as const }
+]
+
+const asLanguage = (item: LanguageOverview | { raw: LanguageOverview }) => ('raw' in item ? item.raw : item)
+const versionLabel = (entry: LanguageVersionInfo) => (entry.kind === 'release' && entry.releaseName ? `${entry.releaseName} · v${entry.versionNumber}` : `v${entry.versionNumber}`)
+const releaseVersions = (languageId: ApiId) => (versions.value[languageId] ?? []).filter((entry) => entry.kind === 'release')
+
+const loadLanguages = async (options?: TableOptions) => {
+  if (options) {
+    currentPage.value = options.page
+    itemsPerPage.value = options.itemsPerPage
+  }
+  const limit = itemsPerPage.value === -1 ? 100 : itemsPerPage.value
   loading.value = true
-  languageService
-    .list(skip, limit)
-    .then((response) => {
-      totalLanguages.value = response.data.total
-      languages.value = response.data.items
-    })
-    .catch((error) => {
-      console.error('Failed to load diagram languages:', error)
-    })
-    .finally(() => {
-      loading.value = false
-    })
+  error.value = null
+  try {
+    const response = await languageService.list((currentPage.value - 1) * limit, limit, { q: query.value || undefined, archived: archiveTab.value })
+    languages.value = response.data.items
+    totalLanguages.value = response.data.total
+  } catch {
+    error.value = 'Diagram languages could not be loaded.'
+  } finally {
+    loading.value = false
+  }
 }
 
-// Event Handler
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+const searchLanguages = () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => void loadLanguages({ page: 1, itemsPerPage: itemsPerPage.value }), 250)
+}
+
+const loadVersions = async (languageId: ApiId, force = false) => {
+  if (!force && versions.value[languageId]) return
+  try {
+    versions.value[languageId] = (await languageService.listVersions(languageId, 0, 100)).data.items
+    expandedTabs.value[languageId] ??= 'versions'
+  } catch {
+    error.value = 'The version history could not be loaded.'
+  }
+}
+
+const expandedId = (entry: unknown) => (typeof entry === 'string' ? entry : (entry as { value?: string }).value)
+const setExpanded = (entries: unknown[]) => {
+  const id = expandedId(entries[entries.length - 1])
+  expanded.value = id ? [id] : []
+  if (id) void loadVersions(id)
+}
+const toggleExpanded = (_event: MouseEvent, { item }: { item: LanguageOverview }) => setExpanded(expanded.value[0] === item.id ? [] : [item.id])
+
 const createNewLanguage = () => {
   selectedLanguage.value = null
   showLanguageDialog.value = true
 }
-
-const editLanguage = (language: LanguageOverviewItem) => {
+const editLanguage = (language: LanguageOverview) => {
   selectedLanguage.value = language
   showLanguageDialog.value = true
 }
+const openInEditor = (language: Pick<LanguageOverview, 'id'>) => router.push(`/diagramLanguageEditor/${language.id}`)
+const openVersion = (language: LanguageOverview, version: LanguageVersionInfo) => router.push({ name: 'DiagramLanguageEditor', params: { id: language.id }, query: version.id === language.latestVersionId ? {} : { restore: version.id } })
 
-const tryLanguage = async (language: Pick<LanguageOverviewItem, 'id' | 'name'>) => {
-  const stored = await languageService.get(language.id)
-  if (!stored.data.latestVersionId) return
-  await workspace.startNew(`Test: ${language.name}`, [{ languageId: language.id, versionId: stored.data.latestVersionId, source: 'additional' }])
-  router.push({ name: 'Modeling' })
-}
-
-const openInEditor = (language: Pick<LanguageOverviewItem, 'id'>) => {
-  router.push(`/diagramLanguageEditor/${language.id}`)
-}
-
-const createInitialVersion = async (language: LanguageOverviewItem) => {
+const tryVersion = async (language: Pick<LanguageOverview, 'id' | 'name'>, version: Pick<LanguageVersionInfo, 'id'>) => {
   try {
+    error.value = null
+    await workspace.startNew(`Test: ${language.name}`, [{ languageId: language.id, versionId: version.id, source: 'additional' }])
+    await router.push({ name: 'Modeling' })
+  } catch {
+    error.value = 'The language version could not be opened for testing.'
+  }
+}
+const tryLanguage = async (language: LanguageOverview) => {
+  if (!language.latestVersionId) return
+  await tryVersion(language, { id: language.latestVersionId })
+}
+
+const forkVersion = async (language: LanguageOverview, version: LanguageVersionInfo) => {
+  try {
+    error.value = null
+    const fork = (
+      await languageService.create({
+        name: `${language.name} – ${versionLabel(version)}`,
+        parent: { languageId: language.id, versionId: version.id }
+      })
+    ).data
+    await router.push(`/diagramLanguageEditor/${fork.id}`)
+  } catch {
+    error.value = 'The language version could not be used as a new language.'
+  }
+}
+
+const createInitialVersion = async (language: LanguageOverview) => {
+  try {
+    error.value = null
     await languageService.createVersion(language.id, {
       baseVersionId: null,
-      versionName: 'Initial version',
+      kind: 'release',
+      releaseName: 'Initial release',
       includedLanguageVersions: [],
       data: createEmptyDiagramLanguage()
     })
     await router.push(`/diagramLanguageEditor/${language.id}`)
-  } catch (error) {
-    console.error('Failed to create initial language version:', error)
-  }
-}
-
-const loadDeletionDependencies = async (languageId: ApiId): Promise<LanguageDeletionDependency[] | undefined> => {
-  try {
-    const response = await languageService.getDeletionDependencies(languageId)
-    return response.data
-  } catch (error) {
-    console.error('Failed to validate language deletion:', error)
-    return undefined
-  }
-}
-
-const showDependencies = (languageName: string, dependencies: LanguageDeletionDependency[]) => {
-  blockingLanguageName.value = languageName
-  blockingDependencies.value = dependencies
-  showDependencyDialog.value = true
-}
-
-const deleteLanguage = async (language: LanguageOverviewItem) => {
-  const dependencies = await loadDeletionDependencies(language.id)
-  if (dependencies === undefined) return
-  if (dependencies.length > 0) {
-    showDependencies(language.name, dependencies)
-    return
-  }
-
-  const title = 'Delete Language'
-  const message = `Are you sure you want to delete the language "${language.name}"?\n\nWarning: This action cannot be undone. All Elements, Connections, and Syntax definitions will be lost.`
-  const confirmBtnText = 'Delete'
-
-  try {
-    const confirmed = await confirmDialog.value?.openDialog(title, message, confirmBtnText)
-    if (confirmed) {
-      await languageService.delete(language.id)
-      loadLanguages({ page: 1, itemsPerPage: itemsPerPage.value })
-    }
-  } catch (error) {
-    console.error('Failed to delete language:', error)
-    const currentDependencies = await loadDeletionDependencies(language.id)
-    if (currentDependencies && currentDependencies.length > 0) {
-      showDependencies(language.name, currentDependencies)
-    }
+  } catch {
+    error.value = 'The first language save could not be created.'
   }
 }
 
 const createLanguage = async (data: CreateLanguage) => {
   try {
-    await languageService.create(data)
-    loadLanguages({ page: 1, itemsPerPage: itemsPerPage.value })
-  } catch (error) {
-    console.error('Failed to create diagram language:', error)
+    error.value = null
+    const language = (await languageService.create(data)).data
+    if (!language.latestVersionId) {
+      await languageService.createVersion(language.id, {
+        baseVersionId: null,
+        kind: 'release',
+        releaseName: 'Initial release',
+        includedLanguageVersions: [],
+        data: createEmptyDiagramLanguage()
+      })
+    }
+    await router.push(`/diagramLanguageEditor/${language.id}`)
+  } catch {
+    error.value = 'The language could not be created.'
   }
 }
 
 const updateLanguage = async (languageId: ApiId, data: UpdateLanguage) => {
   try {
+    error.value = null
     await languageService.update(languageId, data)
-    loadLanguages({ page: 1, itemsPerPage: itemsPerPage.value })
-  } catch (error) {
-    console.error('Failed to update diagram language:', error)
+    await loadLanguages({ page: 1, itemsPerPage: itemsPerPage.value })
+  } catch {
+    error.value = 'The language details could not be changed.'
   }
 }
+
+const setArchived = async (language: LanguageOverview, archived: boolean) => {
+  try {
+    error.value = null
+    await languageService.update(language.id, { archived })
+    expanded.value = []
+    await loadLanguages({ page: 1, itemsPerPage: itemsPerPage.value })
+  } catch {
+    error.value = archived ? 'The language could not be archived.' : 'The language could not be restored.'
+  }
+}
+
+watch(archiveTab, () => {
+  expanded.value = []
+  void loadLanguages({ page: 1, itemsPerPage: itemsPerPage.value })
+})
 </script>

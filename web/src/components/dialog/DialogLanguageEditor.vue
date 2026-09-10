@@ -147,7 +147,7 @@ const loadParentVersions = async (languageId: ApiId | null) => {
     const response = await languageService.listVersions(languageId, 0, 100)
     if (parentLanguageId.value === languageId) {
       parentVersions.value = response.data.items.map((version) => ({
-        title: `Version ${version.versionNumber}: ${version.versionName}`,
+        title: version.kind === 'release' && version.releaseName ? `${version.releaseName} · v${version.versionNumber}` : `v${version.versionNumber}`,
         value: version.id
       }))
     }

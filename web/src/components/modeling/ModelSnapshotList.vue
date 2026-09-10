@@ -2,7 +2,10 @@
   <div v-if="entries.length">
     <div v-for="entry in entries" :key="entry.id" class="snapshot-row">
       <div class="snapshot-info">
-        <div class="font-weight-medium text-truncate">{{ snapshotLabel(entry) }}</div>
+        <div class="d-flex align-center ga-2">
+          <span class="font-weight-medium text-truncate">{{ snapshotLabel(entry) }}</span
+          ><v-chip :color="entry.kind === 'release' ? 'primary' : undefined" size="x-small" variant="tonal">{{ entry.kind === 'release' ? 'Release' : 'Checkpoint' }}</v-chip>
+        </div>
         <div class="text-caption text-medium-emphasis">{{ formattedDate(entry.createdAt) }}</div>
       </div>
       <div class="ml-auto d-flex ga-2">
@@ -35,7 +38,7 @@ const emit = defineEmits<{
 }>()
 
 const formattedDate = (value: string) => new Date(value).toLocaleString('en-GB')
-const snapshotLabel = (entry: ModelVersionInfo) => (entry.kind === 'named' ? `${entry.versionName} · Save #${entry.versionNumber}` : `Save #${entry.versionNumber}`)
+const snapshotLabel = (entry: ModelVersionInfo) => (entry.kind === 'release' && entry.releaseName ? `${entry.releaseName} · v${entry.versionNumber}` : `v${entry.versionNumber}`)
 </script>
 
 <style scoped>

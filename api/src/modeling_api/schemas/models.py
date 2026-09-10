@@ -14,15 +14,15 @@ from modeling_api.schemas.common import (
     Name,
     TaskVersionReference,
     VersionInfo,
+    VersionKind,
 )
 
 ModelSortField = Literal["updatedAt", "createdAt", "name"]
 SortOrder = Literal["asc", "desc"]
-
-
 class Model(Identity):
     name: Name
     latest_version_id: UUID | None
+    preferences: JsonObject = Field(default_factory=dict)
     updated_at: datetime
     archived_at: datetime | None = None
 
@@ -36,6 +36,7 @@ class UpdateModel(ApiSchema):
 
     name: Name | None = None
     archived: bool | None = None
+    preferences: JsonObject | None = None
 
     @model_validator(mode="after")
     def has_change(self) -> "UpdateModel":
@@ -45,6 +46,8 @@ class UpdateModel(ApiSchema):
             raise ValueError("name must not be null.")
         if "archived" in self.model_fields_set and self.archived is None:
             raise ValueError("archived must be true or false.")
+        if "preferences" in self.model_fields_set and self.preferences is None:
+            raise ValueError("preferences must be an object.")
         return self
 
 
@@ -57,11 +60,10 @@ class WorkspaceLanguageReference(LanguageVersionReference):
 class ModelVersionInfo(VersionInfo):
     model_id: UUID
     previous_version_id: UUID | None
-    language_versions: list[LanguageVersionReference]
     workspace_languages: list[WorkspaceLanguageReference] = Field(default_factory=list)
     task_version: TaskVersionReference | None
-    kind: Literal["checkpoint", "named"] = "checkpoint"
-    version_name: Name | None = None
+    kind: VersionKind = "checkpoint"
+    release_name: Name | None = None
     description: str | None = Field(default=None, max_length=2000)
 
 
@@ -72,13 +74,12 @@ class ModelVersion(ModelVersionInfo):
 
 class CreateModelVersion(ApiSchema):
     base_version_id: UUID | None
-    language_versions: list[LanguageVersionReference] = Field(min_length=1, max_length=32)
     workspace_languages: list[WorkspaceLanguageReference] = Field(default_factory=list, max_length=32)
     task_version: TaskVersionReference | None = None
     data: JsonObject
     annotations: JsonObject | None = None
-    kind: Literal["checkpoint", "named"] = "checkpoint"
-    version_name: Name | None = None
+    kind: VersionKind = "checkpoint"
+    release_name: Name | None = None
     description: str | None = Field(default=None, max_length=2000)
 
     @model_validator(mode="after")
@@ -86,14 +87,11 @@ class CreateModelVersion(ApiSchema):
         # Ohne Aufgabenbezug gibt es nichts, worauf sich Anmerkungen beziehen könnten.
         if self.task_version is None and self.annotations is not None:
             raise ValueError("annotations erfordert eine taskVersion.")
-        if self.kind == "named" and self.version_name is None:
-            raise ValueError("Ein benannter Speicherstand benötigt einen versionName.")
-        if self.kind == "checkpoint" and self.version_name is not None:
-            raise ValueError("versionName ist nur für benannte Speicherstände erlaubt.")
+        if self.kind == "release" and self.release_name is None:
+            raise ValueError("Ein Release benötigt einen releaseName.")
+        if self.kind == "checkpoint" and self.release_name is not None:
+            raise ValueError("releaseName ist nur für Releases erlaubt.")
         direct_refs = {(str(item.language_id), str(item.version_id)) for item in self.workspace_languages}
-        all_refs = {(str(item.language_id), str(item.version_id)) for item in self.language_versions}
         if len(direct_refs) != len(self.workspace_languages):
             raise ValueError("workspaceLanguages enthält eine Sprachversion mehrfach.")
-        if not direct_refs.issubset(all_refs):
-            raise ValueError("workspaceLanguages muss in languageVersions enthalten sein.")
         return self

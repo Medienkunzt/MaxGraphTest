@@ -33,9 +33,29 @@ def _uml_class_diagram() -> dict:
 
 
 async def seed_initial_data() -> None:
-    """Speichert die Startdaten einmalig, ohne vorhandene Daten zu verändern."""
+    """Speichert Startdaten und führt kleine, idempotente Metadatenmigrationen aus."""
     created_at = utcnow()
     language_data = _uml_class_diagram()
+
+    # One-time, idempotent migration of the previous API vocabulary.
+    for collection in (
+        db.language_versions,
+        db.model_versions,
+        db.task_statement_versions,
+    ):
+        await collection.update_many(
+            {"versionName": {"$exists": True}, "releaseName": {"$exists": False}},
+            {"$rename": {"versionName": "releaseName"}},
+        )
+        await collection.update_many(
+            {"versionName": {"$exists": True}}, {"$unset": {"versionName": ""}}
+        )
+    await db.language_versions.update_many({"kind": "named"}, {"$set": {"kind": "release"}})
+    await db.model_versions.update_many({"kind": "named"}, {"$set": {"kind": "release"}})
+    await db.model_versions.update_many({}, {"$unset": {"languageVersions": ""}})
+    await db.languages.update_many(
+        {"archivedAt": {"$exists": False}}, {"$set": {"archivedAt": None}}
+    )
 
     await db.languages.update_one(
         {"_id": UML_CLASS_DIAGRAM_ID},
@@ -46,6 +66,7 @@ async def seed_initial_data() -> None:
                 "parent": None,
                 "ownerId": SYSTEM_OWNER_ID,
                 "latestVersionId": UML_CLASS_DIAGRAM_VERSION_ID,
+                "archivedAt": None,
             }
         },
         upsert=True,
@@ -55,10 +76,12 @@ async def seed_initial_data() -> None:
         {
             "$setOnInsert": {
                 "languageId": UML_CLASS_DIAGRAM_ID,
-                "versionNumber": 1,
+                "versionNumber": "1.0",
                 "createdBy": SYSTEM_OWNER_ID,
                 "createdAt": created_at,
-                "versionName": "Initial version",
+                "kind": "release",
+                "releaseName": "Initial release",
+                "description": None,
                 "includedLanguageVersions": [],
                 "data": language_data,
             }
@@ -73,8 +96,14 @@ async def seed_initial_data() -> None:
             "languageId": UML_CLASS_DIAGRAM_ID,
         },
         {
-            "$set": {"data.feedback": language_data["feedback"]},
-            "$unset": {"data.id": "", "data.name": "", "data.tags": ""},
+            "$set": {
+                "kind": "release",
+                "releaseName": "Initial release",
+                "versionNumber": "1.0",
+                "description": None,
+                "data.feedback": language_data["feedback"],
+            },
+            "$unset": {"versionName": "", "data.id": "", "data.name": "", "data.tags": ""},
         },
     )
 
@@ -96,10 +125,10 @@ async def seed_initial_data() -> None:
         {
             "$setOnInsert": {
                 "taskStatementId": ORDER_MANAGEMENT_TASK_ID,
-                "versionNumber": 1,
+                "versionNumber": "1.0",
                 "createdBy": SYSTEM_OWNER_ID,
                 "createdAt": created_at,
-                "versionName": "Initial version",
+                "releaseName": "Initial release",
                 "externalVersionId": "1",
                 "data": {
                     "title": "A3 – Order Management",
@@ -108,4 +137,11 @@ async def seed_initial_data() -> None:
             }
         },
         upsert=True,
+    )
+    await db.task_statement_versions.update_one(
+        {"_id": ORDER_MANAGEMENT_TASK_VERSION_ID},
+        {
+            "$set": {"releaseName": "Initial release", "versionNumber": "1.0"},
+            "$unset": {"versionName": ""},
+        },
     )
