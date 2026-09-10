@@ -13,7 +13,7 @@
       </div>
       <v-alert v-if="saveError" density="compact" type="error" variant="tonal" class="mt-2">{{ saveError }}</v-alert>
     </div>
-    <div class="sidebar-topbar">
+    <div v-if="!modelManagement" class="sidebar-topbar">
       <div class="tab-buttons" role="tablist" aria-label="Sidebar content">
         <button v-for="tab in tabs" :key="tab.value" type="button" class="tab-button" :class="{ 'tab-button--active': activeTab === tab.value }" :title="tab.label" :aria-pressed="activeTab === tab.value" @click="activeTab = tab.value">
           <v-icon size="14">{{ tab.icon }}</v-icon>
@@ -23,10 +23,9 @@
     </div>
 
     <div class="sidebar-body">
-      <SidebarModel v-if="modelManagement && activeTab === 'model'" />
-      <SidebarLibrary v-else-if="modelManagement && activeTab === 'library'" :languages="languages" :sidebar-width="sidebarWidth" />
+      <ElementsSidebar v-if="modelManagement" :languages="languages" :sidebar-width="sidebarWidth" />
       <SidebarSync v-else-if="activeTab === 'sync'" />
-      <SidebarPersistence v-else-if="activeTab === 'files' || activeTab === 'persistence'" />
+      <SidebarPersistence v-else-if="activeTab === 'persistence'" />
       <ElementsSidebar v-else :languages="languages" :sidebar-width="sidebarWidth" />
     </div>
 
@@ -50,17 +49,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import ElementsSidebar, { type SidebarLanguage } from './ElementsSidebar.vue'
-import SidebarModel from './SidebarModel.vue'
-import SidebarLibrary from './SidebarLibrary.vue'
 import SidebarPersistence from './SidebarPersistence.vue'
 import SidebarSync from './SidebarSync.vue'
 import { useModelWorkspaceStore } from '@/stores/modelWorkspace'
 import { useGraphContext } from '@/composables/useGraphContext'
 import { exportModelAsXml } from '@/utils/modelPersistence'
 
-type SidebarTab = 'model' | 'library' | 'files' | 'elements' | 'persistence' | 'sync'
+type SidebarTab = 'elements' | 'persistence' | 'sync'
 
-const props = defineProps<{
+defineProps<{
   languages?: SidebarLanguage[]
   modelManagement?: boolean
 }>()
@@ -74,25 +71,19 @@ const saveError = ref<string | null>(null)
 const stateLabel = computed(() => ({ synced: 'Saved', dirty: 'Unsaved changes', saving: 'Saving…', offline: 'Offline · saved locally', conflict: 'Conflict' })[workspace.syncState])
 const canSave = computed(() => workspace.dirty && workspace.syncState !== 'saving' && workspace.syncState !== 'conflict')
 
-const modelTabs: { value: SidebarTab; icon: string; label: string }[] = [
-  { value: 'library', icon: 'mdi-shape-outline', label: 'Elements' },
-  { value: 'model', icon: 'mdi-history', label: 'History' },
-  { value: 'files', icon: 'mdi-import', label: 'Import/Export' },
-  { value: 'sync', icon: 'mdi-sync', label: 'Sync' }
-]
 const defaultTabs: { value: SidebarTab; icon: string; label: string }[] = [
   { value: 'elements', icon: 'mdi-shape-outline', label: 'Elements' },
   { value: 'persistence', icon: 'mdi-import', label: 'Import/Export' },
   { value: 'sync', icon: 'mdi-sync', label: 'Sync' }
 ]
-const tabs = computed(() => (props.modelManagement ? modelTabs : defaultTabs))
+const tabs = computed(() => defaultTabs)
 
 const DEFAULT_WIDTH = 210
 const MIN_WIDTH = Math.round(DEFAULT_WIDTH / 2)
 const MAX_WIDTH = Math.round(DEFAULT_WIDTH * 1.5)
 
 const sidebarWidth = ref(DEFAULT_WIDTH)
-const activeTab = ref<SidebarTab>(props.modelManagement ? 'library' : 'elements')
+const activeTab = ref<SidebarTab>('elements')
 
 const saveCheckpoint = async () => {
   try {
@@ -255,6 +246,8 @@ const startResize = (event: MouseEvent) => {
 }
 
 .sidebar-body {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;

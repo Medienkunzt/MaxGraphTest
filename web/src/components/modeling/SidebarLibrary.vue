@@ -3,7 +3,6 @@
     <div class="library-actions">
       <v-btn size="small" block variant="tonal" prepend-icon="mdi-bookshelf" @click="openDialog">Manage Languages ({{ workspace.languages.length }})</v-btn>
     </div>
-    <ElementsSidebar :languages="languages" :sidebar-width="sidebarWidth" />
 
     <v-dialog v-model="dialog" max-width="760">
       <v-card>
@@ -40,13 +39,11 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import ElementsSidebar, { type SidebarLanguage } from './ElementsSidebar.vue'
 import languageService from '@/services/language/language.service'
 import { useModelWorkspaceStore } from '@/stores/modelWorkspace'
 import type { ApiId } from '@/services/api/types/common'
 import type { LanguageOverview, LanguageVersionInfo } from '@/services/api/types/language'
 
-defineProps<{ languages?: SidebarLanguage[]; sidebarWidth: number }>()
 const workspace = useModelWorkspaceStore()
 const dialog = ref(false)
 const loading = ref(false)
@@ -134,18 +131,11 @@ const removeLanguage = async (languageId: ApiId) => {
 
 <style scoped>
 .library-sidebar {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+  padding: 8px;
 }
 .library-actions {
-  padding: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid rgba(var(--v-theme-outline), 0.14);
-}
-.library-sidebar :deep(.elements-sidebar) {
-  flex: 1;
-  min-height: 0;
 }
 .language-list {
   display: grid;

@@ -81,6 +81,7 @@
             {{ overlayTooltip.text }}
           </v-tooltip>
         </div>
+        <SidebarRightContainer v-if="props.showElements !== false && props.showModelSidebar !== false && props.showToolbar && props.modelManagement" />
       </div>
       <!-- /canvas-area -->
     </v-card-text>
@@ -129,6 +130,7 @@ import GraphControls from './GraphControls.vue'
 import AutonomyControls from './AutonomyControls.vue'
 import CanvasWindowHost from './CanvasWindowHost.vue'
 import SidebarContainer from './SidebarContainer.vue'
+import SidebarRightContainer from './SidebarRightContainer.vue'
 import type { SidebarLanguage } from './ElementsSidebar.vue'
 import type { DiagramElement } from '@/model/Element'
 import type { DiagramConnection, DiagramConnectionGroup } from '@/model/Connection'
